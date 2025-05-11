@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme.dart';
+
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   runApp(
@@ -19,6 +21,16 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
+   //   showPerformanceOverlay: true,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate, // Add this line
+      ],
+      supportedLocales: const [
+        Locale('ar', 'AE'), // Arabic with country code
+      ],
+      locale: const Locale('ar'), // Force Arabic locale
       title: 'Azkar & Hadith App',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

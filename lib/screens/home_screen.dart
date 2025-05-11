@@ -1,63 +1,72 @@
+import 'package:ahadith_alzakah/screens/hadith_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/navigation_provider.dart';
+import 'abwab_screen.dart';
+import '../screens/search_screen.dart';
+import 'settings_screen.dart';
+import 'about_screen.dart';
+import 'login_screen.dart';
+import 'add_hadith.dart';
+import 'remove_hadith.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(navigationProvider);
+    final navNotifier = ref.read(navigationProvider.notifier);
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+    // Screens for navigation
+    final List<Widget> _pages = [
+      Center(child: BooksScreen()),
+      Center(child: HadithDetails()),
+      Center(child: SearchScreen()),
+      Center(child: SettingsScreen()),
+      Center(child: AboutScreen()),
+    ];
 
-  // Sample pages for navigation
-  final List<Widget> _pages = [
-    const Center(child: Text("Categories Page")),
-    const Center(child: Text("Favorites Page")),
-    const Center(child: Text("Settings Page")),
-    const Center(child: Text("Profile Page")),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 168, 88, 83),
-        title: const Text("موسوعة أحاديث الزكاة", 
-               style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        elevation: 4,
-      ),
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        selectedItemColor: const Color(0xffecbd79),
-        unselectedItemColor: const Color.fromARGB(255, 26, 23, 23),
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "settings",
+    return PopScope(
+      canPop: currentIndex == 0, 
+      onPopInvokedWithResult: (didPop, Object? result) async {
+        if (!didPop && currentIndex != 0) {
+          navNotifier.changeTab(0); 
+        }
+      },
+      child: Scaffold(
+        body: _pages[currentIndex],
+        bottomNavigationBar: Opacity(
+          opacity: .8,
+          child: BottomNavigationBar(
+            currentIndex: currentIndex,
+            backgroundColor: const Color(0xfffcf3e8).withOpacity(.5),
+            onTap: (index) => navNotifier.changeTab(index),
+            selectedItemColor: const Color.fromARGB(255, 192, 144, 76),
+            unselectedItemColor: const Color.fromARGB(255, 26, 23, 23),
+            showUnselectedLabels: true,
+            type: BottomNavigationBarType.fixed,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: "الرئيسية",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.book),
+                label: "ألاحاديث",
+              ),
+              BottomNavigationBarItem(icon: Icon(Icons.search), label: "البحث"),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: "الاعدادات",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.info),
+                label: "عن الموسوعة",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: "search",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.lightbulb),
-            label: "info",
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -21,4 +21,7 @@ class AppTheme {
       titleLarge: TextStyle(fontWeight: FontWeight.bold),
     ),
   );
+
+   static const Color primaryColor = Color(0xffecbd79);
+   static const Color secodaryColor = Color(0xfffcead0);
 }

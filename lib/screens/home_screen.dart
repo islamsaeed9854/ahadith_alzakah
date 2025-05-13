@@ -6,9 +6,10 @@ import 'abwab_screen.dart';
 import '../screens/search_screen.dart';
 import 'settings_screen.dart';
 import 'about_screen.dart';
-import 'login_screen.dart';
-import 'add_hadith.dart';
-import 'remove_hadith.dart';
+import '../providers/theme_provider.dart';
+// import 'login_screen.dart';
+// import 'add_hadith.dart';
+// import 'remove_hadith.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -17,33 +18,40 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(navigationProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
-
+    final innerBooksScreenPr = ref.watch(innerBooksScreenProvider);
     // Screens for navigation
-    final List<Widget> _pages = [
-      Center(child: BooksScreen()),
+    final List<Widget> pages = [
+      innerBooksScreenPr ?? Center(child: BooksScreen()),
       Center(child: HadithDetails()),
       Center(child: SearchScreen()),
       Center(child: SettingsScreen()),
       Center(child: AboutScreen()),
     ];
-
+     final isDarkMode = ref.watch(isDarkModeProvider);
     return PopScope(
-      canPop: currentIndex == 0, 
+      canPop: currentIndex != 0 || ref.watch(innerBooksScreenProvider) != null ? false : true,
       onPopInvokedWithResult: (didPop, Object? result) async {
         if (!didPop && currentIndex != 0) {
-          navNotifier.changeTab(0); 
+          navNotifier.changeTab(0);
+        } else if (!didPop && currentIndex == 0 && innerBooksScreenPr != null) {
+          ref.read(innerBooksScreenProvider.notifier).state = null;
         }
       },
       child: Scaffold(
-        body: _pages[currentIndex],
+        body: pages[currentIndex],
         bottomNavigationBar: Opacity(
-          opacity: .8,
+          opacity: (isDarkMode&&currentIndex==1) ? 1:.8,
           child: BottomNavigationBar(
             currentIndex: currentIndex,
-            backgroundColor: const Color(0xfffcf3e8).withOpacity(.5),
-            onTap: (index) => navNotifier.changeTab(index),
+            backgroundColor:(isDarkMode&&currentIndex==1) ? Color(0xff1c1c1c): const Color.fromRGBO(255, 255, 255, .5),
+            onTap: (index) {
+              if (index != 0) {
+                ref.read(innerBooksScreenProvider.notifier).state = null;
+              }
+              navNotifier.changeTab(index);
+            },
             selectedItemColor: const Color.fromARGB(255, 192, 144, 76),
-            unselectedItemColor: const Color.fromARGB(255, 26, 23, 23),
+            unselectedItemColor:(isDarkMode&&currentIndex==1)?Color(0xfffcead0) : const Color.fromARGB(255, 26, 23, 23),
             showUnselectedLabels: true,
             type: BottomNavigationBarType.fixed,
             items: const [

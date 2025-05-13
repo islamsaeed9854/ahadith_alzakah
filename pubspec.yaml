@@ -38,6 +38,8 @@ dependencies:
   google_fonts: ^6.2.1
   svg_image: ^0.0.5
   flutter_localization: ^0.3.2
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -63,8 +65,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/opening-screen-croped.svg
-    - assets/opening-screen02.png
+    - assets/backGround.webp
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

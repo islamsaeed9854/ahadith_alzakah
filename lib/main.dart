@@ -25,7 +25,7 @@ class MyApp extends ConsumerWidget {
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate, // Add this line
+        GlobalCupertinoLocalizations.delegate, 
       ],
       supportedLocales: const [
         Locale('ar', 'AE'), // Arabic with country code

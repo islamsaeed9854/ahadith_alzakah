@@ -10,20 +10,40 @@ class TextApp {
     style: GoogleFonts.amiri(
       fontWeight: FontWeight.bold,
       fontSize: 16.6,
-      color: AppTheme.secodaryColor,
+      color: AppTheme.primaryColor,
     ),
   );
 
+  static Image appBackgroundWidget = Image.asset(
+    'assets/backGround.webp',
+    fit: BoxFit.cover,
+    height: double.infinity,
+    width: double.infinity,
+  );
+  static const AssetImage appBackgroundImage = AssetImage(
+    'assets/backGround.webp',
+  );
   // زر الرجوع الذي يستخدم navigationProvider
   static IconButton backButton(WidgetRef ref) {
     final navNotifier = ref.read(navigationProvider.notifier);
     return IconButton(
       icon: const Icon(
-        Icons.arrow_back,
+        Icons.arrow_forward,
         color: AppTheme.secodaryColor,
         size: 30,
       ),
       onPressed: () => navNotifier.changeTab(0),
+    );
+  }
+
+  static IconButton backButtonLoginAddRemovePages(context) {
+    return IconButton(
+      icon: const Icon(
+        Icons.arrow_forward,
+        color: AppTheme.secodaryColor,
+        size: 30,
+      ),
+      onPressed: () =>  Navigator.of(context).pop(),
     );
   }
 }

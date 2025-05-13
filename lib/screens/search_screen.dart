@@ -1,9 +1,9 @@
-import 'package:arabic_font/arabic_font.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/search_card.dart';
 import '../core/constants.dart';
+
 final searchControllerProvider = Provider<TextEditingController>((ref) {
   return TextEditingController();
 });
@@ -11,16 +11,13 @@ final searchControllerProvider = Provider<TextEditingController>((ref) {
 final searchResultsProvider = Provider<List<Map<String, String>>>((ref) {
   return [
     {
-      'title': 'بوجود الإحطاء سيريًا ما',
-      'content': 'صنعت بين بالولون واجتماعية حول أربعين بيئياً',
+      'title': 'فرض الزكاة وفضلها',
+      'content':
+          'وجوب الزكاة: حديث: «١ فقيه» عمران، وقال الرجل: أوجبتني في كل أربعين درهمًا',
     },
     {
-      'title': 'التأثيرات البيئية الحديثة',
-      'content': 'دراسة حول التغيرات المناخية وتأثيرها على المجتمعات',
-    },
-    {
-      'title': 'الإحطاء في العصر الحديث',
-      'content': 'تحليل اجتماعي للتحديات البيئية في المدن الكبرى',
+      'title': 'أهمية الصلاة',
+      'content': 'الصلاة عماد الدين من أقامها فقد أقام الدين',
     },
   ];
 });
@@ -31,64 +28,85 @@ final filteredResultsProvider = StateProvider<List<Map<String, String>>>((ref) {
 });
 
 final filterSearchProvider = Provider((ref) {
-  final controller = ref.watch(searchControllerProvider);
   final results = ref.watch(searchResultsProvider);
   return (String query) {
     final lowerQuery = query.trim().toLowerCase();
-    final filtered = lowerQuery.isEmpty
-        ? List<Map<String, String>>.from(results)
-        : results.where((result) {
-            final title = result['title']!.toLowerCase();
-            final content = result['content']!.toLowerCase();
-            return title.contains(lowerQuery) ||
-                content.contains(lowerQuery);
-          }).toList();
+    final filtered =
+        lowerQuery.isEmpty
+            ? List<Map<String, String>>.from(results)
+            : results.where((result) {
+              final title = result['title']!.toLowerCase();
+              final content = result['content']!.toLowerCase();
+              return title.contains(lowerQuery) || content.contains(lowerQuery);
+            }).toList();
     ref.read(filteredResultsProvider.notifier).state = filtered;
   };
 });
 
-class SearchScreen extends ConsumerWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  late FocusNode searchFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    searchFocusNode = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(searchFocusNode);
+    });
+  }
+
+  @override
+  void dispose() {
+    searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final controller = ref.watch(searchControllerProvider);
     final filteredResults = ref.watch(filteredResultsProvider);
 
-    // Initialize filtering on text change
-    ref.listen(searchControllerProvider, (prev, next) {
-      ref.read(filterSearchProvider)(next.text);
-    });
-  
+    // الكشف عن ارتفاع لوحة المفاتيح
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/opening-screen02.png'),
+        resizeToAvoidBottomInset: false, // تأكد من أنها false
+        body: Stack(
+          children: [
+            Image(
+              image: TextApp.appBackgroundImage,
               fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(Colors.black26, BlendMode.darken),
+              width: double.infinity,
+              height:
+                  screenHeight -
+                  keyboardHeight, // تعديل الارتفاع بناءً على لوحة المفاتيح
+              color: Colors.black26,
+              colorBlendMode: BlendMode.darken,
             ),
-          ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.04,
-              vertical: screenHeight * 0.02,
-            ),
-            child: Column(
-              children: [
-                // العنوان وزر الرجوع
-                SizedBox(height: screenHeight * 0.04),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Center(
-                      child: Text(
+            SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.04,
+                vertical: screenHeight * 0.02,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: screenHeight * 0.04),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
                         'البحث',
                         style: GoogleFonts.cairo(
                           fontWeight: FontWeight.bold,
@@ -101,53 +119,104 @@ class SearchScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.left,
                       ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      child: TextApp.backButton(ref),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenHeight * 0.03),
-                // شريط البحث
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        blurRadius: screenWidth * 0.01,
-                        offset: Offset(0, screenWidth * 0.005),
-                      ),
+                      TextApp.backButton(ref),
                     ],
                   ),
-                  child: TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      hintText: 'ابحث هنا...',
-                      hintStyle: TextStyle(
-                        color: Colors.grey,
-                        fontSize: screenWidth * 0.04,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: screenHeight * 0.015,
-                      ),
-                      suffixIcon: const Icon(
-                        Icons.search,
-                        color: Color(0xff912929),
+                  SizedBox(height: screenHeight * 0.03),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(255, 255, 255, 0.0),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color.fromRGBO(158, 158, 158, 0.2),
+                          blurRadius: screenWidth * 0.01,
+                          offset: Offset(0, screenWidth * 0.005),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: controller,
+                      focusNode: searchFocusNode,
+                      style: const TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'اكتب هنا...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey,
+                          fontSize: screenWidth * 0.04,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(55.0),
+                          borderSide: BorderSide(
+                            color: Color(0xffe2b97f),
+                            width: 4.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(55.0),
+                          borderSide: BorderSide(
+                            color: Color(0xffe2b97f),
+                            width: 4.5,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Color(0xfff8f0e3),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenHeight * 0.015,
+                        ),
+                        suffixIcon: const Icon(
+                          Icons.search,
+                          color: Color(0xff977c55),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(height: screenHeight * 0.04),
-                // نتائج البحث
-                filteredResults.isEmpty
-                    ? Padding(
+                  SizedBox(height: screenHeight * 0.025),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ref.read(filterSearchProvider)(controller.text);
+                        FocusScope.of(context).unfocus(); // يخفي الكيبورد
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF937848),
+                        padding: EdgeInsets.symmetric(
+                          vertical: screenHeight * 0.015,
+                          horizontal: screenWidth * 0.1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(55),
+                        ),
+                      ),
+                      child: Text(
+                        'بحث',
+                        style: GoogleFonts.cairo(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.04),
+                  Padding(
+                    padding: EdgeInsets.only(right: screenWidth * 0.02),
+                    child: Text(
+                      'نتائج البحث',
+                      style: GoogleFonts.cairo(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  filteredResults.isEmpty
+                      ? Padding(
                         padding: EdgeInsets.all(screenWidth * 0.04),
                         child: Text(
                           'لا توجد نتائج مطابقة',
@@ -157,25 +226,25 @@ class SearchScreen extends ConsumerWidget {
                           ),
                         ),
                       )
-                    : Column(
-                        children: filteredResults.map((result) {
-                          return Column(
-                            children: [
-                              SearchCard(
-                                context,
-                                title: result['title']!,
-                                content: result['content']!,
-                              ),
-                              SizedBox(height: screenHeight * 0.02),
-                            ],
-                          );
-                        }).toList(),
+                      : Column(
+                        children:
+                            filteredResults.map((result) {
+                              return Column(
+                                children: [
+                                  searchCard(
+                                    context,
+                                    title: result['title']!,
+                                    content: result['content']!,
+                                  ),
+                                  SizedBox(height: screenHeight * 0.02),
+                                ],
+                              );
+                            }).toList(),
                       ),
-                SizedBox(height: screenHeight * 0.03),
-                Center(child: TextApp.drSamyKhalilName),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

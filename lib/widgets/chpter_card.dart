@@ -8,7 +8,7 @@ class ChapterCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isExpanded;
 
-  const ChapterCard({
+  const ChapterCard({super.key, 
     required this.title,
     required this.text,
     required this.isLandscape,
@@ -32,7 +32,7 @@ class ChapterCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(33),
               border: Border.all(
                 color: const Color(0xffe6a345),
-                width: 1.5,
+                width: 3.5,
               ),
               boxShadow: [
                 BoxShadow(
@@ -82,7 +82,7 @@ class ChapterCard extends StatelessWidget {
                 ),
                 Icon(
                   isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                  color: const Color(0xffe6a345),
+                  color: Colors.black,
                   size: 24,
                 ),
               ],

@@ -1,13 +1,12 @@
+import 'package:ahadith_alzakah/core/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../widgets/chpter_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'ahadith_screen.dart';
 import '../data/models/hadith.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../providers/navigation_provider.dart';
+
 // Provider to track expanded chapters
 final expandedChapterProvider = StateProvider<int?>((ref) => null);
 
@@ -37,11 +36,12 @@ class ChaptersScreen extends ConsumerWidget {
       ),
     ),
   );
-   
+
+  ChaptersScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expandedChapter = ref.watch(expandedChapterProvider);
-      final currentIndex = ref.watch(navigationProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     return Scaffold(
       body: LayoutBuilder(
@@ -50,10 +50,7 @@ class ChaptersScreen extends ConsumerWidget {
           return Stack(
             fit: StackFit.expand,
             children: [
-              SvgPicture.asset(
-                'assets/opening-screen-croped.svg',
-                fit: BoxFit.cover,
-              ),
+              TextApp.appBackgroundWidget,
               SafeArea(
                 child: SingleChildScrollView(
                   child: Padding(
@@ -73,7 +70,7 @@ class ChaptersScreen extends ConsumerWidget {
                             shadows: [
                               Shadow(
                                 blurRadius: 10,
-                                color: Colors.black.withOpacity(0.3),
+                                color: const Color.fromRGBO(0, 0, 0, 0.3),
                                 offset: const Offset(2, 2),
                               ),
                             ],
@@ -89,7 +86,7 @@ class ChaptersScreen extends ConsumerWidget {
                             shadows: [
                               Shadow(
                                 blurRadius: 10,
-                                color: Colors.black.withOpacity(0.3),
+                                color: const Color.fromRGBO(0, 0, 0, 0.3),
                                 offset: const Offset(2, 2),
                               ),
                             ],
@@ -114,9 +111,17 @@ class ChaptersScreen extends ConsumerWidget {
                                     onTap: () {
                                       // Toggle expansion
                                       if (isExpanded) {
-                                        ref.read(expandedChapterProvider.notifier).state = null;
+                                        ref
+                                            .read(
+                                              expandedChapterProvider.notifier,
+                                            )
+                                            .state = null;
                                       } else {
-                                        ref.read(expandedChapterProvider.notifier).state = index;
+                                        ref
+                                            .read(
+                                              expandedChapterProvider.notifier,
+                                            )
+                                            .state = index;
                                       }
                                     },
                                   ),
@@ -125,17 +130,36 @@ class ChaptersScreen extends ConsumerWidget {
                                 if (isExpanded)
                                   AnimatedContainer(
                                     duration: Duration(milliseconds: 300),
-                                    margin: EdgeInsets.only(bottom: 16, right: 40, left: 40),
+                                    margin: EdgeInsets.only(
+                                      bottom: 16,
+                                      right: 40,
+                                      left: 40,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: const Color.fromRGBO(
+                                        255,
+                                        255,
+                                        255,
+                                        0.9,
+                                      ),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: const Color(0xffe6a345).withOpacity(0.5),
+                                        color: const Color.fromRGBO(
+                                          230,
+                                          163,
+                                          69,
+                                          0.5,
+                                        ),
                                         width: 1,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
+                                          color: const Color.fromRGBO(
+                                            0,
+                                            0,
+                                            0,
+                                            0.1,
+                                          ),
                                           blurRadius: 4,
                                           offset: Offset(0, 2),
                                         ),
@@ -147,14 +171,21 @@ class ChaptersScreen extends ConsumerWidget {
                                         shrinkWrap: true,
                                         physics: NeverScrollableScrollPhysics(),
                                         itemCount: chapterAhadith[index].length,
-                                        separatorBuilder: (context, i) => Divider(
-                                          color: const Color(0xffe6a345).withOpacity(0.3),
-                                          height: 1,
-                                          indent: 20,
-                                          endIndent: 20,
-                                        ),
+                                        separatorBuilder:
+                                            (context, i) => Divider(
+                                              color: const Color.fromRGBO(
+                                                230,
+                                                163,
+                                                69,
+                                                0.3,
+                                              ),
+                                              height: 1,
+                                              indent: 20,
+                                              endIndent: 20,
+                                            ),
                                         itemBuilder: (context, hadithIndex) {
-                                          final hadith = chapterAhadith[index][hadithIndex];
+                                          final hadith =
+                                              chapterAhadith[index][hadithIndex];
                                           return ListTile(
                                             title: Text(
                                               hadith.nameHadith,
@@ -162,12 +193,12 @@ class ChaptersScreen extends ConsumerWidget {
                                                 arabicFont: ArabicFont.reemKufi,
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.black87,
+                                                color: Color(0xff912929),
                                               ),
                                             ),
                                             subtitle: Text(
-                                              hadith.textHadith.length > 50 
-                                                  ? '${hadith.textHadith.substring(0, 50)}...' 
+                                              hadith.textHadith.length > 50
+                                                  ? '${hadith.textHadith.substring(0, 50)}...'
                                                   : hadith.textHadith,
                                               style: ArabicTextStyle(
                                                 arabicFont: ArabicFont.reemKufi,
@@ -178,24 +209,12 @@ class ChaptersScreen extends ConsumerWidget {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             trailing: Icon(
-                                              Icons.arrow_forward_ios, 
+                                              Icons.arrow_forward_ios,
                                               size: 16,
                                               color: const Color(0xffe6a345),
                                             ),
                                             onTap: () {
-                                              // Navigator.push(
-                                              //   context,
-                                              //   MaterialPageRoute(
-                                              //     builder: (context) => AhadithScreen(
-                                              //       chapterId: index + 1,
-                                              //       hadithId: hadith.hadithNumber,
-                                              //     ),
-                                              //   ),
-                                              // );
-
-                                             Navigator.of(context).pop();
                                               navNotifier.changeTab(1);
-                                            
                                             },
                                           );
                                         },

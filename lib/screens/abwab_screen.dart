@@ -30,8 +30,8 @@ class BooksScreen extends ConsumerWidget {
                   : constraints.maxWidth / 2.2;
           final double cardHeight =
               isLandscape
-                  ? constraints.maxHeight * 0.55
-                  : constraints.maxHeight * 0.16;
+                  ? constraints.maxHeight * 0.6 // زيادة الارتفاع قليلاً
+                  : constraints.maxHeight * 0.18; // زيادة الارتفاع قليلاً
           final double cardWidth =
               isLandscape
                   ? constraints.maxWidth / 3.5
@@ -145,8 +145,8 @@ class BooksScreen extends ConsumerWidget {
                                   mainAxisSpacing: 30,
                                   childAspectRatio:
                                       isLandscape
-                                          ? 1
-                                          : cardWidth / (cardHeight * 0.8),
+                                          ? 0.9 // تعديل النسبة لإعطاء مساحة أكبر
+                                          : cardWidth / (cardHeight * 0.9),
                                   mainAxisExtent: cardHeight,
                                 ),
                             itemBuilder: (context, index) {
@@ -183,50 +183,54 @@ Widget buildBabCard(
   String text,
   bool isLandscape,
 ) {
-  return GestureDetector(
-    onTap: () {
-      ref.read(innerBooksScreenProvider.notifier).state = ChaptersScreen();
-    },
-    child: Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(16),
-      color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: const Color.fromRGBO(255, 255, 255, .8),
-          border: Border.all(color: const Color(0xffe6a345), width: 3),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(isLandscape ? 16 : 12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: ArabicTextStyle(
-                  arabicFont: ArabicFont.reemKufi,
-                  fontSize: isLandscape ? 26 : 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xffe6a345),
+  return Directionality(
+    textDirection: TextDirection.rtl, // ضمان اتجاه النصوص العربية
+    child: GestureDetector(
+      onTap: () {
+        ref.read(innerBooksScreenProvider.notifier).state = ChaptersScreen();
+      },
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: const Color.fromRGBO(255, 255, 255, .8),
+            border: Border.all(color: const Color(0xffe6a345), width: 3),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(isLandscape ? 20 : 16), // زيادة المسافات
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: ArabicTextStyle(
+                    arabicFont: ArabicFont.reemKufi,
+                    fontSize: isLandscape ? 24 : 18, // تقليل حجم الخط
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xffe6a345),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                text,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.visible,
-                softWrap: true,
-                maxLines: null,
-                style: ArabicTextStyle(
-                  arabicFont: ArabicFont.reemKufi,
-                  fontSize: isLandscape ? 22 : 18,
-                  color: Colors.black87,
+                const SizedBox(height: 12), // زيادة المسافة بين النصوص
+                Expanded( // استخدام Expanded لضمان ملء المساحة
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis, // التعامل مع النصوص الطويلة
+                    maxLines: 2, // تحديد عدد الأسطر
+                    style: ArabicTextStyle(
+                      arabicFont: ArabicFont.reemKufi,
+                      fontSize: isLandscape ? 20 : 16, // تقليل حجم الخط
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

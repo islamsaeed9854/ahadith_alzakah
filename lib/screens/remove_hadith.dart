@@ -10,10 +10,14 @@ class RemoveHadithScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenSize = MediaQuery.of(context).size;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom; // Get keyboard height
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        resizeToAvoidBottomInset: false, // Prevent Scaffold from resizing with keyboard
         body: Stack(
+          fit: StackFit.expand, // Ensure Stack fills the entire screen
           children: [
             // Background
             SizedBox.expand(child: TextApp.appBackgroundWidget),
@@ -25,15 +29,20 @@ class RemoveHadithScreen extends ConsumerWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    top: screenSize.height * 0.04, // Space for title and back button
+                    bottom: keyboardHeight > 0 ? keyboardHeight + 30 : 30, // Adjust for keyboard
+                    left: 16.0,
+                    right: 16.0,
+                  ),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
+                      minHeight: constraints.maxHeight - keyboardHeight, // Adjust minHeight based on keyboard
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Column(
                         children: [
-                          SizedBox(height: screenSize.height * 0.04),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -91,10 +100,7 @@ class RemoveHadithScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          SizedBox(
-                            height:
-                                MediaQuery.of(context).viewInsets.bottom + 30,
-                          ),
+                          SizedBox(height: 20), // Additional bottom padding
                         ],
                       ),
                     ),
@@ -141,23 +147,21 @@ class RemoveHadithScreen extends ConsumerWidget {
                 borderSide: const BorderSide(
                   color: Color(0xffe6a345),
                   width: 2,
-                ), // Consistent border
+                ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(
-                  30,
-                ), // Same as border to remove animation
+                borderRadius: BorderRadius.circular(30),
                 borderSide: const BorderSide(
                   color: Color(0xffe6a345),
                   width: 2,
-                ), // Same width to remove animation
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
                 borderSide: const BorderSide(
                   color: Color(0xffe6a345),
                   width: 2,
-                ), // Consistent border
+                ),
               ),
             ),
             cursorColor: const Color(0xff6f4f2d),
@@ -172,45 +176,44 @@ class RemoveHadithScreen extends ConsumerWidget {
   void _showConfirmationDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              backgroundColor: const Color(0xFFFDF5EC),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text(
-                'تأكيد الحذف',
-                style: TextStyle(
-                  color: Color(0xff912929),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: const Text('هل أنت متأكد من حذف هذا الحديث؟'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'إلغاء',
-                    style: TextStyle(color: Colors.brown),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('تم حذف الحديث بنجاح'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  },
-                  child: const Text('حذف', style: TextStyle(color: Colors.red)),
-                ),
-              ],
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFFFDF5EC),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'تأكيد الحذف',
+            style: TextStyle(
+              color: Color(0xff912929),
+              fontWeight: FontWeight.bold,
             ),
           ),
+          content: const Text('هل أنت متأكد من حذف هذا الحديث؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'إلغاء',
+                style: TextStyle(color: Colors.brown),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم حذف الحديث بنجاح'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('حذف', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

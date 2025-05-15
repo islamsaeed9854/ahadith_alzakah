@@ -1,28 +1,38 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'dart\:math' as math; // For math.pi
+import 'package\:flutter/material.dart';
+import 'package\:flutter\_riverpod/flutter\_riverpod.dart';
+import 'package\:google\_fonts/google\_fonts.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
+
+    return  Scaffold(
         body: Stack(
           children: [
-            // Background Image
-            Image(
-              image: TextApp.appBackgroundImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black26,
-              colorBlendMode: BlendMode.darken,
+            // Background Image with 180-degree rotation
+            Transform(
+              transform: Matrix4.rotationZ(math.pi), // Rotate 180 degrees
+              alignment: Alignment.center,
+              child: Image(
+                image: TextApp.appBackgroundImage,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.black26,
+                colorBlendMode: BlendMode.darken,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey,
+                  ); // Fallback if image fails
+                },
+              ),
             ),
             // Content
             SafeArea(
@@ -166,7 +176,7 @@ class AboutScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
+      
     );
   }
 }

@@ -18,7 +18,7 @@ class SplashScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          TextApp.appBackgroundWidget,
+          TextApp.appBackgroundWidgetForSplashScreen,
           Container(color: const Color.fromRGBO(0, 0, 0, 0.2)),
           SafeArea(
             child: LayoutBuilder(

@@ -31,70 +31,68 @@ class LoginScreen extends ConsumerWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 400;
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom; // Get keyboard height
 
     final navNotifier = ref.read(navigationProvider.notifier);
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, Object? result) async {
-          if (!didPop) {
-            navNotifier.changeTab(3);
-            Navigator.of(context, rootNavigator: true).pop();
-          }
-        },
-        child: Scaffold(
-          body: Stack(
-            children: [
-              // Background Image
-              SizedBox(
-                width: screenWidth,
-                height: screenHeight,
-                child: TextApp.appBackgroundWidget,
+      child: Scaffold(
+        resizeToAvoidBottomInset: false, // Prevent Scaffold from resizing with keyboard
+        body: Stack(
+          fit: StackFit.expand, // Ensure Stack fills the entire screen
+          children: [
+            // Background Image
+            SizedBox(
+              width: double.infinity,
+              height: double.infinity,
+              child: TextApp.appBackgroundWidget,
+            ),
+            // Content
+            SingleChildScrollView(
+              padding: EdgeInsets.only(
+                top: screenHeight * 0.04, // Adjust top padding for back button
+                bottom: keyboardHeight > 0 ? keyboardHeight + screenHeight * 0.1 : screenHeight * 0.1, // Add padding for keyboard
+                left: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
+                right: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
               ),
-              // Content
-              SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: screenHeight),
-                  child: IntrinsicHeight(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
-                        vertical: isLandscape ? screenHeight * 0.05 : screenHeight * 0.1,
-                      ),
-                      child: isLandscape
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: _buildLoginForm(context, screenWidth, screenHeight, isSmallScreen),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildLoginForm(context, screenWidth, screenHeight, isSmallScreen),
-                              ],
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: screenHeight - keyboardHeight, // Adjust minHeight based on keyboard
+                ),
+                child: IntrinsicHeight(
+                  child: isLandscape
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: _buildLoginForm(context, screenWidth, screenHeight, isSmallScreen),
                             ),
-                    ),
-                  ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildLoginForm(context, screenWidth, screenHeight, isSmallScreen),
+                          ],
+                        ),
                 ),
               ),
-              // Back Button at Top Left (Placed last in Stack to ensure it’s on top)
-              Positioned(
-                top: screenHeight * 0.04,
-                left: screenWidth * 0.04,
-                child: GestureDetector(
-                  onTap: () {
-                  },
-                  child: backButtonLoginAddRemovePages(context, ref),
-                ),
+            ),
+            // Back Button at Top Left (Placed last in Stack to ensure it’s on top)
+            Positioned(
+              top: screenHeight * 0.04,
+              left: screenWidth * 0.04,
+              child: GestureDetector(
+                onTap: () {
+                  navNotifier.changeTab(3);
+                  Navigator.of(context, rootNavigator: true).pop();
+                },
+                child: backButtonLoginAddRemovePages(context, ref),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -15,13 +15,19 @@ class TextApp {
   );
 
   static Image appBackgroundWidget = Image.asset(
+    'assets/opening-screen-crupped-blured.webp',
+    fit: BoxFit.cover,
+    height: double.infinity,
+    width: double.infinity,
+  );
+  static Image appBackgroundWidgetForSplashScreen = Image.asset(
     'assets/backGround.webp',
     fit: BoxFit.cover,
     height: double.infinity,
     width: double.infinity,
   );
   static const AssetImage appBackgroundImage = AssetImage(
-    'assets/backGround.webp',
+    'assets/opening-screen-crupped-blured.webp',
   );
   // زر الرجوع الذي يستخدم navigationProvider
   static IconButton backButton(WidgetRef ref) {

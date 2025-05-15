@@ -7,7 +7,7 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 final isDarkModeProvider = StateProvider<bool>((ref) => false);
 
 // Font Size
-final fontSizeProvider = StateProvider<int>((ref) => 21);
+final fontSizeProvider = StateProvider<int>((ref) => 20);
 
 // App Theme
 final themeProvider = Provider<ThemeData>((ref) {
@@ -53,4 +53,6 @@ final themeProvider = Provider<ThemeData>((ref) {
     ),
   );
 });
+
+
 

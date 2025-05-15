@@ -1,264 +1,238 @@
+import 'package:ahadith_alzakah/screens/login_screen.dart';
+import 'package:ahadith_alzakah/screens/remove_hadith.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
 import '../providers/theme_provider.dart';
-import 'login_screen.dart'; // تأكد من أن المسار صحيح
+import '../screens/add_hadith.dart';
+import '../providers/navigation_provider.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  int _tapCount = 0;
-  DateTime? _lastTapTime;
-
-  void _handleFontBoxTap() {
+  void _handleTitleTap(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
-    if (_lastTapTime == null ||
-        now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
-      _tapCount = 1;
+    final lastTapTime = ref.read(lastTapTimeProvider);
+    final tapCount = ref.read(tapCountProvider.notifier);
+
+    if (lastTapTime == null ||
+        now.difference(lastTapTime) > const Duration(seconds: 2)) {
+      tapCount.state = 1;
     } else {
-      _tapCount++;
+      tapCount.state++;
     }
 
-    _lastTapTime = now;
+    ref.read(lastTapTimeProvider.notifier).state = now;
 
-    if (_tapCount >= 5) {
-      _tapCount = 0;
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+    if (tapCount.state >= 5) {
+      tapCount.state = 0;
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final fontSize = ref.watch(fontSizeProvider);
     final isDarkMode = ref.watch(isDarkModeProvider);
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/opening-screen02.png'),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(Colors.black26, BlendMode.darken),
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
               padding: EdgeInsets.symmetric(
                 horizontal: screenWidth * 0.04,
                 vertical: screenHeight * 0.02,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextApp.backButton(ref),
-                      Text(
-                        'الإعدادات',
-                        style: TextStyle(
-                          color: const Color(0xfffcead0),
-                          fontSize: screenWidth * 0.08,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
-                  SizedBox(height: screenHeight * 0.04),
-                  GestureDetector(
-                    onTap: _handleFontBoxTap,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(255, 255, 255, 0.8),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromRGBO(158, 158, 158, 0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: screenHeight * 0.015,
-                      ),
-                      child: Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'حجم الخط',
-                            style: TextStyle(
-                              color: Colors.brown.shade800,
-                              fontSize: screenWidth * 0.045,
+                          GestureDetector(
+                            onTap: () => _handleTitleTap(context, ref),
+                            child: Text(
+                              'الإعدادات',
+                              style: GoogleFonts.cairo(
+                                color: const Color(0xfffcead0),
+                                fontSize: screenWidth * 0.08,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove,
-                                    color: Color(0xff977c55)),
-                                onPressed: () {
-                                  if (fontSize > 10) {
-                                    ref
-                                        .read(fontSizeProvider.notifier)
-                                        .state--;
-                                  }
-                                },
-                              ),
-                              Text(
-                                fontSize.toString(),
-                                style: TextStyle(
-                                  color: Colors.brown.shade800,
-                                  fontSize: screenWidth * 0.045,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add,
-                                    color: Color(0xff977c55)),
-                                onPressed: () {
-                                  if (fontSize < 30) {
-                                    ref
-                                        .read(fontSizeProvider.notifier)
-                                        .state++;
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
+                          TextApp.backButton(ref),
                         ],
                       ),
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(255, 255, 255, 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromRGBO(158, 158, 158, 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                      SizedBox(height: screenHeight * 0.04),
+
+                      // Font Size Setting
+                      _buildSettingCard(
+                        context,
+                        label: 'حجم الخط',
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.remove,
+                                color: Color(0xff977c55),
+                              ),
+                              onPressed:
+                                  fontSize > 10
+                                      ? () =>
+                                          ref
+                                              .read(fontSizeProvider.notifier)
+                                              .state--
+                                      : null,
+                            ),
+                            Text(
+                              fontSize.toString(),
+                              style: GoogleFonts.cairo(
+                                color: Colors.brown.shade800,
+                                fontSize: screenWidth * 0.045,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.add,
+                                color: Color(0xff977c55),
+                              ),
+                              onPressed:
+                                  fontSize < 30
+                                      ? () =>
+                                          ref
+                                              .read(fontSizeProvider.notifier)
+                                              .state++
+                                      : null,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.015,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'القراءة الليلية',
-                          style: TextStyle(
-                            color: Colors.brown.shade800,
-                            fontSize: screenWidth * 0.045,
-                          ),
-                        ),
-                        Switch(
+                      ),
+
+                      SizedBox(height: screenHeight * 0.02),
+
+                      // Dark Mode Setting
+                      _buildSettingCard(
+                        context,
+                        label: 'القراءة الليلية',
+                        child: Switch.adaptive(
                           value: isDarkMode,
-                          onChanged: (value) {
-                            ref.read(isDarkModeProvider.notifier).state = value;
-                          },
+                          onChanged:
+                              (value) =>
+                                  ref.read(isDarkModeProvider.notifier).state =
+                                      value,
                           activeColor: const Color(0xff977c55),
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(255, 255, 255, 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromRGBO(158, 158, 158,0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.015,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'إضافة حديث',
-                          style: TextStyle(
-                            color: Colors.brown.shade800,
-                            fontSize: screenWidth * 0.045,
-                          ),
-                        ),
-                        const Icon(
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      // Add Hadith Button
+                      _buildClickableSettingCard(
+                        context,
+                        label: 'إضافة حديث',
+                        icon: const Icon(
                           Icons.add,
                           color: Color(0xff977c55),
                           size: 20,
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(255, 255, 255, 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromRGBO(158, 158, 158, 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.015,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "حذف حديث",
-                          style: TextStyle(
-                            color: Colors.brown.shade800,
-                            fontSize: screenWidth * 0.045,
-                          ),
-                        ),
-                        const Icon(
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddHadithScreen(),
+                              ),
+                            ),
+                      ),
+
+                      SizedBox(height: screenHeight * 0.02),
+
+                      // Remove Hadith Button
+                      _buildClickableSettingCard(
+                        context,
+                        label: 'حذف حديث',
+                        icon: const Icon(
                           Icons.delete,
                           color: Color(0xff977c55),
                           size: 20,
                         ),
-                      ],
-                    ),
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RemoveHadithScreen(),
+                              ),
+                            ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 50),
-                  Center(child: TextApp.drSamyKhalilName),
-                ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingCard(
+    BuildContext context, {
+    required String label,
+    required Widget child,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(255, 255, 255, 0.8),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(158, 158, 158, 0.2),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.015,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              style: GoogleFonts.cairo(
+                color: Colors.brown.shade800,
+                fontSize: screenWidth * 0.05,
               ),
             ),
           ),
-        ),
+          child,
+        ],
       ),
+    );
+  }
+
+  Widget _buildClickableSettingCard(
+    BuildContext context, {
+    required String label,
+    required Widget icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: _buildSettingCard(context, label: label, child: icon),
     );
   }
 }

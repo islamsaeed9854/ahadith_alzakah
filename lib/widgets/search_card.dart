@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-Widget SearchCard(
+Widget searchCard(
   BuildContext context, {
   required String title,
   required String content,
@@ -17,7 +17,7 @@ Widget SearchCard(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      color: Colors.white.withOpacity(0.9),
+      color: const Color.fromRGBO(255, 255, 255, 0.9),
       child: Padding(
         padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(

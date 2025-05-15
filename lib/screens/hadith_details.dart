@@ -1,7 +1,10 @@
+import 'package:ahadith_alzakah/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/theme_provider.dart'; // Assuming providers are in this file
+import 'package:google_fonts/google_fonts.dart';
+import '../providers/theme_provider.dart';
 import '../providers/navigation_provider.dart';
+
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
@@ -10,8 +13,10 @@ class HadithDetails extends ConsumerWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final theme = ref.watch(themeProvider);
+    final isDark = theme.brightness == Brightness.dark;
     final fontSize = ref.watch(fontSizeProvider);
-final navNotifier = ref.read(navigationProvider.notifier);
+    final navNotifier = ref.read(navigationProvider.notifier);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Theme(
@@ -19,89 +24,117 @@ final navNotifier = ref.read(navigationProvider.notifier);
         child: DefaultTabController(
           length: 3,
           child: Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back, color: theme.textTheme.titleLarge?.color),
-                onPressed: () => navNotifier.changeTab(0),
-              ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'الباب الأول: فرض الزكاة وفضلها',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  Text(
-                    'الفصل الأول: وجوب الزكاة | حديث رقم: 1',
-                    style: TextStyle(
-                      color: theme.textTheme.bodyMedium?.color,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              centerTitle: true,
-            ),
             body: SingleChildScrollView(
               child: Column(
                 children: [
-                  // Hadith text section
-                  Container(
-                    padding: EdgeInsets.all(screenWidth * 0.04),
-                    margin: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.02,
+                  // Header Row
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      right: 16,
+                      left: 16,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(theme.brightness == Brightness.dark ? 0.2 : 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'الباب الأول: فرض الزكاة وفضلها',
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                  fontSize: 17,
+                                ),
+                              ),
+                              Text(
+                                'الفصل الأول: وجوب الزكاة | حديث رقم: 1',
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.arrow_forward,
+                            color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
+                          ),
+                          onPressed: () => navNotifier.changeTab(0),
                         ),
                       ],
                     ),
-                    child: Text(
-                      'عن أبي هريرة رضي الله عنه قال: قال رسول الله صلى الله عليه وسلم: '
-                      'ما نقصت صدقة من مال، وما زاد الله عبداً بعفو إلا عزاً، وما تواضع '
-                      'أحد لله إلا رفعه الله. (رواه مسلم)',
-                      textAlign: TextAlign.justify,
-                      style: TextStyle(
-                        color: theme.textTheme.bodyMedium?.color,
-                        fontSize: fontSize.toDouble(), // Dynamic font size from provider
-                        height: 1.8,
+                  ),
+
+                  SizedBox(height: screenHeight * 0.02),
+
+                  // Hadith Text Section (Made Larger)
+                  Container(
+                    margin: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.00,
+                    ),
+                    height: screenHeight * 0.4, // Increased from 0.3 to 0.4
+                    padding: EdgeInsets.all(screenWidth * 0.01),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        'عن أبي هريرة رضي الله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الله عليه وسلم: من آتى الزكاة طيبة بها نفسه فله أجرها...',
+                        textAlign: TextAlign.justify,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: fontSize.toDouble(),
+                          height: 1.8,
+                        ),
                       ),
                     ),
                   ),
-                  // Tabs (TabBar)
-                  TabBar(
-                    indicatorColor: const Color(0xFFE6A345),
-                    labelColor: theme.textTheme.titleLarge?.color,
-                    unselectedLabelColor: const Color(0xff977c55),
-                    labelStyle: TextStyle(
-                      fontSize: fontSize.toDouble() * 0.8, // Slightly smaller for tabs
-                      fontWeight: FontWeight.bold,
+
+                  // TabBar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2.0,vertical:1.0),
+                    child: TabBar(
+                      indicatorColor: const Color(0xFFb58d8d),
+                      labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                      unselectedLabelColor: const Color(0xff977c55),
+                      labelStyle: TextStyle(
+                        fontSize: fontSize.toDouble() * 0.8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      unselectedLabelStyle: TextStyle(
+                        fontSize: fontSize.toDouble() * 0.8,
+                      ),
+                      tabs: const [
+                        Tab(text: 'الخلاصة'),
+                        Tab(text: 'التخريج'),
+                        Tab(text: 'الدراسة'),
+                      ],
                     ),
-                    unselectedLabelStyle: TextStyle(
-                      fontSize: fontSize.toDouble() * 0.8,
-                    ),
-                    tabs: const [
-                      Tab(text: 'الخلاصة'),
-                      Tab(text: 'التخريج'),
-                      Tab(text: 'الدراسة'),
-                    ],
                   ),
-                  // Tabbed content (TabBarView)
+
+                  // TabBarView
                   Container(
                     height: screenHeight * 0.5,
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                    ),
                     child: TabBarView(
                       children: [
-                        TabContent(text: 'الخلاصة: هذا الحديث يبين وجوب الزكاة وأهميتها في الإسلام...'),
-                        TabContent(text: 'التخريج: أخرجه أبو داود في سننه برقم 1561، وصححه الألباني.'),
-                        TabContent(text: 'الدراسة: الحديث يدل على عدالة توزيع المال...'),
+                        TabContent(
+                          text: 'الخلاصة: هذا الحديث يبين وجوب الزكاة وأهميتها في الإسلام...',
+                          isDark: isDark,
+                        ),
+                        TabContent(
+                          text: 'التخريج: أخرجه أبو داود في سننه برقم 1561، وصححه الألباني.',
+                          isDark: isDark,
+                        ),
+                        TabContent(
+                          text: 'الدراسة: الحديث يدل على عدالة توزيع المال...',
+                          isDark: isDark,
+                        ),
                       ],
                     ),
                   ),
@@ -117,7 +150,9 @@ final navNotifier = ref.read(navigationProvider.notifier);
 
 class TabContent extends ConsumerWidget {
   final String text;
-  const TabContent({super.key, required this.text});
+  final bool isDark;
+
+  const TabContent({super.key, required this.text, required this.isDark});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,9 +164,9 @@ class TabContent extends ConsumerWidget {
         child: Text(
           text,
           textAlign: TextAlign.justify,
-          style: TextStyle(
-            color: Theme.of(context).textTheme.bodyMedium?.color,
-            fontSize: fontSize.toDouble(), // Dynamic font size from provider
+          style: GoogleFonts.cairo(
+            color: isDark ? Color(0xffd6c9b3) : const Color(0xffa37635),
+            fontSize: fontSize.toDouble(),
             height: 1.8,
           ),
         ),

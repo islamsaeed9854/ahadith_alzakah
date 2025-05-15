@@ -1,38 +1,47 @@
+import 'package:arabic_font/arabic_font.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:arabic_font/arabic_font.dart';
-import '../widgets/bab_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
+import '../providers/navigation_provider.dart';
+import 'chapters_screen.dart';
+
 class BooksScreen extends ConsumerWidget {
   final List<Map<String, String>> cards = List.generate(
     6,
-    (_) => {'title': 'الباب الاول', 'text': 'فرض الزكاة و\nفضلها'},
+    (_) => {'title': 'الباب الأول', 'text': 'فرض الزكاة وفضلها'},
   );
+
+  BooksScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    
+    final size = MediaQuery.of(context).size;
+    final isLandscape = size.width > size.height;
+    final double baseFontSize = size.width * 0.04;
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Responsive calculations
-          final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final double paddingHorizontal = constraints.maxWidth < 600 ? 12 : 24;
+          final double gridMaxWidth =
+              isLandscape
+                  ? constraints.maxWidth / 3.2
+                  : constraints.maxWidth / 2.2;
           final double cardHeight =
               isLandscape
-                  ? constraints.maxHeight * 0.25
-                  : constraints.maxHeight * 0.15;
+                  ? constraints.maxHeight * 0.6 // زيادة الارتفاع قليلاً
+                  : constraints.maxHeight * 0.18; // زيادة الارتفاع قليلاً
+          final double cardWidth =
+              isLandscape
+                  ? constraints.maxWidth / 3.5
+                  : constraints.maxWidth / 2.5;
 
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Background SVG
-              Image.asset(
-                'assets/opening-screen02.png',
-                fit: BoxFit.cover,
-              ),
-
+              TextApp.appBackgroundWidget,
+              Container(color: const Color.fromRGBO(0, 0, 0, 0.15)),
               SafeArea(
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -42,74 +51,103 @@ class BooksScreen extends ConsumerWidget {
                     ),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: constraints.maxWidth < 600 ? 20 : 40,
-                        vertical: 16,
+                        horizontal: paddingHorizontal,
+                        vertical: 12,
                       ),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          SizedBox(height: isLandscape ? 6 : 12),
                           Text(
-                            "موسوعة أحاديث الزكاة",
+                            "موسوعة",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.cairo(
                               fontWeight: FontWeight.bold,
-                              fontSize: 25,
-                              color: Color(0xfffcead0),
+                              fontSize:
+                                  baseFontSize * (isLandscape ? 1.1 : 1.2),
+                              color: const Color(0xfffcead0),
                               shadows: [
                                 Shadow(
-                                  blurRadius: 10,
+                                  blurRadius: 6,
                                   color: const Color.fromRGBO(0, 0, 0, 0.3),
                                   offset: const Offset(2, 2),
                                 ),
                               ],
                             ),
                           ),
-                          SizedBox(height: 13),
-                          // Search Box
-                          Container(
-                            margin: const EdgeInsets.symmetric(vertical: 16),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 0,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(32),
-                              border: Border.all(
-                                width: 1,
-                                color: const Color(0xffe6a345),
-                              ),
-                            ),
-                            child: TextField(
-                              textAlign: TextAlign.right,
-                              decoration: InputDecoration(
-                                hintText: 'ابحث...',
-                                hintStyle: ArabicTextStyle(
-                                  arabicFont: ArabicFont.reemKufi,
-                                  fontSize: 16,
+                          Text(
+                            "أحاديث الزكاة",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              fontSize:
+                                  baseFontSize * (isLandscape ? 1.1 : 1.2),
+                              color: const Color(0xfffcead0),
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 6,
+                                  color: const Color.fromRGBO(0, 0, 0, 0.3),
+                                  offset: const Offset(2, 2),
                                 ),
-                                border: InputBorder.none,
-                                prefixIcon: Icon(
-                                  Icons.search,
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: isLandscape ? 8 : 16),
+                          GestureDetector(
+                            onTap: () {
+                              ref
+                                  .read(navigationProvider.notifier)
+                                  .changeTab(2);
+                            },
+                            child: Container(
+                              width: constraints.maxWidth * 0.85,
+                              margin: const EdgeInsets.symmetric(vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color.fromRGBO(255, 255, 255, 0.9),
+                                borderRadius: BorderRadius.circular(32),
+                                border: Border.all(
+                                  width: 1,
                                   color: const Color(0xffe6a345),
+                                ),
+                              ),
+                              child: TextField(
+                                enabled: false,
+                                textAlign: TextAlign.right,
+                                decoration: InputDecoration(
+                                  hintText: 'البحث عن حديث...',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: baseFontSize * 0.85,
+                                  ),
+                                  border: InputBorder.none,
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: const Color(0xffe6a345),
+                                    size: baseFontSize * 1.1,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                          SizedBox(height: 30),
-                          // Responsive Grid View
+                          SizedBox(height: isLandscape ? 8 : 16),
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: cards.length,
                             gridDelegate:
                                 SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: isLandscape ? 400 : 300,
-                                  crossAxisSpacing: 50,
-                                  mainAxisSpacing: 15,
-                                  childAspectRatio: isLandscape ? 1.5 : 0.9,
-                                  mainAxisExtent:
-                                      isLandscape ? null : cardHeight,
+                                  maxCrossAxisExtent: gridMaxWidth,
+                                  crossAxisSpacing: 76,
+                                  mainAxisSpacing: 30,
+                                  childAspectRatio:
+                                      isLandscape
+                                          ? 0.9 // تعديل النسبة لإعطاء مساحة أكبر
+                                          : cardWidth / (cardHeight * 0.9),
+                                  mainAxisExtent: cardHeight,
                                 ),
                             itemBuilder: (context, index) {
                               return buildBabCard(
@@ -121,11 +159,8 @@ class BooksScreen extends ConsumerWidget {
                               );
                             },
                           ),
-
-                          // Footer Text
                           Padding(
-                            padding: const EdgeInsets.only(top: 20, bottom: 10),
-                            child: Center(child: TextApp.drSamyKhalilName),
+                            padding: const EdgeInsets.only(top: 20, bottom: 12),
                           ),
                         ],
                       ),
@@ -139,4 +174,66 @@ class BooksScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Widget buildBabCard(
+  BuildContext context,
+  WidgetRef ref,
+  String title,
+  String text,
+  bool isLandscape,
+) {
+  return Directionality(
+    textDirection: TextDirection.rtl, // ضمان اتجاه النصوص العربية
+    child: GestureDetector(
+      onTap: () {
+        ref.read(innerBooksScreenProvider.notifier).state = ChaptersScreen();
+      },
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: const Color.fromRGBO(255, 255, 255, .8),
+            border: Border.all(color: const Color(0xffe6a345), width: 3),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(isLandscape ? 20 : 16), // زيادة المسافات
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: ArabicTextStyle(
+                    arabicFont: ArabicFont.reemKufi,
+                    fontSize: isLandscape ? 24 : 18, // تقليل حجم الخط
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xffe6a345),
+                  ),
+                ),
+                const SizedBox(height: 12), // زيادة المسافة بين النصوص
+                Expanded( // استخدام Expanded لضمان ملء المساحة
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis, // التعامل مع النصوص الطويلة
+                    maxLines: 2, // تحديد عدد الأسطر
+                    style: ArabicTextStyle(
+                      arabicFont: ArabicFont.reemKufi,
+                      fontSize: isLandscape ? 20 : 16, // تقليل حجم الخط
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

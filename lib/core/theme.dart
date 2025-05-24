@@ -4,7 +4,7 @@ class AppTheme {
   static final light = ThemeData(
     brightness: Brightness.light,
    // primarySwatch: Colors.indigo,
-    scaffoldBackgroundColor: Colors.white,
+    scaffoldBackgroundColor: Color(0xfffcf3e8),
   );
 
   static final dark = ThemeData(

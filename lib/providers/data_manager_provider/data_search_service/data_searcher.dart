@@ -1,0 +1,91 @@
+import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
+import '../../../data/models/hadith.dart';
+import 'text_normalizer.dart';
+
+class DataSearcher {
+  final Logger _logger = Logger();
+  final TextNormalizer _normalizer = TextNormalizer();
+
+  DataSearcher();
+
+  Future<List<Map<String, dynamic>>> searchHadiths(
+    String query,
+    BuildContext context,
+    List<Hadith> currentHadiths,
+  ) async {
+    if (currentHadiths.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لا توجد أحاديث للبحث')),
+        );
+      }
+      return [];
+    }
+
+    if (query.trim().isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('يرجى إدخال كلمة بحث صالحة')),
+        );
+      }
+      return [];
+    }
+
+    try {
+      final normalizedQuery = normalizeArabicText(query);
+      final queryWords = normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
+      final matches = <Map<String, dynamic>>[];
+
+      for (final hadith in currentHadiths) {
+        final combinedText =
+            hadith.text;
+        final normalizedText = normalizeArabicText(combinedText);
+        int index = -1;
+        while ((index = normalizedText.indexOf(normalizedQuery, index + 1)) != -1) {    
+          matches.add({
+            'hadith': hadith,
+            'startIndex': index,
+            'length': query.length,
+          });
+        }
+        if(matches.length>=111)
+           break;
+      }
+
+      matches.sort((a, b) {
+        final aText = normalizeArabicText(
+            '${(a['hadith'] as Hadith).text} ${(a['hadith'] as Hadith).reference} ${(a['hadith'] as Hadith).summary} ${(a['hadith'] as Hadith).analysis}');
+        final bText = normalizeArabicText(
+            '${(b['hadith'] as Hadith).text} ${(b['hadith'] as Hadith).reference} ${(b['hadith'] as Hadith).summary} ${(b['hadith'] as Hadith).analysis}');
+        final aScore = queryWords.fold(0, (sum, word) => sum + (aText.contains(word) ? 1 : 0));
+        final bScore = queryWords.fold(0, (sum, word) => sum + (bText.contains(word) ? 1 : 0));
+        return bScore.compareTo(aScore);
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(matches.isEmpty
+              ? 'لم يتم العثور على نتائج'
+              : 'تم العثور على ${matches.length} تطابق')),
+        );
+      }
+
+      _logger.i('Search for "$query" returned ${matches.length} matches');
+      return matches;
+    } catch (e, st) {
+      _logger.e('Search error: $e', stackTrace: st);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في البحث: ${e.toString()}')),
+        );
+      }
+      return [];
+    }
+  }
+
+  // Placeholder for normalizeArabicText (assumed to be available in the scope)
+  String normalizeArabicText(String text) {
+    return _normalizer.normalizeArabicText(text);
+  }
+}

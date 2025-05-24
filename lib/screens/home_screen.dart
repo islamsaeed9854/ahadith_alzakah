@@ -65,7 +65,7 @@ class HomeScreen extends ConsumerWidget {
               currentIndex: currentIndex,
               backgroundColor: (isDarkMode && currentIndex == 1)
                   ? const Color(0xff1c1c1c)
-                  : const Color.fromRGBO(255, 255, 255, .5),
+                  : const Color.fromRGBO(252, 243, 232, 0.9),
               onTap: (index) {
                 if (index != 0) {
                   ref.read(innerBooksScreenProvider.notifier).state = null;

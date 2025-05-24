@@ -1,58 +1,102 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:convert';
-
 class Hadith {
-  int hadithBook;
-  int hadithFasl;
-  int hadithNumber;
-  String nameHadith;
-  String textHadith;
-  String explanationHadith;
-  String translateNarrator;
-  String ta5reegHadith;
+  final int id;
+  final int number;
+  final bool deleted;
+  final String text;
+  final String reference;
+  final String analysis;
+  final String summary;
+  final int bab; // Chapter number
+  final int fasl; // Section number
+  final String chapter_title;
+  final String section_title;
 
   Hadith({
-    required this.hadithBook,
-    required this.hadithFasl,
-    required this.hadithNumber,
-    required this.nameHadith,
-    required this.textHadith,
-    required this.explanationHadith,
-    required this.translateNarrator,
-    required this.ta5reegHadith,
+    required this.id,
+    required this.number,
+    required this.deleted,
+    required this.text,
+    required this.reference,
+    required this.analysis,
+    required this.summary,
+    required this.bab,
+    required this.fasl,
+    required this.chapter_title,
+    required this.section_title,
   });
 
-  
-
- 
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'hadithBook': hadithBook,
-      'hadithFasl': hadithFasl,
-      'hadithNumber': hadithNumber,
-      'nameHadith': nameHadith,
-      'textHadith': textHadith,
-      'explanationHadith': explanationHadith,
-      'translateNarrator': translateNarrator,
-      'ta5reegHadith': ta5reegHadith,
-    };
-  }
-
-  factory Hadith.fromMap(Map<String, dynamic> map) {
+  factory Hadith.fromJson(Map<String, dynamic> json) {
     return Hadith(
-      hadithBook: map['hadithBook'] as int,
-      hadithFasl: map['hadithFasl'] as int,
-      hadithNumber: map['hadithNumber'] as int,
-      nameHadith: map['nameHadith'] as String,
-      textHadith: map['textHadith'] as String,
-      explanationHadith: map['explanationHadith'] as String,
-      translateNarrator: map['translateNarrator'] as String,
-      ta5reegHadith: map['ta5reegHadith'] as String,
+      id: json['id'] as int? ?? 0,
+      number: json['number'] as int? ?? 0,
+      deleted: json['deleted'] as bool? ?? false,
+      text: json['text'] as String? ?? '',
+      reference: json['reference'] as String? ?? '',
+      analysis: json['analysis'] as String? ?? '',
+      summary: json['summary'] as String? ?? '',
+      bab: json['bab'] as int? ?? 0,
+      fasl: json['fasl'] as int? ?? 0,
+      chapter_title: json['chapter_title'] as String? ?? '',
+      section_title: json['section_title'] as String? ?? '',
     );
   }
 
-  String toJson() => json.encode(toMap());
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'number': number,
+      'deleted': deleted,
+      'text': text,
+      'reference': reference,
+      'analysis': analysis,
+      'summary': summary,
+      chapter_title: chapter_title,
+      section_title: section_title,
+    };
+  }
 
-  factory Hadith.fromJson(String source) => Hadith.fromMap(json.decode(source) as Map<String, dynamic>);
+  Hadith copyWith({
+    int? id,
+    int? number,
+    bool? deleted,
+    String? text,
+    String? reference,
+    String? analysis,
+    String? summary,
+    String? chapter_title,
+    String? section_title,
+    int? bab,
+    int? fasl,
+  }) {
+    return Hadith(
+      id: id ?? this.id,
+      number: number ?? this.number,
+      deleted: deleted ?? this.deleted,
+      text: text ?? this.text,
+      reference: reference ?? this.reference,
+      analysis: analysis ?? this.analysis,
+      summary: summary ?? this.summary,
+      bab: bab ?? this.bab,
+      fasl: fasl ?? this.fasl,
+      chapter_title: chapter_title ?? this.chapter_title,
+      section_title: section_title ?? this.section_title,
+    );
+  }
+
+  // إضافة مصنف empty
+  factory Hadith.empty() {
+    return Hadith(
+      id: 0,
+      number: 0,
+      deleted: false,
+      text: '',
+      reference: '',
+      analysis: '',
+      summary: '',
+      bab: 0,
+      fasl: 0,
+      chapter_title: '',
+      section_title: '',
+    );
+  }
 }

@@ -3,7 +3,10 @@ import 'package:ahadith_alzakah/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../providers/data_manager_provider/data_manager/data_manager.dart';
+import 'add_hadith.dart'; // استيراد المزودات للـ Controllers
+import '../data/models/hadith.dart';
 class RemoveHadithScreen extends ConsumerWidget {
   const RemoveHadithScreen({super.key});
 
@@ -11,6 +14,89 @@ class RemoveHadithScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final screenSize = MediaQuery.of(context).size;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom; // Get keyboard height
+
+    // جلب الـ Controllers من المزودات
+    final babController = ref.watch(babControllerProvider);
+    final faslController = ref.watch(faslControllerProvider);
+    final numberController = ref.watch(numberControllerProvider);
+
+    // جلب DataManager من المزود
+    final dataManager = ref.read(DataProvider.notifier);
+
+    // دالة لعرض رسالة الخطأ أو النجاح
+    void _showMessage(BuildContext context, String message, {bool isSuccess = false}) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              message,
+              style: GoogleFonts.cairo(color: Colors.white),
+            ),
+            backgroundColor: isSuccess ? Colors.green : Colors.redAccent,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+
+    // دالة لحذف الحديث
+    Future<void> deleteHadith() async {
+      final bab = int.tryParse(babController.text.trim()) ?? -1;
+      final fasl = int.tryParse(faslController.text.trim()) ?? -1;
+      final number = int.tryParse(numberController.text.trim()) ?? -1;
+
+      // التحقق من البيانات الأساسية
+      if (bab <= 0 || fasl <= 0 || number <= 0) {
+        _showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
+        return;
+      }
+
+      // التحقق من الاتصال بالإنترنت
+      final connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult == ConnectivityResult.none) {
+        _showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
+        return;
+      }
+
+      try {
+        // البحث عن الحديث بناءً على الأرقام المدخلة
+        final currentHadiths = ref.read(DataProvider).value ?? [];
+        final hadithToDelete = currentHadiths.firstWhere(
+          (hadith) => hadith.bab == bab && hadith.fasl == fasl && hadith.number == number,
+          orElse: () => Hadith.empty(),
+        );
+
+        // if (hadithToDelete.id == 0) {
+        //   _showMessage(context, 'لم يتم العثور على الحديث المطلوب');
+        //   return;
+        // }
+
+        // حذف الحديث باستخدام DataManager
+        await dataManager.deleteHadith(hadithToDelete.bab,hadithToDelete.fasl,hadithToDelete.number, context);
+        _showMessage(context, 'تم حذف الحديث بنجاح', isSuccess: true);
+
+        // إعادة تعيين الحقول بعد الحذف الناجح
+        babController.clear();
+        faslController.clear();
+        numberController.clear();
+
+        // العودة إلى الشاشة السابقة
+        if (context.mounted) Navigator.pop(context);
+      } catch (e) {
+        // معالجة الأخطاء بطريقة مفهومة
+        String errorMessage;
+        if (e.toString().contains('network') || e.toString().contains('timeout')) {
+          errorMessage = 'فشل الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة';
+        } else if (e.toString().contains('permission') || e.toString().contains('unauthorized')) {
+          errorMessage = 'لا يوجد إذن كافٍ لحذف الحديث، يرجى التحقق من الصلاحيات';
+        } else if (e.toString().contains('storage') || e.toString().contains('io')) {
+          errorMessage = 'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
+        } else {
+          errorMessage = 'حدث خطأ أثناء الحذف، يرجى المحاولة لاحقًا';
+        }
+        _showMessage(context, errorMessage);
+      }
+    }
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -69,38 +155,43 @@ class RemoveHadithScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _buildLabeledInputField('رقم الباب'),
+                                _buildLabeledInputField('رقم الباب', babController),
                                 const SizedBox(height: 20),
-                                _buildLabeledInputField('رقم الفصل'),
+                                _buildLabeledInputField('رقم الفصل', faslController),
                                 const SizedBox(height: 20),
-                                _buildLabeledInputField('رقم الحديث'),
+                                _buildLabeledInputField('رقم الحديث', numberController),
                                 const SizedBox(height: 30),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xff912929),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xff912929),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 16,
+                                      ),
+                                      minimumSize: const Size(0, 0), // Allow button to size based on content
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    _showConfirmationDialog(context);
-                                  },
-                                  child: Text(
-                                    'حذف الحديث',
-                                    style: GoogleFonts.cairo(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryColor,
+                                    onPressed: () {
+                                      _showConfirmationDialog(context, deleteHadith);
+                                    },
+                                    child: Text(
+                                      'حذف الحديث',
+                                      style: GoogleFonts.reemKufi(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.secodaryColor,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          SizedBox(height: 20), // Additional bottom padding
+                          const SizedBox(height: 20), // Additional bottom padding
                         ],
                       ),
                     ),
@@ -114,7 +205,7 @@ class RemoveHadithScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLabeledInputField(String label) {
+  Widget _buildLabeledInputField(String label, TextEditingController controller) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -122,10 +213,10 @@ class RemoveHadithScreen extends ConsumerWidget {
           flex: 3,
           child: Text(
             label,
-            style: GoogleFonts.cairo(
-              color: AppTheme.primaryColor,
+            style: GoogleFonts.reemKufi(
+              color: AppTheme.secodaryColor,
               fontSize: 25,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.right,
           ),
@@ -134,10 +225,11 @@ class RemoveHadithScreen extends ConsumerWidget {
         Expanded(
           flex: 1,
           child: TextFormField(
+            controller: controller, // ربط الـ Controller مع الحقل
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xfffcead0),
+              fillColor: const Color.fromRGBO(255, 255, 255, 0.8),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
@@ -173,7 +265,7 @@ class RemoveHadithScreen extends ConsumerWidget {
     );
   }
 
-  void _showConfirmationDialog(BuildContext context) {
+  void _showConfirmationDialog(BuildContext context, Future<void> Function() deleteHadith) {
     showDialog(
       context: context,
       builder: (context) => Directionality(
@@ -200,14 +292,9 @@ class RemoveHadithScreen extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم حذف الحديث بنجاح'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              onPressed: () async {
+                Navigator.pop(context); // إغلاق الـ Dialog
+                await deleteHadith(); // تنفيذ عملية الحذف
               },
               child: const Text('حذف', style: TextStyle(color: Colors.red)),
             ),

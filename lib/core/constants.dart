@@ -9,7 +9,7 @@ class TextApp {
     "د/سامى خليل",
     style: GoogleFonts.amiri(
       fontWeight: FontWeight.bold,
-      fontSize: 16.6,
+      fontSize: 30,
       color: AppTheme.primaryColor,
     ),
   );

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
 import '../providers/navigation_provider.dart';
+import '../screens/chapters_screen.dart'; // لاستخدام numberToArabicText
 
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
@@ -16,6 +17,39 @@ class HadithDetails extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final fontSize = ref.watch(fontSizeProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
+    final selectedHadith = ref.watch(selectedHadithProvider); // جلب الحديث المختار
+
+    // التحقق من وجود حديث مختار
+    if (selectedHadith == null) {
+      return Scaffold(
+        body: Center(child: Text('لم يتم اختيار حديث')),
+      );
+    }
+
+    // دالة لتحويل الأرقام إلى نصوص عربية (يمكن نقلها إلى ملف مشترك)
+    String numberToArabicText(int number) {
+      const List<String> ones = [
+        '', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع'
+      ];
+      const List<String> tens = [
+        '', '', 'العشرون', 'الثلاثون', 'الأربعون', 'الخمسون', 'الستون', 'السبعون', 'الثمانون', 'التسعون'
+      ];
+      const List<String> teens = [
+        'العاشر', 'الحادي عشر', 'الثاني عشر', 'الثالث عشر', 'الرابع عشر', 'الخامس عشر', 'السادس عشر',
+        'السابع عشر', 'الثامن عشر', 'التاسع عشر'
+      ];
+
+      if (number == 0) return 'الصفر';
+      if (number >= 1 && number <= 9) return ones[number];
+      if (number >= 10 && number <= 19) return teens[number - 10];
+      if (number >= 20 && number <= 99) {
+        int ten = (number ~/ 10) * 10;
+        int one = number % 10;
+        if (one == 0) return tens[number ~/ 10];
+        return '${ones[one]} و${tens[number ~/ 10]}';
+      }
+      return number.toString();
+    }
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -41,7 +75,7 @@ class HadithDetails extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'الباب الأول: فرض الزكاة وفضلها',
+                                'الباب ${numberToArabicText(selectedHadith.bab)}: ${selectedHadith.bab == 3 ? "باب رقم 3" : "فرض الزكاة وفضلها"}', // يمكن تحديثه ديناميكيًا
                                 style: GoogleFonts.cairo(
                                   fontWeight: FontWeight.bold,
                                   color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
@@ -49,7 +83,7 @@ class HadithDetails extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                'الفصل الأول: وجوب الزكاة | حديث رقم: 1',
+                                'الفصل ${numberToArabicText(selectedHadith.fasl)}: قسم رقم ${selectedHadith.fasl} | حديث رقم: ${selectedHadith.number}',
                                 style: GoogleFonts.cairo(
                                   fontWeight: FontWeight.bold,
                                   color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
@@ -72,17 +106,17 @@ class HadithDetails extends ConsumerWidget {
 
                   SizedBox(height: screenHeight * 0.02),
 
-                  // Hadith Text Section (Made Larger)
+                  // Hadith Text Section
                   Container(
                     margin: EdgeInsets.symmetric(
                       horizontal: screenWidth * 0.04,
                       vertical: screenHeight * 0.00,
                     ),
-                    height: screenHeight * 0.4, // Increased from 0.3 to 0.4
+                    height: screenHeight * 0.4,
                     padding: EdgeInsets.all(screenWidth * 0.01),
                     child: SingleChildScrollView(
                       child: Text(
-                        'عن أبي هريرة رضي الله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الالله عنه قال: قال رسول الله صلى الله عليه وسلم: من آتى الزكاة طيبة بها نفسه فله أجرها...',
+                        selectedHadith.text,
                         textAlign: TextAlign.justify,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black,
@@ -95,16 +129,16 @@ class HadithDetails extends ConsumerWidget {
 
                   // TabBar
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.0,vertical:1.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
                     child: TabBar(
-                      indicatorColor: const Color(0xFFb58d8d),
+                      indicatorColor: AppTheme.redBlackColer,
                       labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
                       unselectedLabelColor: const Color(0xff977c55),
-                      labelStyle: TextStyle(
+                      labelStyle: GoogleFonts.notoKufiArabic(
                         fontSize: fontSize.toDouble() * 0.8,
                         fontWeight: FontWeight.bold,
                       ),
-                      unselectedLabelStyle: TextStyle(
+                      unselectedLabelStyle: GoogleFonts.notoKufiArabic(
                         fontSize: fontSize.toDouble() * 0.8,
                       ),
                       tabs: const [
@@ -124,15 +158,15 @@ class HadithDetails extends ConsumerWidget {
                     child: TabBarView(
                       children: [
                         TabContent(
-                          text: 'الخلاصة: هذا الحديث يبين وجوب الزكاة وأهميتها في الإسلام...',
+                          text: selectedHadith.summary,
                           isDark: isDark,
                         ),
                         TabContent(
-                          text: 'التخريج: أخرجه أبو داود في سننه برقم 1561، وصححه الألباني.',
+                          text: selectedHadith.reference,
                           isDark: isDark,
                         ),
                         TabContent(
-                          text: 'الدراسة: الحديث يدل على عدالة توزيع المال...',
+                          text: selectedHadith.analysis,
                           isDark: isDark,
                         ),
                       ],
@@ -162,9 +196,9 @@ class TabContent extends ConsumerWidget {
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
         child: Text(
-          text,
-          textAlign: TextAlign.justify,
-          style: GoogleFonts.cairo(
+          text.trim(),
+         textAlign: TextAlign.justify,
+          style: TextStyle(
             color: isDark ? Color(0xffd6c9b3) : const Color(0xffa37635),
             fontSize: fontSize.toDouble(),
             height: 1.8,

@@ -8,7 +8,8 @@ class ChapterCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isExpanded;
 
-  const ChapterCard({super.key, 
+  const ChapterCard({
+    super.key,
     required this.title,
     required this.text,
     required this.isLandscape,
@@ -25,8 +26,8 @@ class ChapterCard extends StatelessWidget {
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
-            margin: const EdgeInsets.symmetric(vertical: 4,horizontal: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 30),
             decoration: BoxDecoration(
               color: const Color.fromRGBO(255, 255, 255, .8),
               borderRadius: BorderRadius.circular(33),
@@ -68,7 +69,6 @@ class ChapterCard extends StatelessWidget {
                         child: Text(
                           text,
                           style: ArabicTextStyle(
-                            
                             arabicFont: ArabicFont.reemKufi,
                             fontSize: isLandscape ? 16 : 14,
                             color: Colors.black87,

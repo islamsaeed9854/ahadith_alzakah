@@ -5,7 +5,7 @@ import 'core/theme.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'notification_service.dart';
-
+import 'package:awesome_notifications/awesome_notifications.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,7 +19,8 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.init();
   await notificationService.scheduleDailyHadithNotification();
-
+  final pending = await AwesomeNotifications().listScheduledNotifications();
+debugPrint('Pending notifications: ${pending.length}');
   runApp(const ProviderScope(child: MyApp()));
 }
 

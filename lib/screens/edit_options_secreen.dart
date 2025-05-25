@@ -19,130 +19,133 @@ class EditOptionsScreen extends ConsumerWidget {
 
     final options = ['نص الحديث', 'الخلاصة', 'التخريج', 'الدراسة', 'الكل'];
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // الخلفية
-          Positioned.fill(
-            child: Image.asset(
-              'assets/opening-screen-crupped-blured.webp',
-              fit: BoxFit.cover,
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // العنوان والعودة
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "تعديل حديث",
-                        style: GoogleFonts.cairo(
-                          color: AppTheme.secodaryColor,
-                          fontSize: screenWidth * 0.06,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextApp.backButtonLoginAddRemovePages(context),
-                    ],
-                  ),
-                 
- const SizedBox(height: 30),
-                  // المحتوى الرئيسي (اختيارات + زر)
-                  Expanded(
-               
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            // قائمة الاختيارات
-                            SizedBox(
-                              width: isLandscape
-                                  ? screenWidth * 0.85
-                                  : screenWidth * 0.9,
-                              child: Column(
-                                children: options.map((option) {
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(vertical: 25),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: RadioListTile<String>(
-                                      value: option,
-                                      groupValue: selectedOption,
-                                      activeColor: const Color(0xfffcf3e8),
-                                      onChanged: (val) => ref
-                                          .read(selectedEditFieldProvider.notifier)
-                                          .state = val!,
-                                      title: Text(
-                                        option,
-                                        textAlign: TextAlign.right,
-                                        style: GoogleFonts.reemKufi(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-
-                            const SizedBox(height: 35),
-
-                            // زر التالي
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff977c55),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 30,
-                                  vertical: 12,
-                                ),
-                              ),
-                              onPressed: () {
-                                if (selectedOption.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => EditHadithScreen(
-                                        selectedOption: selectedOption,
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("اختر أحد الحقول أولاً"),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Text(
-                                'التالي',
-                                style: GoogleFonts.reemKufi(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                   
-                  ),
-                ],
+    return Directionality(
+         textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // الخلفية
+            Positioned.fill(
+              child: Image.asset(
+                'assets/opening-screen-crupped-blured.webp',
+                fit: BoxFit.cover,
               ),
             ),
-          ),
-        ],
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // العنوان والعودة
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "تعديل حديث",
+                          style: GoogleFonts.cairo(
+                            color: AppTheme.secodaryColor,
+                            fontSize: screenWidth * 0.06,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextApp.backButtonLoginAddRemovePages(context),
+                      ],
+                    ),
+                   
+       const SizedBox(height: 30),
+                    // المحتوى الرئيسي (اختيارات + زر)
+                    Expanded(
+                 
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              // قائمة الاختيارات
+                              SizedBox(
+                                width: isLandscape
+                                    ? screenWidth * 0.85
+                                    : screenWidth * 0.9,
+                                child: Column(
+                                  children: options.map((option) {
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(vertical: 25),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.4),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: RadioListTile<String>(
+                                        value: option,
+                                        groupValue: selectedOption,
+                                        activeColor: const Color(0xfffcf3e8),
+                                        onChanged: (val) => ref
+                                            .read(selectedEditFieldProvider.notifier)
+                                            .state = val!,
+                                        title: Text(
+                                          option,
+                                          textAlign: TextAlign.right,
+                                          style: GoogleFonts.reemKufi(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+      
+                              const SizedBox(height: 35),
+      
+                              // زر التالي
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xff977c55),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 30,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  if (selectedOption.isNotEmpty) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => EditHadithScreen(
+                                          selectedOption: selectedOption,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("اختر أحد الحقول أولاً"),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  'التالي',
+                                  style: GoogleFonts.reemKufi(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                     
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

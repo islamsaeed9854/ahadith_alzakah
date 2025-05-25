@@ -1,14 +1,18 @@
 import 'package:ahadith_alzakah/core/theme.dart';
+import 'package:ahadith_alzakah/screens/hadith_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logger/logger.dart';
-import '../widgets/search_card.dart';
 import '../core/constants.dart';
 import '../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../providers/navigation_provider.dart';
 import 'chapters_screen.dart';
+
+final Hadith_Details_Helper_provider = StateProvider<String>((ref) {
+  return '';
+});
 
 // مزود للتحكم في حقل البحث
 final searchControllerProvider = Provider<TextEditingController>((ref) {
@@ -27,6 +31,7 @@ final filterSearchProvider = Provider((ref) {
       ref.read(filteredResultsProvider.notifier).state = [];
       return;
     }
+    
     try {
       final results = await ref.read(DataProvider.notifier).searchHadiths(query, context);
       // تصفية النتائج للتأكد من أن جميع الحقول المطلوبة ليست null
@@ -54,46 +59,46 @@ class SearchScreen extends ConsumerWidget {
   const SearchScreen({super.key});
 
   // دالة لبناء عنوان النتيجة مع تنسيقات مختلفة
-  Widget _buildResultTitle(Hadith hadith) {
+  Widget _buildResultTitle(Hadith hadith, bool isLandscape, double screenWidth) {
     return RichText(
       text: TextSpan(
         children: [
           TextSpan(
             text: hadith.chapter_title ?? 'باب بدون عنوان',
             style: GoogleFonts.cairo(
-              color: Colors.amber, // لون اسم الباب
+              color: Colors.amber,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: isLandscape ? screenWidth * 0.018 : 16,
             ),
           ),
           TextSpan(
             text: ':',
             style: GoogleFonts.cairo(
               color: const Color.fromARGB(255, 12, 1, 1),
-              fontSize: 16,
+              fontSize: isLandscape ? screenWidth * 0.018 : 16,
             ),
           ),
           TextSpan(
             text: hadith.section_title ?? 'قسم بدون عنوان',
             style: GoogleFonts.cairo(
-              color: Color(0xff513c2e), // لون اسم الفصل
+              color: Color(0xff513c2e),
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: isLandscape ? screenWidth * 0.018 : 16,
             ),
           ),
           TextSpan(
             text: ':',
             style: GoogleFonts.cairo(
               color: Color(0xff977c55),
-              fontSize: 16,
+              fontSize: isLandscape ? screenWidth * 0.018 : 16,
             ),
           ),
           TextSpan(
             text: 'حديث ${hadith.number}',
             style: GoogleFonts.cairo(
-              color: Color(0xff977c55), // لون رقم الحديث
+              color: Color(0xff977c55),
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: isLandscape ? screenWidth * 0.018 : 16,
             ),
           ),
         ],
@@ -201,8 +206,38 @@ class SearchScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenSize = MediaQuery.of(context).size;
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
     final filteredResults = ref.watch(filteredResultsProvider);
+    
+    // الحصول على معلومات الكيبورد
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+
+    // تحديد المقاسات المناسبة - محسنة للوضع الأفقي
+    final double horizontalPadding = isLandscape 
+        ? screenSize.width * 0.02  // تقليل أكبر للمساحة الجانبية
+        : screenSize.width * 0.04;
+    
+    final double titleFontSize = isLandscape 
+        ? screenSize.width * 0.025  // تقليل أكبر لحجم العنوان الرئيسي
+        : screenSize.width * 0.09;
+    
+    final double inputFontSize = isLandscape 
+        ? screenSize.width * 0.016  // تقليل أكبر لحجم النص في حقل البحث
+        : screenSize.width * 0.045;
+    
+    final double buttonFontSize = isLandscape 
+        ? screenSize.width * 0.018   // تقليل أكبر لحجم نص الزر
+        : screenSize.width * 0.05;
+    
+    final double sectionTitleFontSize = isLandscape 
+        ? screenSize.width * 0.020  // تقليل أكبر لحجم عنوان النتائج
+        : screenSize.width * 0.055;
+    
+    final double emptyResultsFontSize = isLandscape 
+        ? screenSize.width * 0.018   // تقليل أكبر لحجم نص "لا توجد نتائج"
+        : screenSize.width * 0.045;
 
     final controller = ref.watch(searchControllerProvider);
     final filterSearch = ref.read(filterSearchProvider);
@@ -214,126 +249,362 @@ class SearchScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      // إزالة هذا لمنع المساحة الفارغة فوق الكيبورد
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            horizontal: screenSize.width * 0.04,
-            vertical: screenSize.height * 0.02,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'البحث',
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenSize.width * 0.09,
-                      color: const Color(0xfffcead0),
-                      shadows: [
-                        Shadow(
-                          blurRadius: 4,
-                          color: Colors.black.withOpacity(0.3),
+        child: isLandscape ? 
+        // تخطيط محسن للوضع الأفقي مع دعم الكيبورد
+        SingleChildScrollView(
+          // إضافة padding للكيبورد في الوضع الأفقي
+          padding: EdgeInsets.only(bottom: isKeyboardVisible ? keyboardHeight : 0),
+          child: SizedBox(
+            height: screenSize.height - (isKeyboardVisible ? keyboardHeight : 0),
+            child: Row(
+              children: [
+                // الجزء الثابت - يأخذ جزء أصغر من عرض الشاشة
+                Container(
+                  width: screenSize.width * 0.32, // تقليل إلى 32% من عرض الشاشة
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenSize.width * 0.015, // تقليل المساحة الداخلية
+                    vertical: screenSize.height * 0.015,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min, // تقليل المساحة المستخدمة
+                    children: [
+                      // Header مع العنوان وزر الرجوع
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'البحث',
+                              style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.bold,
+                                fontSize: titleFontSize,
+                                color: const Color(0xfffcead0),
+                                shadows: [
+                                  Shadow(
+                                    blurRadius: 4,
+                                    color: Colors.black.withOpacity(0.3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          TextApp.backButton(ref),
+                        ],
+                      ),
+                      SizedBox(height: screenSize.height * 0.02), // تقليل المسافة
+
+                      // حقل البحث
+                      TextField(
+                        controller: controller,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => performSearch(),
+                        style: GoogleFonts.cairo(
+                          color: Colors.black,
+                          fontSize: inputFontSize,
                         ),
-                      ],
+                        decoration: InputDecoration(
+                          hintText: 'اكتب هنا...',
+                          hintStyle: GoogleFonts.cairo(
+                            fontSize: inputFontSize,
+                          ),
+                          filled: true,
+                          fillColor: const Color.fromRGBO(255, 255, 255, 0.9),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 10, // تقليل المساحة الداخلية
+                            vertical: 8,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20), // تقليل الانحناء
+                            borderSide: const BorderSide(
+                              color: Color(0xffe6a345),
+                              width: 2,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe6a345),
+                              width: 2,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe6a345),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenSize.height * 0.015), // تقليل المسافة
+
+                      // زر البحث
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: performSearch,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF937848),
+                            padding: EdgeInsets.symmetric(
+                              vertical: screenSize.height * 0.008, // تقليل المساحة العمودية
+                              horizontal: screenSize.width * 0.03,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 3,
+                          ),
+                          child: Text(
+                            'بحث',
+                            style: GoogleFonts.cairo(
+                              fontSize: buttonFontSize,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenSize.height * 0.02), // تقليل المسافة
+
+                      // عنوان النتائج
+                      Text(
+                        'نتائج البحث',
+                        style: GoogleFonts.cairo(
+                          fontSize: sectionTitleFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // الخط الفاصل
+                Container(
+                  width: 1,
+                  color: Colors.white.withOpacity(0.3),
+                ),
+
+                // الجزء القابل للتمرير - النتائج (يأخذ باقي المساحة)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(screenSize.width * 0.015), // تقليل المساحة
+                    child: filteredResults.isEmpty
+                        ? Center(
+                            child: Text(
+                              'لا توجد نتائج مطابقة',
+                              style: GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: emptyResultsFontSize,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: EdgeInsets.only(top: 5), // تقليل المساحة
+                            itemCount: filteredResults.length,
+                            itemBuilder: (context, index) {
+                              final result = filteredResults[index];
+                              final hadith = result['hadith'] as Hadith;
+                              final startIndex = result['startIndex'] as int;
+                              final length = result['length'] as int;
+                              final snippetInfo = _getSnippet(
+                                result['content']!,
+                                controller.text,
+                                startIndex,
+                                length,
+                              );
+
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: screenSize.height * 0.01), // تقليل المسافة
+                                child: GestureDetector(
+                                  onTap: () {
+                                    ref.watch(Hadith_Details_Helper_provider.notifier).state = ref.read(searchControllerProvider).text;
+                                    ref.read(searchControllerProvider).text = '';
+                                    ref.read(filteredResultsProvider.notifier).state = [];
+                                    ref.read(selectedHadithProvider.notifier).state = hadith;
+                                    ref.read(navigationProvider.notifier).changeTab(1);
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.all(6), // تقليل المساحة الداخلية
+                                    decoration: BoxDecoration(
+                                      color: const Color.fromRGBO(255, 255, 255, .9),
+                                      borderRadius: BorderRadius.circular(20), // تقليل الانحناء
+                                      border: Border.all(
+                                        color: const Color(0xffe6a345),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildResultTitle(hadith, isLandscape, screenSize.width),
+                                        SizedBox(height: 3), // تقليل المسافة
+                                        RichText(
+                                          text: TextSpan(
+                                            children: _buildHighlightedText(
+                                              snippetInfo['snippet'],
+                                              snippetInfo['query'],
+                                              snippetInfo['queryStart'],
+                                              snippetInfo['queryEnd'],
+                                              isLandscape,
+                                              screenSize.width,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        :
+        // التخطيط المحسن للوضع العمودي
+        Column(
+          children: [
+            // الجزء الثابت - Header والبحث
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: screenSize.height * 0.02,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'البحث',
+                          style: GoogleFonts.cairo(
+                            fontWeight: FontWeight.bold,
+                            fontSize: titleFontSize,
+                            color: const Color(0xfffcead0),
+                            shadows: [
+                              Shadow(
+                                blurRadius: 4,
+                                color: Colors.black.withOpacity(0.3),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      TextApp.backButton(ref),
+                    ],
+                  ),
+                  SizedBox(height: screenSize.height * 0.03),
+
+                  // Search Field
+                  TextField(
+                    controller: controller,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => performSearch(),
+                    style: GoogleFonts.cairo(
+                      color: Colors.black,
+                      fontSize: inputFontSize,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'اكتب هنا...',
+                      hintStyle: GoogleFonts.cairo(
+                        fontSize: inputFontSize,
+                      ),
+                      filled: true,
+                      fillColor: const Color.fromRGBO(255, 255, 255, 0.9),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(
+                          color: Color(0xffe6a345),
+                          width: 2,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(
+                          color: Color(0xffe6a345),
+                          width: 2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(
+                          color: Color(0xffe6a345),
+                          width: 2,
+                        ),
+                      ),
                     ),
                   ),
-                  TextApp.backButton(ref),
+                  SizedBox(height: screenSize.height * 0.025),
+
+                  // Search Button
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: performSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF937848),
+                        padding: EdgeInsets.symmetric(
+                          vertical: screenSize.height * 0.012,
+                          horizontal: screenSize.width * 0.10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(55),
+                        ),
+                        elevation: 3,
+                      ),
+                      child: Text(
+                        'بحث',
+                        style: GoogleFonts.cairo(
+                          fontSize: buttonFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenSize.height * 0.04),
+
+                  // Results Title
+                  Padding(
+                    padding: EdgeInsets.only(right: screenSize.width * 0.02),
+                    child: Text(
+                      'نتائج البحث',
+                      style: GoogleFonts.cairo(
+                        fontSize: sectionTitleFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenSize.height * 0.02),
                 ],
               ),
-              SizedBox(height: screenSize.height * 0.03),
+            ),
 
-              // Search Field - محفوظ كما هو في الكود الأصلي
-              TextField(
-                controller: controller,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => performSearch(),
-                style: GoogleFonts.cairo(
-                  color: Colors.black,
-                  fontSize: screenSize.width * 0.045,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'اكتب هنا...',
-                  filled: true,
-                  fillColor: const Color.fromRGBO(255, 255, 255, 0.9),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(
-                      color: Color(0xffe6a345),
-                      width: 2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(
-                      color: Color(0xffe6a345),
-                      width: 2,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(
-                      color: Color(0xffe6a345),
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: screenSize.height * 0.025),
-
-              // Search Button - محفوظ كما هو في الكود الأصلي
-              Center(
-                child: ElevatedButton(
-                  onPressed: performSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF937848),
-                    padding: EdgeInsets.symmetric(
-                      vertical: screenSize.height * 0.012,
-                      horizontal: screenSize.width * 0.10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(55),
-                    ),
-                    elevation: 3,
-                  ),
-                  child: Text(
-                    'بحث',
-                    style: GoogleFonts.cairo(
-                      fontSize: screenSize.width * 0.05,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: screenSize.height * 0.04),
-
-              // Results Section
-              Padding(
-                padding: EdgeInsets.only(right: screenSize.width * 0.02),
-                child: Text(
-                  'نتائج البحث',
-                  style: GoogleFonts.cairo(
-                    fontSize: screenSize.width * 0.055,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(height: screenSize.height * 0.02),
-
-              // Results List - الجزء المعدل فقط لعرض النتائج
-              SizedBox(
-                height: screenSize.height * 0.4,
+            // الجزء القابل للتمرير - النتائج
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: filteredResults.isEmpty
                     ? Center(
                         child: Padding(
@@ -342,14 +613,15 @@ class SearchScreen extends ConsumerWidget {
                             'لا توجد نتائج مطابقة',
                             style: GoogleFonts.cairo(
                               color: Colors.white,
-                              fontSize: screenSize.width * 0.045,
+                              fontSize: emptyResultsFontSize,
                             ),
                           ),
                         ),
                       )
                     : ListView.builder(
+                        // إضافة padding للكيبورد فقط في الأسفل
                         padding: EdgeInsets.only(
-                          bottom: keyboardHeight > 0 ? keyboardHeight + 20 : 20,
+                          bottom: isKeyboardVisible ? keyboardHeight + 20 : 20
                         ),
                         itemCount: filteredResults.length,
                         itemBuilder: (context, index) {
@@ -370,6 +642,9 @@ class SearchScreen extends ConsumerWidget {
                             ),
                             child: GestureDetector(
                               onTap: () {
+                                ref.watch(Hadith_Details_Helper_provider.notifier).state = ref.read(searchControllerProvider).text;
+                                ref.read(searchControllerProvider).text = '';
+                                ref.read(filteredResultsProvider.notifier).state = [];
                                 ref.read(selectedHadithProvider.notifier).state = hadith;
                                 ref.read(navigationProvider.notifier).changeTab(1);
                               },
@@ -393,10 +668,8 @@ class SearchScreen extends ConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // العنوان مع الألوان المختلفة
-                                    _buildResultTitle(hadith),
-                                    SizedBox(height:5),
-                                    // نص الحديث مع تمييز نتيجة البحث
+                                    _buildResultTitle(hadith, isLandscape, screenSize.width),
+                                    SizedBox(height: 5),
                                     RichText(
                                       text: TextSpan(
                                         children: _buildHighlightedText(
@@ -404,6 +677,8 @@ class SearchScreen extends ConsumerWidget {
                                           snippetInfo['query'],
                                           snippetInfo['queryStart'],
                                           snippetInfo['queryEnd'],
+                                          isLandscape,
+                                          screenSize.width,
                                         ),
                                       ),
                                     ),
@@ -415,16 +690,24 @@ class SearchScreen extends ConsumerWidget {
                         },
                       ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // دالة لبناء النص مع تمييز نتيجة البحث
-  List<TextSpan> _buildHighlightedText(String text, String query, int start, int end) {
+  List<TextSpan> _buildHighlightedText(
+    String text, 
+    String query, 
+    int start, 
+    int end,
+    bool isLandscape,
+    double screenWidth,
+  ) {
     List<TextSpan> spans = [];
+    final double fontSize = isLandscape ? screenWidth * 0.012 : 12; // تقليل حجم الخط في الوضع الأفقي
     
     if (start >= 0 && end <= text.length) {
       if (start > 0) {
@@ -433,7 +716,7 @@ class SearchScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(
             color: Color(0xff513c2e),
             fontWeight: FontWeight.bold,
-            fontSize: 12,
+            fontSize: fontSize,
           ),
         ));
       }
@@ -442,7 +725,7 @@ class SearchScreen extends ConsumerWidget {
         text: text.substring(start, end),
         style: GoogleFonts.cairo(
           color: AppTheme.redBlackColer,
-          fontSize: 12,
+          fontSize: fontSize,
           fontWeight: FontWeight.bold,
         ),
       ));
@@ -452,7 +735,7 @@ class SearchScreen extends ConsumerWidget {
           text: text.substring(end),
           style: GoogleFonts.cairo(
             color: Color(0xff513c2e),
-            fontSize: 12,
+            fontSize: fontSize,
             fontWeight: FontWeight.bold,
           ),
         ));
@@ -462,7 +745,7 @@ class SearchScreen extends ConsumerWidget {
         text: text,
         style: GoogleFonts.cairo(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: fontSize,
         ),
       ));
     }

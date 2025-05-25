@@ -74,7 +74,7 @@ class ChaptersScreen extends ConsumerWidget {
                   if (!sections.containsKey(hadith.fasl)) {
                     sections[hadith.fasl] = {
                       'section_number': hadith.fasl,
-                      'section_title': 'قسم رقم ${hadith.fasl}',
+                      'section_title': '${hadith.section_title}',
                       'ahadith': <Hadith>[],
                     };
                   }
@@ -207,8 +207,8 @@ class ChaptersScreen extends ConsumerWidget {
                                           color: const Color.fromRGBO(255, 255, 255, 0.9),
                                           borderRadius: BorderRadius.circular(16),
                                           border: Border.all(
-                                            color: const Color.fromRGBO(230, 163, 69, 0.5),
-                                            width: 1,
+                                            color: AppTheme.primaryColor,
+                                            width: 3.5,
                                           ),
                                           boxShadow: [
                                             BoxShadow(
@@ -220,15 +220,24 @@ class ChaptersScreen extends ConsumerWidget {
                                         ),
                                         child: Directionality(
                                           textDirection: TextDirection.rtl,
-                                          child: ListView.builder(
+                                          child: ListView.separated(
                                             shrinkWrap: true,
                                             physics: NeverScrollableScrollPhysics(),
                                             itemCount: (section['ahadith'] as List<Hadith>).length,
+                                            separatorBuilder: (context, index) => Divider(
+                                              height: 1,
+                                              thickness: 0.5,
+                                              color: const Color.fromRGBO(230, 163, 69, 0.3),
+                                              indent: 16,
+                                              endIndent: 16,
+                                            ),
                                             itemBuilder: (context, hadithIndex) {
                                               final hadith = (section['ahadith'] as List<Hadith>)[hadithIndex];
                                               return ListTile(
+                                                dense: true,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                                 title: Text(
-                                                  'حديث رقم ${hadith.number}',
+                                                  'الحديث ${hadith.number}',
                                                   style: ArabicTextStyle(
                                                     arabicFont: ArabicFont.reemKufi,
                                                     fontSize: 16,
@@ -236,17 +245,20 @@ class ChaptersScreen extends ConsumerWidget {
                                                     color: Color(0xff912929),
                                                   ),
                                                 ),
-                                                subtitle: Text(
-                                                  hadith.text.length > 50
-                                                      ? '${hadith.text.substring(0, 50)}...'
-                                                      : hadith.text,
-                                                  style: ArabicTextStyle(
-                                                    arabicFont: ArabicFont.reemKufi,
-                                                    fontSize: 14,
-                                                    color: Colors.black54,
+                                                subtitle: Padding(
+                                                  padding: const EdgeInsets.only(top: 2.0),
+                                                  child: Text(
+                                                    hadith.text.length > 50
+                                                        ? '${hadith.text.trim().substring(0, 50)}...'
+                                                        : hadith.text,
+                                                    style: ArabicTextStyle(
+                                                      arabicFont: ArabicFont.reemKufi,
+                                                      fontSize: 14,
+                                                      color: Colors.black54,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                                 trailing: Icon(
                                                   Icons.arrow_forward_ios,

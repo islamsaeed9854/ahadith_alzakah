@@ -155,7 +155,7 @@ class AboutScreen extends ConsumerWidget {
                                       ),
                                     ),
                                     Text(
-                                      "رقم الهاتف :123456789",
+                                      "رقم الهاتف : 00966505137789",
                                       style: GoogleFonts.cairo(
                                         color: Colors.brown.shade800,
                                         fontSize: screenWidth * 0.045,

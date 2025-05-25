@@ -63,7 +63,7 @@ class ChapterCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      //const SizedBox(height: 8),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12),
                         child: Text(

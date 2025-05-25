@@ -149,14 +149,13 @@ class LoginScreen extends ConsumerWidget {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         body: Stack(
-          fit: StackFit.expand,
           children: [
-            // Background Image
-            SizedBox(
-              width: double.infinity,
-              height: double.infinity,
+            // Background Image - ثابت ولا يتأثر بالكيبورد
+            Positioned.fill(
               child: TextApp.appBackgroundWidget,
             ),
+            // Gradient Overlay
+          
             // Content
             SingleChildScrollView(
               padding: EdgeInsets.only(
@@ -205,7 +204,7 @@ class LoginScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Back Button at Top Left
+            // Back Button at Top Left - ثابت في أعلى يسار الشاشة
             Positioned(
               top: screenHeight * 0.1,
               left: screenWidth * 0.05,

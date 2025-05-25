@@ -75,6 +75,7 @@ flutter:
     - assets/backGround.webp
     - assets/opening-screen-crupped-blured.webp
     - assets/logo.png
+    - assets/ic_launcher.png
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true

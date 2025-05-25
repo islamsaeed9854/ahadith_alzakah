@@ -9,7 +9,7 @@ class NotificationService {
 
   Future<void> init() async {
     await AwesomeNotifications().initialize(
-      'resource://drawable/logo.png',
+      'resource://drawable/ic_launcher',
       [
         NotificationChannel(
           channelKey: 'daily_hadith_channel',
@@ -24,7 +24,6 @@ class NotificationService {
       debug: true,
     );
 
-    // فحص وطلب إذن الإشعارات
     bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
     if (!isAllowed) {
       await AwesomeNotifications().requestPermissionToSendNotifications();
@@ -36,22 +35,20 @@ class NotificationService {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id:100,
-       // id: DateTime.now().millisecondsSinceEpoch.remainder(100000), // ID فريد
         channelKey: 'daily_hadith_channel',
         title: 'حديث اليوم',
         body: hadith,
         notificationLayout: NotificationLayout.Default,
       ),
       schedule: NotificationCalendar(
-        hour: 12,
-        minute: 15,
+        hour: 20,
+        minute: 7,
         second: 0,
         repeats: true,
         preciseAlarm: true,
         allowWhileIdle: true,
       ),
     );
-    print('Notification scheduled for hadith: $hadith at 12:15 PM');
   }
 
   Future<void> cancelNotifications() async {

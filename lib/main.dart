@@ -1,12 +1,10 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
-
+import 'notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +16,9 @@ void main() async {
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xam5wcG1scXFlaG5xa3RlamZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5OTg0NzgsImV4cCI6MjA2MzU3NDQ3OH0.ponVTjJnEhFJsjO5Ol25PJt5d2zrYToJxxHXDsbcLLE",
   );
 
-
+  final notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.scheduleDailyHadithNotification();
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -36,15 +36,6 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
-      locale: const Locale('ar'), // إجبار اللغة العربية
-      supportedLocales: const [
-        Locale('ar', 'AE'),
-      ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
       home: const SplashScreen(),
     );
   }

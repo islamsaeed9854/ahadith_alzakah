@@ -9,7 +9,7 @@ class NotificationService {
 
   Future<void> init() async {
     await AwesomeNotifications().initialize(
-      'resource://drawable/ic_launcher',
+      'resource://drawable/logo.png',
       [
         NotificationChannel(
           channelKey: 'daily_hadith_channel',

@@ -51,7 +51,7 @@ class NotificationService {
         allowWhileIdle: true,
       ),
     );
-    print('Notification scheduled for hadith: $hadith at 12:00 PM');
+    print('Notification scheduled for hadith: $hadith at 12:15 PM');
   }
 
   Future<void> cancelNotifications() async {

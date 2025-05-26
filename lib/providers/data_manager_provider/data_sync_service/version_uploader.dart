@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:retry/retry.dart';
+import '../../../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
 
 class VersionUploader {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -34,11 +35,14 @@ class VersionUploader {
             )
             .timeout(const Duration(seconds: 100));
       }, onRetry: (e) => _logger.w('Retrying version upload: $e'));
-      // if (context.mounted) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(content: Text(successMessage)),
-      //   );
-      // }
+      if (context.mounted) {
+        showSingleSnackBar(
+          context,
+          message: successMessage,
+          backgroundColor: Colors.green, 
+          duration: const Duration(seconds: 3), 
+        );
+      }
     } catch (e) {
       _logger.e('Version upload error: $e');
       rethrow;

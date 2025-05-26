@@ -48,20 +48,6 @@ class DataDeleter {
       return;
     }
 
-    // final confirm = await showDialog<bool>(
-    //   context: context,
-    //   builder: (ctx) => AlertDialog(
-    //     title: const Text('تأكيد الحذف'),
-    //     content: const Text('هل أنت متأكد من حذف هذا الحديث؟'),
-    //     actions: [
-    //       TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('إلغاء')),
-    //       TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('حذف')),
-    //     ],
-    //   ),
-    // );
-
-    // if (confirm != true) return;
-
     try {
       final stagedHadiths = current.where((h) => !(h.bab == bab && h.fasl == fasl && h.number == number)).toList();
       final version = DateTime.now().millisecondsSinceEpoch;

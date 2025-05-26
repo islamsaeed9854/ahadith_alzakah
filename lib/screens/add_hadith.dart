@@ -8,6 +8,7 @@ import '../../../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'package:logger/logger.dart';
 import '../providers/data_manager_provider/data_manager/data_loader.dart';
+import '../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
 
 // Providers for text controllers
 final babControllerProvider = Provider<TextEditingController>((ref) {
@@ -60,20 +61,21 @@ class AddHadithScreen extends ConsumerWidget {
     // Get DataManager from provider
     final dataManager = ref.read(DataProvider.notifier);
 
-    // Show message function
-    void _showMessage(BuildContext context, String message, {bool isSuccess = false}) {
+    // Show message function using showSingleSnackBar
+    void showMessage(BuildContext context, String message, {bool isSuccess = false}) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              message,
-              style: GoogleFonts.cairo(color: Colors.white),
-            ),
-            backgroundColor: isSuccess ? Colors.green : Colors.redAccent,
-            duration: const Duration(seconds: 3),
-          ),
+        showSingleSnackBar(
+          context,
+          message: message,
+          backgroundColor: isSuccess ? Colors.green : Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
+    }
+
+    // Hide keyboard function
+    void _hideKeyboard() {
+      FocusScope.of(context).unfocus();
     }
 
     // Check chapter and section existence
@@ -85,18 +87,21 @@ class AddHadithScreen extends ConsumerWidget {
         if (jsonData == null || jsonData is! Map<String, dynamic> || jsonData['chapters'] is! List) {
           logger.e('Invalid JSON data for chapter/section check');
           return {
-            'isChapterMissing': true, 
+            'isChapterMissing': true,
             'isSectionMissing': true,
+            'chapterTitle': null,
           };
         }
 
         final chapters = jsonData['chapters'] as List<dynamic>;
         final isChapterMissing = !chapters.any((ch) => ch['chapter_number'] == bab);
-        
+
         bool isSectionMissing = true;
+        String? existingChapterTitle;
 
         if (!isChapterMissing) {
           final chapter = chapters.firstWhere((ch) => ch['chapter_number'] == bab);
+          existingChapterTitle = chapter['chapter_title'] as String?;
           final sections = chapter['sections'] as List<dynamic>? ?? [];
           isSectionMissing = !sections.any((sec) => sec['section_number'] == fasl);
         }
@@ -104,12 +109,14 @@ class AddHadithScreen extends ConsumerWidget {
         return {
           'isChapterMissing': isChapterMissing,
           'isSectionMissing': isSectionMissing,
+          'chapterTitle': existingChapterTitle,
         };
       } catch (e) {
         logger.e('Error checking chapter/section existence: $e');
         return {
-          'isChapterMissing': true, 
+          'isChapterMissing': true,
           'isSectionMissing': true,
+          'chapterTitle': null,
         };
       }
     }
@@ -119,6 +126,7 @@ class AddHadithScreen extends ConsumerWidget {
       BuildContext context, {
       required bool isChapterMissing,
       required bool isSectionMissing,
+      String? existingChapterTitle,
     }) async {
       final chapterTitleController = TextEditingController();
       final sectionTitleController = TextEditingController();
@@ -140,13 +148,54 @@ class AddHadithScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Show chapter info if it exists
+                  if (!isChapterMissing && existingChapterTitle != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'اسم الباب الموجود:',
+                          style: GoogleFonts.cairo(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Text(
+                            existingChapterTitle,
+                            style: GoogleFonts.cairo(
+                              color: Colors.green[800],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                      ],
+                    ),
+
+                  // Chapter title input (only if missing)
                   if (isChapterMissing)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('اسم الباب (مطلوب)', style: TextStyle(color: Colors.red)),
+                        Text(
+                          'اسم الباب (مطلوب)',
+                          style: GoogleFonts.cairo(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
                         _buildTextInputField(
-                          '',
+                          'أدخل اسم الباب',
                           MediaQuery.of(context).size.width,
                           MediaQuery.of(context).size.height,
                           controller: chapterTitleController,
@@ -155,15 +204,23 @@ class AddHadithScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  
+
+                  // Section title input (if missing)
                   if (isSectionMissing)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (isChapterMissing) SizedBox(height: 16),
-                        Text('اسم الفصل (مطلوب)', style: TextStyle(color: Colors.red)),
+                        Text(
+                          'اسم الفصل (مطلوب)',
+                          style: GoogleFonts.cairo(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
                         _buildTextInputField(
-                          '',
+                          'أدخل اسم الفصل',
                           MediaQuery.of(context).size.width,
                           MediaQuery.of(context).size.height,
                           controller: sectionTitleController,
@@ -177,30 +234,36 @@ class AddHadithScreen extends ConsumerWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('إلغاء', style: TextStyle(color: Colors.red)),
+                onPressed: () => Navigator.pop(context, null),
+                child: Text(
+                  'إلغاء',
+                  style: GoogleFonts.cairo(color: Colors.red),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff977c55),
                 ),
                 onPressed: () {
-                  final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : null;
+                  final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : existingChapterTitle;
                   final sectionTitle = isSectionMissing ? sectionTitleController.text.trim() : null;
-                  
+
                   // Validate required fields
                   if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
                       (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
-                    _showMessage(context, 'يرجى إدخال جميع البيانات المطلوبة');
+                    showMessage(context, 'يرجى إدخال جميع البيانات المطلوبة');
                     return;
                   }
-                  
+
                   Navigator.pop(context, {
                     'chapterTitle': chapterTitle,
                     'sectionTitle': sectionTitle,
                   });
                 },
-                child: Text('حفظ', style: TextStyle(color: Colors.white)),
+                child: Text(
+                  'حفظ',
+                  style: GoogleFonts.cairo(color: Colors.white),
+                ),
               ),
             ],
           );
@@ -210,6 +273,9 @@ class AddHadithScreen extends ConsumerWidget {
 
     // Add hadith function
     Future<void> addHadith() async {
+      // Hide keyboard first
+      _hideKeyboard();
+
       final bab = int.tryParse(babController.text.trim()) ?? -1;
       final fasl = int.tryParse(faslController.text.trim()) ?? -1;
       final number = int.tryParse(numberController.text.trim()) ?? -1;
@@ -220,18 +286,18 @@ class AddHadithScreen extends ConsumerWidget {
 
       // Basic validation
       if (bab <= 0 || fasl <= 0 || number <= 0) {
-        _showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
+        showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
         return;
       }
       if (text.isEmpty) {
-        _showMessage(context, 'نص الحديث مطلوب');
+        showMessage(context, 'نص الحديث مطلوب');
         return;
       }
 
       // Check internet connection
       final connectivityResult = await (Connectivity().checkConnectivity());
       if (connectivityResult == ConnectivityResult.none) {
-        _showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
+        showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
         return;
       }
 
@@ -240,8 +306,9 @@ class AddHadithScreen extends ConsumerWidget {
         final existenceCheck = await _checkChapterAndSectionExistence(bab, fasl);
         final isChapterMissing = existenceCheck['isChapterMissing'] as bool;
         final isSectionMissing = existenceCheck['isSectionMissing'] as bool;
+        final existingChapterTitle = existenceCheck['chapterTitle'] as String?;
 
-        String? chapterTitle;
+        String? chapterTitle = existingChapterTitle;
         String? sectionTitle;
 
         // Show dialog if titles are missing
@@ -250,20 +317,23 @@ class AddHadithScreen extends ConsumerWidget {
             context,
             isChapterMissing: isChapterMissing,
             isSectionMissing: isSectionMissing,
+            existingChapterTitle: existingChapterTitle,
           );
-          
+
           if (result == null) {
-            _showMessage(context, 'لا يمكن إضافة الحديث بدون إدخال البيانات المطلوبة');
+            showMessage(context, 'لا يمكن إضافة الحديث بدون إدخال البيانات المطلوبة');
             return;
           }
-          
-          chapterTitle = result['chapterTitle'];
+
+          if (isChapterMissing) {
+            chapterTitle = result['chapterTitle'];
+          }
           sectionTitle = result['sectionTitle'];
-          
+
           // Validate required titles
           if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
               (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
-            _showMessage(context, 'يرجى إدخال جميع العناوين المطلوبة');
+            showMessage(context, 'يرجى إدخال جميع العناوين المطلوبة');
             return;
           }
         }
@@ -284,7 +354,7 @@ class AddHadithScreen extends ConsumerWidget {
         );
 
         await dataManager.addHadith(newHadith, 4, context);
-        _showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
+        showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
 
         // Reset fields after successful addition
         babController.clear();
@@ -305,7 +375,7 @@ class AddHadithScreen extends ConsumerWidget {
         } else {
           errorMessage = 'حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا';
         }
-        _showMessage(context, errorMessage);
+        showMessage(context, errorMessage);
       }
     }
 
@@ -313,190 +383,193 @@ class AddHadithScreen extends ConsumerWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            SizedBox(
-              width: double.infinity,
-              height: double.infinity,
-              child: TextApp.appBackgroundWidget,
-            ),
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color.fromARGB(100, 0, 0, 0),
-                    Color.fromARGB(150, 0, 0, 0),
-                  ],
+        body: GestureDetector(
+          onTap: _hideKeyboard, // Hide keyboard when tapping outside
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: double.infinity,
+                child: TextApp.appBackgroundWidget,
+              ),
+              Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.fromARGB(100, 0, 0, 0),
+                      Color.fromARGB(150, 0, 0, 0),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            SingleChildScrollView(
-              padding: EdgeInsets.only(
-                top: screenHeight * 0.04 + (keyboardHeight > 0 ? keyboardHeight * 0.1 : 0),
-                bottom: keyboardHeight > 0 ? keyboardHeight + 40 : 40,
-                left: screenWidth * 0.04,
-                right: screenWidth * 0.04,
-              ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: screenHeight - keyboardHeight,
+              SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  top: screenHeight * 0.04 + (keyboardHeight > 0 ? keyboardHeight * 0.1 : 0),
+                  bottom: keyboardHeight > 0 ? keyboardHeight + 40 : 40,
+                  left: screenWidth * 0.04,
+                  right: screenWidth * 0.04,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'إضافة حديث',
-                              style: GoogleFonts.cairo(
-                                fontWeight: FontWeight.bold,
-                                fontSize: screenWidth * 0.09,
-                                color: const Color(0xfffcead0),
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: screenWidth * 0.03,
-                                    color: const Color(0xfffcead0),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            TextApp.backButtonLoginAddRemovePages(context),
-                          ],
-                        ),
-                        Container(
-                          padding: EdgeInsets.all(isSmallScreen ? 12 : 18),
-                          width: isSmallScreen ? screenWidth * 0.9 : screenWidth * 0.9,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color.fromRGBO(0, 0, 0, 0.1),
-                                blurRadius: isSmallScreen ? 5 : 10,
-                                spreadRadius: isSmallScreen ? 1 : 3,
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: screenHeight - keyboardHeight,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildNumberInputRow(
-                                'رقم الباب',
-                                screenWidth,
-                                screenHeight,
-                                controller: babController,
-                                isSmallScreen: isSmallScreen,
+                              Text(
+                                'إضافة حديث',
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: screenWidth * 0.09,
+                                  color: const Color(0xfffcead0),
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: screenWidth * 0.03,
+                                      color: const Color(0xfffcead0),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              SizedBox(height: screenHeight * 0.015),
-                              _buildNumberInputRow(
-                                'رقم الفصل',
-                                screenWidth,
-                                screenHeight,
-                                controller: faslController,
-                                isSmallScreen: isSmallScreen,
-                              ),
-                              SizedBox(height: screenHeight * 0.015),
-                              _buildNumberInputRow(
-                                'رقم الحديث',
-                                screenWidth,
-                                screenHeight,
-                                controller: numberController,
-                                isSmallScreen: isSmallScreen,
-                              ),
-                              SizedBox(height: screenHeight * 0.02),
-                              Divider(
-                                color: Colors.white,
-                                thickness: 2.0,
-                                indent: 16.0,
-                                endIndent: 16.0,
-                              ),
-                              SizedBox(height: screenHeight * 0.015),
-                              _buildTextInputField(
-                                'نص الحديث',
-                                screenWidth,
-                                screenHeight,
-                                controller: textController,
-                                isSmallScreen: isSmallScreen,
-                                maxLines: 3,
-                                heightFactor: 0.08,
-                              ),
-                              SizedBox(height: screenHeight * 0.015),
-                              _buildTextInputField(
-                                'الخلاصة',
-                                screenWidth,
-                                screenHeight,
-                                controller: summaryController,
-                                isSmallScreen: isSmallScreen,
-                                maxLines: 3,
-                                heightFactor: 0.08,
-                              ),
-                              SizedBox(height: screenHeight * 0.015),
-                              _buildTextInputField(
-                                'التخريج',
-                                screenWidth,
-                                screenHeight,
-                                controller: referenceController,
-                                isSmallScreen: isSmallScreen,
-                                maxLines: 3,
-                                heightFactor: 0.08,
-                              ),
-                              SizedBox(height: screenHeight * 0.015),
-                              _buildTextInputField(
-                                'الدراسة',
-                                screenWidth,
-                                screenHeight,
-                                controller: analysisController,
-                                isSmallScreen: isSmallScreen,
-                                maxLines: 3,
-                                heightFactor: 0.08,
-                              ),
-                              SizedBox(height: screenHeight * 0.04),
+                              TextApp.backButtonLoginAddRemovePages(context),
                             ],
                           ),
-                        ),
-                        SizedBox(height: screenHeight * 0.02),
-                        Align(
-                          alignment: Alignment.center,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff977c55),
-                              foregroundColor: const Color(0xff977c55),
-                              overlayColor: Colors.transparent,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: isSmallScreen ? 12 : 14,
-                              ),
-                              minimumSize: const Size(0, 0),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
+                          Container(
+                            padding: EdgeInsets.all(isSmallScreen ? 12 : 18),
+                            width: isSmallScreen ? screenWidth * 0.9 : screenWidth * 0.9,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color.fromRGBO(0, 0, 0, 0.1),
+                                  blurRadius: isSmallScreen ? 5 : 10,
+                                  spreadRadius: isSmallScreen ? 1 : 3,
+                                ),
+                              ],
                             ),
-                            onPressed: () => addHadith(),
-                            child: Text(
-                              "إضافة حديث",
-                              style: GoogleFonts.amiri(
-                                color: Colors.white,
-                                fontSize: isSmallScreen ? 16 : 18,
-                                fontWeight: FontWeight.bold,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildNumberInputRow(
+                                  'رقم الباب',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: babController,
+                                  isSmallScreen: isSmallScreen,
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                _buildNumberInputRow(
+                                  'رقم الفصل',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: faslController,
+                                  isSmallScreen: isSmallScreen,
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                _buildNumberInputRow(
+                                  'رقم الحديث',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: numberController,
+                                  isSmallScreen: isSmallScreen,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                Divider(
+                                  color: Colors.white,
+                                  thickness: 2.0,
+                                  indent: 16.0,
+                                  endIndent: 16.0,
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                _buildTextInputField(
+                                  'نص الحديث',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: textController,
+                                  isSmallScreen: isSmallScreen,
+                                  maxLines: 3,
+                                  heightFactor: 0.08,
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                _buildTextInputField(
+                                  'الخلاصة',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: summaryController,
+                                  isSmallScreen: isSmallScreen,
+                                  maxLines: 3,
+                                  heightFactor: 0.08,
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                _buildTextInputField(
+                                  'التخريج',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: referenceController,
+                                  isSmallScreen: isSmallScreen,
+                                  maxLines: 3,
+                                  heightFactor: 0.08,
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                _buildTextInputField(
+                                  'الدراسة',
+                                  screenWidth,
+                                  screenHeight,
+                                  controller: analysisController,
+                                  isSmallScreen: isSmallScreen,
+                                  maxLines: 3,
+                                  heightFactor: 0.08,
+                                ),
+                                SizedBox(height: screenHeight * 0.04),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          Align(
+                            alignment: Alignment.center,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xff977c55),
+                                foregroundColor: const Color(0xff977c55),
+                                overlayColor: Colors.transparent,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: isSmallScreen ? 12 : 14,
+                                ),
+                                minimumSize: const Size(0, 0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                              onPressed: () => addHadith(),
+                              child: Text(
+                                "إضافة حديث",
+                                style: GoogleFonts.amiri(
+                                  color: Colors.white,
+                                  fontSize: isSmallScreen ? 16 : 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                  ],
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

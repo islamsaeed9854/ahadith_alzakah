@@ -23,14 +23,40 @@ class ChaptersScreen extends ConsumerWidget {
 
   String numberToArabicText(int number) {
     const List<String> ones = [
-      '', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع'
+      '',
+      'الأول',
+      'الثاني',
+      'الثالث',
+      'الرابع',
+      'الخامس',
+      'السادس',
+      'السابع',
+      'الثامن',
+      'التاسع',
     ];
     const List<String> tens = [
-      '', '', 'العشرون', 'الثلاثون', 'الأربعون', 'الخمسون', 'الستون', 'السبعون', 'الثمانون', 'التسعون'
+      '',
+      '',
+      'العشرون',
+      'الثلاثون',
+      'الأربعون',
+      'الخمسون',
+      'الستون',
+      'السبعون',
+      'الثمانون',
+      'التسعون',
     ];
     const List<String> teens = [
-      'العاشر', 'الحادي عشر', 'الثاني عشر', 'الثالث عشر', 'الرابع عشر', 'الخامس عشر', 'السادس عشر',
-      'السابع عشر', 'الثامن عشر', 'التاسع عشر'
+      'العاشر',
+      'الحادي عشر',
+      'الثاني عشر',
+      'الثالث عشر',
+      'الرابع عشر',
+      'الخامس عشر',
+      'السادس عشر',
+      'السابع عشر',
+      'الثامن عشر',
+      'التاسع عشر',
     ];
 
     if (number == 0) return 'الصفر';
@@ -61,16 +87,19 @@ class ChaptersScreen extends ConsumerWidget {
               // تجميع الأحاديث حسب الباب والقسم
               final chaptersMap = <int, Map<String, dynamic>>{};
               for (final hadith in hadiths) {
-                if (!hadith.deleted && (chapterNumber == null || hadith.bab == chapterNumber)) {
+                if (!hadith.deleted &&
+                    (chapterNumber == null || hadith.bab == chapterNumber)) {
                   if (!chaptersMap.containsKey(hadith.bab)) {
                     chaptersMap[hadith.bab] = {
                       'chapter_number': hadith.bab,
-                      'chapter_title': 'باب رقم ${hadith.bab}',
+                      'chapter_title':
+                          hadith.chapter_title ?? 'باب رقم ${hadith.bab}',
                       'sections': <int, Map<String, dynamic>>{},
                     };
                   }
                   final chapter = chaptersMap[hadith.bab]!;
-                  final sections = chapter['sections'] as Map<int, Map<String, dynamic>>;
+                  final sections =
+                      chapter['sections'] as Map<int, Map<String, dynamic>>;
                   if (!sections.containsKey(hadith.fasl)) {
                     sections[hadith.fasl] = {
                       'section_number': hadith.fasl,
@@ -83,17 +112,28 @@ class ChaptersScreen extends ConsumerWidget {
                 }
               }
 
-              final dynamicChapters = chaptersMap.entries.map((entry) {
-                final chapter = entry.value;
-                final sections = (chapter['sections'] as Map<int, Map<String, dynamic>>)
-                    .entries
-                    .map((sectionEntry) => sectionEntry.value)
-                    .toList()
-                  ..sort((a, b) => (a['section_number'] as int).compareTo(b['section_number'] as int));
-                chapter['sections'] = sections;
-                return chapter;
-              }).toList()
-                ..sort((a, b) => (a['chapter_number'] as int).compareTo(b['chapter_number'] as int));
+              final dynamicChapters =
+                  chaptersMap.entries.map((entry) {
+                      final chapter = entry.value;
+                      final sections =
+                          (chapter['sections']
+                                  as Map<int, Map<String, dynamic>>)
+                              .entries
+                              .map((sectionEntry) => sectionEntry.value)
+                              .toList()
+                            ..sort(
+                              (a, b) => (a['section_number'] as int).compareTo(
+                                b['section_number'] as int,
+                              ),
+                            );
+                      chapter['sections'] = sections;
+                      return chapter;
+                    }).toList()
+                    ..sort(
+                      (a, b) => (a['chapter_number'] as int).compareTo(
+                        b['chapter_number'] as int,
+                      ),
+                    );
 
               String getChapterTitle(int bab) {
                 final chapter = dynamicChapters.firstWhere(
@@ -103,7 +143,10 @@ class ChaptersScreen extends ConsumerWidget {
                 return chapter['chapter_title'] as String;
               }
 
-              final allSections = dynamicChapters.expand((chapter) => chapter['sections'] as List).toList();
+              final allSections =
+                  dynamicChapters
+                      .expand((chapter) => chapter['sections'] as List)
+                      .toList();
 
               return Stack(
                 fit: StackFit.expand,
@@ -135,7 +178,12 @@ class ChaptersScreen extends ConsumerWidget {
                                       shadows: [
                                         Shadow(
                                           blurRadius: 10,
-                                          color: const Color.fromRGBO(0, 0, 0, 0.3),
+                                          color: const Color.fromRGBO(
+                                            0,
+                                            0,
+                                            0,
+                                            0.3,
+                                          ),
                                           offset: const Offset(2, 2),
                                         ),
                                       ],
@@ -147,13 +195,21 @@ class ChaptersScreen extends ConsumerWidget {
                                     Icons.arrow_forward,
                                     color: AppTheme.secodaryColor,
                                   ),
-                                  onPressed: () => ref.read(innerBooksScreenProvider.notifier).state = null,
+                                  onPressed:
+                                      () =>
+                                          ref
+                                              .read(
+                                                innerBooksScreenProvider
+                                                    .notifier,
+                                              )
+                                              .state = null,
                                 ),
                               ],
                             ),
                             Text(
                               dynamicChapters.isNotEmpty
-                                  ? dynamicChapters[0]['chapter_title'] as String
+                                  ? dynamicChapters[0]['chapter_title']
+                                      as String
                                   : "فرض الزكاة وفضلها",
                               textAlign: TextAlign.center,
                               style: GoogleFonts.cairo(
@@ -180,17 +236,31 @@ class ChaptersScreen extends ConsumerWidget {
                                 return Column(
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 8.0,
+                                      ),
                                       child: ChapterCard(
-                                        title: 'الفصل ${numberToArabicText(section['section_number'] as int)}',
-                                        text: section['section_title'] as String,
+                                        title:
+                                            'الفصل ${numberToArabicText(section['section_number'] as int)}',
+                                        text:
+                                            section['section_title'] as String,
                                         isLandscape: isLandscape,
                                         isExpanded: isExpanded,
                                         onTap: () {
                                           if (isExpanded) {
-                                            ref.read(expandedSectionProvider.notifier).state = null;
+                                            ref
+                                                .read(
+                                                  expandedSectionProvider
+                                                      .notifier,
+                                                )
+                                                .state = null;
                                           } else {
-                                            ref.read(expandedSectionProvider.notifier).state = index;
+                                            ref
+                                                .read(
+                                                  expandedSectionProvider
+                                                      .notifier,
+                                                )
+                                                .state = index;
                                           }
                                         },
                                       ),
@@ -204,15 +274,27 @@ class ChaptersScreen extends ConsumerWidget {
                                           left: 40,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color.fromRGBO(255, 255, 255, 0.9),
-                                          borderRadius: BorderRadius.circular(16),
+                                          color: const Color.fromRGBO(
+                                            255,
+                                            255,
+                                            255,
+                                            0.9,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                           border: Border.all(
                                             color: AppTheme.primaryColor,
                                             width: 3.5,
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: const Color.fromRGBO(0, 0, 0, 0.1),
+                                              color: const Color.fromRGBO(
+                                                0,
+                                                0,
+                                                0,
+                                                0.1,
+                                              ),
                                               blurRadius: 4,
                                               offset: Offset(0, 2),
                                             ),
@@ -222,52 +304,86 @@ class ChaptersScreen extends ConsumerWidget {
                                           textDirection: TextDirection.rtl,
                                           child: ListView.separated(
                                             shrinkWrap: true,
-                                            physics: NeverScrollableScrollPhysics(),
-                                            itemCount: (section['ahadith'] as List<Hadith>).length,
-                                            separatorBuilder: (context, index) => Divider(
-                                              height: 1,
-                                              thickness: 0.5,
-                                              color: const Color.fromRGBO(230, 163, 69, 0.3),
-                                              indent: 16,
-                                              endIndent: 16,
-                                            ),
-                                            itemBuilder: (context, hadithIndex) {
-                                              final hadith = (section['ahadith'] as List<Hadith>)[hadithIndex];
+                                            physics:
+                                                NeverScrollableScrollPhysics(),
+                                            itemCount:
+                                                (section['ahadith']
+                                                        as List<Hadith>)
+                                                    .length,
+                                            separatorBuilder:
+                                                (context, index) => Divider(
+                                                  height: 1,
+                                                  thickness: 0.5,
+                                                  color: const Color.fromRGBO(
+                                                    230,
+                                                    163,
+                                                    69,
+                                                    0.3,
+                                                  ),
+                                                  indent: 16,
+                                                  endIndent: 16,
+                                                ),
+                                            itemBuilder: (
+                                              context,
+                                              hadithIndex,
+                                            ) {
+                                              final hadith =
+                                                  (section['ahadith']
+                                                      as List<
+                                                        Hadith
+                                                      >)[hadithIndex];
                                               return ListTile(
                                                 dense: true,
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 4,
+                                                    ),
                                                 title: Text(
                                                   'الحديث ${hadith.number}',
                                                   style: ArabicTextStyle(
-                                                    arabicFont: ArabicFont.reemKufi,
+                                                    arabicFont:
+                                                        ArabicFont.reemKufi,
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                     color: Color(0xff912929),
                                                   ),
                                                 ),
                                                 subtitle: Padding(
-                                                  padding: const EdgeInsets.only(top: 2.0),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        top: 2.0,
+                                                      ),
                                                   child: Text(
                                                     hadith.text.length > 50
                                                         ? '${hadith.text.trim().substring(0, 50)}...'
                                                         : hadith.text,
                                                     style: ArabicTextStyle(
-                                                      arabicFont: ArabicFont.reemKufi,
+                                                      arabicFont:
+                                                          ArabicFont.reemKufi,
                                                       fontSize: 14,
                                                       color: Colors.black54,
                                                     ),
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                                 trailing: Icon(
                                                   Icons.arrow_forward_ios,
                                                   size: 16,
-                                                  color: const Color(0xffe6a345),
+                                                  color: const Color(
+                                                    0xffe6a345,
+                                                  ),
                                                 ),
                                                 onTap: () {
                                                   // تحديث الحديث المختار
-                                                  ref.read(selectedHadithProvider.notifier).state = hadith;
+                                                  ref
+                                                      .read(
+                                                        selectedHadithProvider
+                                                            .notifier,
+                                                      )
+                                                      .state = hadith;
                                                   // الانتقال إلى HadithDetails
                                                   navNotifier.changeTab(1);
                                                 },

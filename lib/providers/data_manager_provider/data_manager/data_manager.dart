@@ -49,7 +49,7 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
   }
 
   Future<dynamic> getJsonData() async {
-    return await _loader.getJsonData(); // Delegate to DataLoader
+    return await _loader.getJsonData(); 
   }
 
   Future<List<Map<String, dynamic>>> searchHadiths(

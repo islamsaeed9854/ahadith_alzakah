@@ -6,6 +6,8 @@ import '../providers/theme_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../screens/chapters_screen.dart';
 import 'search_screen.dart';
+import '../notification_service.dart';
+import '../data/models/hadith.dart';
 
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
@@ -132,7 +134,6 @@ class HadithDetails extends ConsumerWidget {
                 fontSize: fontSize,
                 height: 1.8,
                 fontWeight: FontWeight.bold,
-               // backgroundColor: Colors.yellow.withOpacity(0.3),
               ),
             ),
           );
@@ -179,6 +180,56 @@ class HadithDetails extends ConsumerWidget {
     return normalized;
   }
 
+  String numberToArabicText(int number) {
+    const List<String> ones = [
+      '',
+      'الأول',
+      'الثاني',
+      'الثالث',
+      'الرابع',
+      'الخامس',
+      'السادس',
+      'السابع',
+      'الثامن',
+      'التاسع',
+    ];
+    const List<String> tens = [
+      '',
+      '',
+      'العشرون',
+      'الثلاثون',
+      'الأربعون',
+      'الخمسون',
+      'الستون',
+      'السبعون',
+      'الثمانون',
+      'التسعون',
+    ];
+    const List<String> teens = [
+      'العاشر',
+      'الحادي عشر',
+      'الثاني عشر',
+      'الثالث عشر',
+      'الرابع عشر',
+      'الخامس عشر',
+      'السادس عشر',
+      'السابع عشر',
+      'الثامن عشر',
+      'التاسع عشر',
+    ];
+
+    if (number == 0) return 'الصفر';
+    if (number >= 1 && number <= 9) return ones[number];
+    if (number >= 10 && number <= 19) return teens[number - 10];
+    if (number >= 20 && number <= 99) {
+      int ten = (number ~/ 10) * 10;
+      int one = number % 10;
+      if (one == 0) return tens[number ~/ 10];
+      return '${ones[one]} و${tens[number ~/ 10]}';
+    }
+    return number.toString();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -188,69 +239,42 @@ class HadithDetails extends ConsumerWidget {
     final fontSize = ref.watch(fontSizeProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     final selectedHadith = ref.watch(selectedHadithProvider);
+    final dailyHadith = ref.watch(dailyHadithProvider);
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
     final searchQuery = controller.state;
 
-    if (selectedHadith == null) {
-      return Scaffold(body: Center(child: Text('لم يتم اختيار حديث')));
-    }
-
-    String numberToArabicText(int number) {
-      const List<String> ones = [
-        '',
-        'الأول',
-        'الثاني',
-        'الثالث',
-        'الرابع',
-        'الخامس',
-        'السادس',
-        'السابع',
-        'الثامن',
-        'التاسع',
-      ];
-      const List<String> tens = [
-        '',
-        '',
-        'العشرون',
-        'الثلاثون',
-        'الأربعون',
-        'الخمسون',
-        'الستون',
-        'السبعون',
-        'الثمانون',
-        'التسعون',
-      ];
-      const List<String> teens = [
-        'العاشر',
-        'الحادي عشر',
-        'الثاني عشر',
-        'الثالث عشر',
-        'الرابع عشر',
-        'الخامس عشر',
-        'السادس عشر',
-        'السابع عشر',
-        'الثامن عشر',
-        'التاسع عشر',
-      ];
-
-      if (number == 0) return 'الصفر';
-      if (number >= 1 && number <= 9) return ones[number];
-      if (number >= 10 && number <= 19) return teens[number - 10];
-      if (number >= 20 && number <= 99) {
-        int ten = (number ~/ 10) * 10;
-        int one = number % 10;
-        if (one == 0) return tens[number ~/ 10];
-        return '${ones[one]} و${tens[number ~/ 10]}';
-      }
-      return number.toString();
+    // Use selected hadith or fall back to daily hadith
+    final hadithToDisplay = selectedHadith ?? dailyHadith;
+    if (hadithToDisplay == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.book_outlined,
+                size: 64,
+                color: isDark ? Colors.white54 : Colors.black54,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'لا يوجد حديث متاح',
+                style: TextStyle(
+                  fontSize: fontSize.toDouble(),
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return WillPopScope(
       onWillPop: () async {
-        // تنفيذ الكود المطلوب عند الضغط على زر الرجوع
         controller.state = '';
         navNotifier.changeTab(0);
-        return false; // نمنع السلوك الافتراضي للزر الخلفي
+        return false;
       },
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -274,8 +298,9 @@ class HadithDetails extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                               
                                 Text(
-                                  'الباب ${numberToArabicText(selectedHadith.bab)}: ${selectedHadith.bab == 3 ? "باب رقم 3" : "فرض الزكاة وفضلها"}',
+                                  'الباب ${numberToArabicText(hadithToDisplay.bab)}:${hadithToDisplay.chapter_title}',
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
@@ -283,7 +308,7 @@ class HadithDetails extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
-                                  'الفصل ${numberToArabicText(selectedHadith.fasl)}: قسم رقم ${selectedHadith.fasl} | حديث رقم: ${selectedHadith.number}',
+                                  'الفصل ${numberToArabicText(hadithToDisplay.fasl)}:${hadithToDisplay.section_title} | حديث رقم: ${hadithToDisplay.number}',
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
@@ -321,7 +346,7 @@ class HadithDetails extends ConsumerWidget {
                           textAlign: TextAlign.justify,
                           text: TextSpan(
                             children: _buildFormattedText(
-                              selectedHadith.text.trim(),
+                              hadithToDisplay.text.trim(),
                               searchQuery,
                               isDark,
                               fontSize.toDouble(),
@@ -363,17 +388,17 @@ class HadithDetails extends ConsumerWidget {
                       child: TabBarView(
                         children: [
                           TabContent(
-                            text: selectedHadith.summary,
+                            text: hadithToDisplay.summary,
                             isDark: isDark,
                             searchQuery: searchQuery,
                           ),
                           TabContent(
-                            text: selectedHadith.reference,
+                            text: hadithToDisplay.reference,
                             isDark: isDark,
                             searchQuery: searchQuery,
                           ),
                           TabContent(
-                            text: selectedHadith.analysis,
+                            text: hadithToDisplay.analysis,
                             isDark: isDark,
                             searchQuery: searchQuery,
                           ),
@@ -499,7 +524,6 @@ class TabContent extends ConsumerWidget {
                 fontSize: fontSize,
                 height: 1.8,
                 fontWeight: FontWeight.bold,
-              //  backgroundColor: Colors.yellow.withOpacity(0.3),
               ),
             ),
           );

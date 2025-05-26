@@ -10,8 +10,6 @@ Widget searchCard(
   required Map<String, dynamic> Function(String, String, int, int) getSnippet,
 }) {
   final screenWidth = MediaQuery.of(context).size.width;
-
-  // استخدام _getSnippet لاستخراج جزء من النص مع إبراز الكلمة المطابقة
   final snippetData = getSnippet(content, query, startIndex, length);
   final snippet = snippetData['snippet'] as String;
   final queryStart = snippetData['queryStart'] as int;

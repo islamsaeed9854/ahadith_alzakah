@@ -50,8 +50,10 @@ class Hadith {
       'reference': reference,
       'analysis': analysis,
       'summary': summary,
-      chapter_title: chapter_title,
-      section_title: section_title,
+      'chapter_title': chapter_title,
+      'section_title': section_title,
+      'bab':bab,
+      'fasl':fasl,
     };
   }
 

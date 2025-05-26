@@ -7,6 +7,7 @@ import '../core/constants.dart';
 import '../providers/navigation_provider.dart';
 import 'chapters_screen.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
+import '../core/utils.dart'; // استيراد ملف utils.dart لاستخدام showSingleSnackBar
 
 class BooksScreen extends ConsumerWidget {
   BooksScreen({super.key});
@@ -278,21 +279,12 @@ class BooksScreen extends ConsumerWidget {
                             final connectivityResult =
                                 await Connectivity().checkConnectivity();
                             if (connectivityResult == ConnectivityResult.none) {
-                              // Show SnackBar if offline
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'لا يوجد اتصال بالإنترنت',
-                                    textAlign: TextAlign.center,
-                                    style: ArabicTextStyle(
-                                      arabicFont: ArabicFont.amiri,
-                                      fontSize: baseFontSize * 0.9,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  backgroundColor: const Color(0xffe6a345),
-                                  duration: const Duration(seconds: 3),
-                                ),
+                              // Show SnackBar if offline using showSingleSnackBar
+                              showSingleSnackBar(
+                                context,
+                                message: 'لا يوجد اتصال بالإنترنت',
+                                backgroundColor: Colors.redAccent,
+                                duration: const Duration(seconds: 3),
                               );
                             } else {
                               // Refresh the DataProvider to retry loading

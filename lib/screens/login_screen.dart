@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/login_providers.dart';
+import '../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
 import '../widgets/login_text_field.dart';
 
 // مزود لـ SupabaseClient
@@ -34,47 +35,35 @@ class LoginScreen extends ConsumerWidget {
 
     // التحقق من المدخلات قبل تسجيل الدخول
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            email.isEmpty && password.isEmpty
-                ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
-                : email.isEmpty
-                    ? 'يرجى إدخال البريد الإلكتروني'
-                    : 'يرجى إدخال كلمة المرور',
-            style: GoogleFonts.cairo(color: Colors.white),
-          ),
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        ),
+      showSingleSnackBar(
+        context,
+        message: email.isEmpty && password.isEmpty
+            ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
+            : email.isEmpty
+                ? 'يرجى إدخال البريد الإلكتروني'
+                : 'يرجى إدخال كلمة المرور',
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     if (!_isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'البريد الإلكتروني غير صالح، يرجى إدخال بريد إلكتروني صحيح (مثال: user@example.com)',
-            style: GoogleFonts.cairo(color: Colors.white),
-          ),
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        ),
+      showSingleSnackBar(
+        context,
+        message: 'البريد الإلكتروني غير صالح، يرجى إدخال بريد إلكتروني صحيح (مثال: user@example.com)',
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
-            style: GoogleFonts.cairo(color: Colors.white),
-          ),
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        ),
+      showSingleSnackBar(
+        context,
+        message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -94,15 +83,11 @@ class LoginScreen extends ConsumerWidget {
         loginFormState.passwordController.clear();
 
         // عرض SnackBar عند النجاح
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم تسجيل الدخول بنجاح! مرحبًا بك',
-              style: GoogleFonts.cairo(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
+        showSingleSnackBar(
+          context,
+          message: 'تم تسجيل الدخول بنجاح! مرحبًا بك',
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
         );
         // الانتقال إلى الصفحة الرئيسية
         ref.read(navigationProvider.notifier).changeTab(3);
@@ -111,22 +96,18 @@ class LoginScreen extends ConsumerWidget {
     } catch (e) {
       // معالجة الأخطاء مع رسائل واضحة
       String errorMessage;
-      if (e.toString().contains('invalid login credentials')) {
+      if (e.toString().contains('Invalid login credentials')) {
         errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
       } else if (e.toString().contains('network')) {
         errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة';
       } else {
         errorMessage = 'حدث خطأ غير متوقع: $e';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            errorMessage,
-            style: GoogleFonts.cairo(color: Colors.white),
-          ),
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        ),
+      showSingleSnackBar(
+        context,
+        message: errorMessage,
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       // إعادة تعيين حالة التحميل
@@ -151,18 +132,14 @@ class LoginScreen extends ConsumerWidget {
         body: Stack(
           children: [
             // Background Image - ثابت ولا يتأثر بالكيبورد
-            Positioned.fill(
-              child: TextApp.appBackgroundWidget,
-            ),
+            Positioned.fill(child: TextApp.appBackgroundWidget),
             // Gradient Overlay
-          
+
             // Content
             SingleChildScrollView(
               padding: EdgeInsets.only(
                 top: screenHeight * 0.04,
-                bottom: keyboardHeight > 0
-                    ? keyboardHeight + screenHeight * 0.1
-                    : screenHeight * 0.1,
+                bottom: keyboardHeight > 0 ? keyboardHeight + screenHeight * 0.1 : screenHeight * 0.1,
                 left: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
                 right: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
               ),

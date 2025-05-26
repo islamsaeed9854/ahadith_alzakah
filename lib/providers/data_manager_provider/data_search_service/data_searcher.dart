@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../../data/models/hadith.dart';
+import '../../../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
 import 'text_normalizer.dart';
 
 class DataSearcher {
@@ -16,8 +17,11 @@ class DataSearcher {
   ) async {
     if (currentHadiths.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا توجد أحاديث للبحث')),
+        showSingleSnackBar(
+          context,
+          message: 'لا توجد أحاديث للبحث',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
       return [];
@@ -25,8 +29,11 @@ class DataSearcher {
 
     if (query.trim().isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يرجى إدخال كلمة بحث صالحة')),
+        showSingleSnackBar(
+          context,
+          message: 'يرجى إدخال كلمة بحث صالحة',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
       return [];
@@ -38,19 +45,17 @@ class DataSearcher {
       final matches = <Map<String, dynamic>>[];
 
       for (final hadith in currentHadiths) {
-        final combinedText =
-            hadith.text;
+        final combinedText = hadith.text;
         final normalizedText = normalizeArabicText(combinedText);
         int index = -1;
-        while ((index = normalizedText.indexOf(normalizedQuery, index + 1)) != -1) {    
+        while ((index = normalizedText.indexOf(normalizedQuery, index + 1)) != -1) {
           matches.add({
             'hadith': hadith,
             'startIndex': index,
             'length': query.length,
           });
         }
-        if(matches.length>=111)
-           break;
+        if (matches.length >= 111) break;
       }
 
       matches.sort((a, b) {
@@ -64,10 +69,13 @@ class DataSearcher {
       });
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(matches.isEmpty
+        showSingleSnackBar(
+          context,
+          message: matches.isEmpty
               ? 'لم يتم العثور على نتائج'
-              : 'تم العثور على ${matches.length} تطابق')),
+              : 'تم العثور على ${matches.length} تطابق',
+          backgroundColor: matches.isEmpty ? Colors.redAccent : Colors.green,
+          duration: const Duration(seconds: 3),
         );
       }
 
@@ -76,8 +84,11 @@ class DataSearcher {
     } catch (e, st) {
       _logger.e('Search error: $e', stackTrace: st);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في البحث: ${e.toString()}')),
+        showSingleSnackBar(
+          context,
+          message: 'خطأ في البحث: ${e.toString()}',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
       return [];

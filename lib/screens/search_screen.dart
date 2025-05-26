@@ -1,5 +1,4 @@
 import 'package:ahadith_alzakah/core/theme.dart';
-import 'package:ahadith_alzakah/screens/hadith_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,23 +7,21 @@ import '../core/constants.dart';
 import '../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../providers/navigation_provider.dart';
+import '../core/utils.dart';
 import 'chapters_screen.dart';
 
 final Hadith_Details_Helper_provider = StateProvider<String>((ref) {
   return '';
 });
 
-// مزود للتحكم في حقل البحث
 final searchControllerProvider = Provider<TextEditingController>((ref) {
   return TextEditingController();
 });
 
-// مزود لتخزين نتائج البحث
 final filteredResultsProvider = StateProvider<List<Map<String, dynamic>>>((ref) {
   return [];
 });
 
-// مزود لتنفيذ البحث باستخدام DataProvider
 final filterSearchProvider = Provider((ref) {
   return (String query, BuildContext context) async {
     if (query.trim().isEmpty) {
@@ -34,7 +31,6 @@ final filterSearchProvider = Provider((ref) {
     
     try {
       final results = await ref.read(DataProvider.notifier).searchHadiths(query, context);
-      // تصفية النتائج للتأكد من أن جميع الحقول المطلوبة ليست null
       final filteredResults = results.where((result) {
         final hadith = result['hadith'] as Hadith?;
         return hadith != null;
@@ -51,6 +47,14 @@ final filterSearchProvider = Provider((ref) {
       ref.read(filteredResultsProvider.notifier).state = filteredResults;
     } catch (e) {
       ref.read(filteredResultsProvider.notifier).state = [];
+      if (context.mounted) {
+        showSingleSnackBar(
+          context,
+          message: 'حدث خطأ أثناء البحث: $e',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
+      }
     }
   };
 });
@@ -58,7 +62,6 @@ final filterSearchProvider = Provider((ref) {
 class SearchScreen extends ConsumerWidget {
   const SearchScreen({super.key});
 
-  // دالة لبناء عنوان النتيجة مع تنسيقات مختلفة
   Widget _buildResultTitle(Hadith hadith, bool isLandscape, double screenWidth) {
     return RichText(
       text: TextSpan(
@@ -96,8 +99,7 @@ class SearchScreen extends ConsumerWidget {
           TextSpan(
             text: 'حديث ${hadith.number}',
             style: GoogleFonts.cairo(
-              color: Color(0xff977c55),
-              fontWeight: FontWeight.bold,
+              color: Color(0xff977848),
               fontSize: isLandscape ? screenWidth * 0.018 : 16,
             ),
           ),
@@ -106,7 +108,6 @@ class SearchScreen extends ConsumerWidget {
     );
   }
 
-  // دالة لاستخراج جزء من النص مع إبراز الكلمة المطابقة
   Map<String, dynamic> _getSnippet(
     String text,
     String query,
@@ -209,34 +210,30 @@ class SearchScreen extends ConsumerWidget {
     final orientation = MediaQuery.of(context).orientation;
     final isLandscape = orientation == Orientation.landscape;
     final filteredResults = ref.watch(filteredResultsProvider);
-    
-    // الحصول على معلومات الكيبورد
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final isKeyboardVisible = keyboardHeight > 0;
-
-    // تحديد المقاسات المناسبة - محسنة للوضع الأفقي
     final double horizontalPadding = isLandscape 
-        ? screenSize.width * 0.02  // تقليل أكبر للمساحة الجانبية
+        ? screenSize.width * 0.02  
         : screenSize.width * 0.04;
     
     final double titleFontSize = isLandscape 
-        ? screenSize.width * 0.025  // تقليل أكبر لحجم العنوان الرئيسي
+        ? screenSize.width * 0.025 
         : screenSize.width * 0.09;
     
     final double inputFontSize = isLandscape 
-        ? screenSize.width * 0.016  // تقليل أكبر لحجم النص في حقل البحث
+        ? screenSize.width * 0.016  
         : screenSize.width * 0.045;
     
     final double buttonFontSize = isLandscape 
-        ? screenSize.width * 0.018   // تقليل أكبر لحجم نص الزر
+        ? screenSize.width * 0.018   
         : screenSize.width * 0.05;
     
     final double sectionTitleFontSize = isLandscape 
-        ? screenSize.width * 0.020  // تقليل أكبر لحجم عنوان النتائج
+        ? screenSize.width * 0.020  
         : screenSize.width * 0.055;
     
     final double emptyResultsFontSize = isLandscape 
-        ? screenSize.width * 0.018   // تقليل أكبر لحجم نص "لا توجد نتائج"
+        ? screenSize.width * 0.018 
         : screenSize.width * 0.045;
 
     final controller = ref.watch(searchControllerProvider);
@@ -249,30 +246,25 @@ class SearchScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      // إزالة هذا لمنع المساحة الفارغة فوق الكيبورد
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: isLandscape ? 
-        // تخطيط محسن للوضع الأفقي مع دعم الكيبورد
         SingleChildScrollView(
-          // إضافة padding للكيبورد في الوضع الأفقي
           padding: EdgeInsets.only(bottom: isKeyboardVisible ? keyboardHeight : 0),
           child: SizedBox(
             height: screenSize.height - (isKeyboardVisible ? keyboardHeight : 0),
             child: Row(
               children: [
-                // الجزء الثابت - يأخذ جزء أصغر من عرض الشاشة
                 Container(
-                  width: screenSize.width * 0.32, // تقليل إلى 32% من عرض الشاشة
+                  width: screenSize.width * 0.32, 
                   padding: EdgeInsets.symmetric(
-                    horizontal: screenSize.width * 0.015, // تقليل المساحة الداخلية
+                    horizontal: screenSize.width * 0.015, 
                     vertical: screenSize.height * 0.015,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min, // تقليل المساحة المستخدمة
+                    mainAxisSize: MainAxisSize.min, 
                     children: [
-                      // Header مع العنوان وزر الرجوع
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -295,7 +287,7 @@ class SearchScreen extends ConsumerWidget {
                           TextApp.backButton(ref),
                         ],
                       ),
-                      SizedBox(height: screenSize.height * 0.02), // تقليل المسافة
+                      SizedBox(height: screenSize.height * 0.02),
 
                       // حقل البحث
                       TextField(
@@ -314,11 +306,11 @@ class SearchScreen extends ConsumerWidget {
                           filled: true,
                           fillColor: const Color.fromRGBO(255, 255, 255, 0.9),
                           contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10, // تقليل المساحة الداخلية
+                            horizontal: 10, 
                             vertical: 8,
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20), // تقليل الانحناء
+                            borderRadius: BorderRadius.circular(20),
                             borderSide: const BorderSide(
                               color: Color(0xffe6a345),
                               width: 2,
@@ -340,16 +332,15 @@ class SearchScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: screenSize.height * 0.015), // تقليل المسافة
+                      SizedBox(height: screenSize.height * 0.015), 
 
-                      // زر البحث
                       Center(
                         child: ElevatedButton(
                           onPressed: performSearch,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF937848),
                             padding: EdgeInsets.symmetric(
-                              vertical: screenSize.height * 0.008, // تقليل المساحة العمودية
+                              vertical: screenSize.height * 0.008, 
                               horizontal: screenSize.width * 0.03,
                             ),
                             shape: RoundedRectangleBorder(
@@ -367,9 +358,8 @@ class SearchScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: screenSize.height * 0.02), // تقليل المسافة
+                      SizedBox(height: screenSize.height * 0.02), 
 
-                      // عنوان النتائج
                       Text(
                         'نتائج البحث',
                         style: GoogleFonts.cairo(
@@ -382,16 +372,14 @@ class SearchScreen extends ConsumerWidget {
                   ),
                 ),
 
-                // الخط الفاصل
                 Container(
                   width: 1,
                   color: Colors.white.withOpacity(0.3),
                 ),
 
-                // الجزء القابل للتمرير - النتائج (يأخذ باقي المساحة)
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.all(screenSize.width * 0.015), // تقليل المساحة
+                    padding: EdgeInsets.all(screenSize.width * 0.015), 
                     child: filteredResults.isEmpty
                         ? Center(
                             child: Text(
@@ -403,7 +391,7 @@ class SearchScreen extends ConsumerWidget {
                             ),
                           )
                         : ListView.builder(
-                            padding: EdgeInsets.only(top: 5), // تقليل المساحة
+                            padding: EdgeInsets.only(top: 5), 
                             itemCount: filteredResults.length,
                             itemBuilder: (context, index) {
                               final result = filteredResults[index];
@@ -418,7 +406,7 @@ class SearchScreen extends ConsumerWidget {
                               );
 
                               return Padding(
-                                padding: EdgeInsets.only(bottom: screenSize.height * 0.01), // تقليل المسافة
+                                padding: EdgeInsets.only(bottom: screenSize.height * 0.01), 
                                 child: GestureDetector(
                                   onTap: () {
                                     ref.watch(Hadith_Details_Helper_provider.notifier).state = ref.read(searchControllerProvider).text;
@@ -428,10 +416,10 @@ class SearchScreen extends ConsumerWidget {
                                     ref.read(navigationProvider.notifier).changeTab(1);
                                   },
                                   child: Container(
-                                    padding: EdgeInsets.all(6), // تقليل المساحة الداخلية
+                                    padding: EdgeInsets.all(6), 
                                     decoration: BoxDecoration(
                                       color: const Color.fromRGBO(255, 255, 255, .9),
-                                      borderRadius: BorderRadius.circular(20), // تقليل الانحناء
+                                      borderRadius: BorderRadius.circular(20), 
                                       border: Border.all(
                                         color: const Color(0xffe6a345),
                                         width: 2,
@@ -448,7 +436,7 @@ class SearchScreen extends ConsumerWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         _buildResultTitle(hadith, isLandscape, screenSize.width),
-                                        SizedBox(height: 3), // تقليل المسافة
+                                        SizedBox(height: 3), 
                                         RichText(
                                           text: TextSpan(
                                             children: _buildHighlightedText(
@@ -475,10 +463,8 @@ class SearchScreen extends ConsumerWidget {
           ),
         )
         :
-        // التخطيط المحسن للوضع العمودي
         Column(
           children: [
-            // الجزء الثابت - Header والبحث
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: horizontalPadding,
@@ -601,7 +587,6 @@ class SearchScreen extends ConsumerWidget {
               ),
             ),
 
-            // الجزء القابل للتمرير - النتائج
             Expanded(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -619,7 +604,6 @@ class SearchScreen extends ConsumerWidget {
                         ),
                       )
                     : ListView.builder(
-                        // إضافة padding للكيبورد فقط في الأسفل
                         padding: EdgeInsets.only(
                           bottom: isKeyboardVisible ? keyboardHeight + 20 : 20
                         ),
@@ -697,7 +681,6 @@ class SearchScreen extends ConsumerWidget {
     );
   }
 
-  // دالة لبناء النص مع تمييز نتيجة البحث
   List<TextSpan> _buildHighlightedText(
     String text, 
     String query, 
@@ -707,7 +690,7 @@ class SearchScreen extends ConsumerWidget {
     double screenWidth,
   ) {
     List<TextSpan> spans = [];
-    final double fontSize = isLandscape ? screenWidth * 0.012 : 12; // تقليل حجم الخط في الوضع الأفقي
+    final double fontSize = isLandscape ? screenWidth * 0.012 : 12;
     
     if (start >= 0 && end <= text.length) {
       if (start > 0) {

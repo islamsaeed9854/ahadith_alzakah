@@ -23,13 +23,17 @@ final authStateProvider = StreamProvider<bool>((ref) {
 
 // Provider for notifications enabled state
 final notificationsEnabledProvider = StateProvider<bool>((ref) {
-  return false; // Default to false to avoid showing enabled when permissions denied
+  return false; // Default to false until loaded from SharedPreferences
 });
 
-// Provider for notification permission denied state
-final permissionDeniedProvider = StateProvider<bool>((ref) {
-  return false; // Default; updated by initializer
+// Provider for font size
+final fontSizeProvider = StateProvider<int>((ref) {
+  return 20; // Default font size
 });
+
+// Provider for last tap time and tap count (for secret login trigger)
+final lastTapTimeProvider = StateProvider<DateTime?>((ref) => null);
+final tapCountProvider = StateProvider<int>((ref) => 0);
 
 // Initialize all settings from SharedPreferences
 final settingsInitializerProvider = FutureProvider<void>((ref) async {
@@ -37,34 +41,27 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
   final notificationService = ref.read(notificationServiceProvider);
 
   // Load font size
-  final fontSize = prefs.getInt('font_size') ?? 20; // Default font size
+  final fontSize = prefs.getInt('font_size') ?? 20;
   ref.read(fontSizeProvider.notifier).state = fontSize;
 
   // Load dark mode
-  final isDarkMode = prefs.getBool('dark_mode') ?? false; // Default to false
+  final isDarkMode = prefs.getBool('dark_mode') ?? false;
   ref.read(isDarkModeProvider.notifier).state = isDarkMode;
-
-  // Load permission denied state
-  final isPermissionDenied = await notificationService.isPermissionDenied();
-  ref.read(permissionDeniedProvider.notifier).state = isPermissionDenied;
 
   // Load notifications enabled state
   bool isEnabled = prefs.getBool('notifications_enabled') ?? false;
-
-  // If permissions are denied, force notifications to be disabled
-  if (isPermissionDenied) {
-    isEnabled = false;
-    await prefs.setBool('notifications_enabled', false);
-    await notificationService.cancelNotifications();
-  }
-
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
 
   // Configure notifications based on state
-  if (isEnabled && !isPermissionDenied) {
+  if (isEnabled) {
     bool hasPermission = await notificationService.hasNotificationPermission();
     if (hasPermission) {
       await notificationService.scheduleDailyHadithNotification();
+    } else {
+      // If permission is revoked after initial approval, disable notifications
+      await prefs.setBool('notifications_enabled', false);
+      ref.read(notificationsEnabledProvider.notifier).state = false;
+      await notificationService.cancelNotifications();
     }
   } else {
     await notificationService.cancelNotifications();
@@ -165,7 +162,7 @@ class SettingsScreen extends ConsumerWidget {
         duration: const Duration(seconds: 2),
       );
       ref.read(navigationProvider.notifier).changeTab(0);
-      Navigator.pushReplacementNamed(context, '/login');
+   //   Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       showSingleSnackBar(
         context,
@@ -192,7 +189,6 @@ class SettingsScreen extends ConsumerWidget {
     await prefs.setBool('dark_mode', value);
   }
 
-  // Toggle notifications and persist state in SharedPreferences
   Future<void> _toggleNotifications(bool value, WidgetRef ref, BuildContext context) async {
     final notificationService = ref.read(notificationServiceProvider);
     final prefs = await SharedPreferences.getInstance();
@@ -202,20 +198,16 @@ class SettingsScreen extends ConsumerWidget {
       if (!hasPermission) {
         hasPermission = await notificationService.requestNotificationPermission();
         if (!hasPermission) {
-          // User denied permission; keep toggle off
           ref.read(notificationsEnabledProvider.notifier).state = false;
-          ref.read(permissionDeniedProvider.notifier).state = true;
           await prefs.setBool('notifications_enabled', false);
           showSingleSnackBar(
             context,
-            message: 'يرجى تفعيل أذونات الإشعارات لتلقي الإشعارات اليومية',
+            message: 'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
             backgroundColor: Colors.redAccent,
             duration: const Duration(seconds: 3),
           );
           return;
         }
-        // Permission granted; update permission state
-        ref.read(permissionDeniedProvider.notifier).state = false;
       }
       await notificationService.scheduleDailyHadithNotification();
       ref.read(notificationsEnabledProvider.notifier).state = true;
@@ -241,7 +233,6 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the initializer to ensure all settings are loaded
     ref.watch(settingsInitializerProvider);
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -299,7 +290,7 @@ class SettingsScreen extends ConsumerWidget {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.remove, color: Color(0xff977c55)),
-                                  onPressed: fontSize > 10.0
+                                  onPressed: fontSize > 10
                                       ? () => _updateFontSize(fontSize - 1, ref)
                                       : null,
                                 ),
@@ -312,7 +303,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.add, color: Color(0xff977c55)),
-                                  onPressed: fontSize < 30.0
+                                  onPressed: fontSize < 30
                                       ? () => _updateFontSize(fontSize + 1, ref)
                                       : null,
                                 ),

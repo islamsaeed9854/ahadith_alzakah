@@ -10,6 +10,7 @@ Widget searchCard(
   required Map<String, dynamic> Function(String, String, int, int) getSnippet,
 }) {
   final screenWidth = MediaQuery.of(context).size.width;
+  final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
   final snippetData = getSnippet(content, query, startIndex, length);
   final snippet = snippetData['snippet'] as String;
   final queryStart = snippetData['queryStart'] as int;
@@ -19,6 +20,7 @@ Widget searchCard(
     constraints: BoxConstraints(
       maxWidth: screenWidth * 0.9,
       minWidth: screenWidth * 0.9,
+      maxHeight: double.infinity, // السماح بارتفاع ديناميكي
     ),
     child: Card(
       elevation: 4,
@@ -40,37 +42,40 @@ Widget searchCard(
               ),
             ),
             const SizedBox(height: 8),
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: snippet.substring(0, queryStart),
-                    style: TextStyle(
-                      color: Colors.brown.shade800,
-                      fontSize: 16,
-                      height: 1.6,
+            Flexible( // جعل النص مرنًا لتجنب القص
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: snippet.substring(0, queryStart),
+                      style: TextStyle(
+                        color: Colors.brown.shade800,
+                        fontSize: 16,
+                        height: 1.6,
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: snippet.substring(queryStart, queryEnd),
-                    style: const TextStyle(
-                      color: Colors.green,
-                      fontSize: 16,
-                      height: 1.6,
-                      fontWeight: FontWeight.bold,
+                    TextSpan(
+                      text: snippet.substring(queryStart, queryEnd),
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 16,
+                        height: 1.6,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: snippet.substring(queryEnd),
-                    style: TextStyle(
-                      color: Colors.brown.shade800,
-                      fontSize: 16,
-                      height: 1.6,
+                    TextSpan(
+                      text: snippet.substring(queryEnd),
+                      style: TextStyle(
+                        color: Colors.brown.shade800,
+                        fontSize: 16,
+                        height: 1.6,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                textDirection: TextDirection.rtl,
+                overflow: TextOverflow.ellipsis, // التعامل مع النصوص الطويلة
               ),
-              textDirection: TextDirection.rtl,
             ),
           ],
         ),

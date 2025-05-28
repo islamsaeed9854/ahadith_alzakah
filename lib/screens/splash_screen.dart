@@ -8,7 +8,7 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Future.delayed(const Duration(seconds: 1), () {
+    Future.delayed(const Duration(seconds: 2), () {
       Navigator.of(
        context
       ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
@@ -44,6 +44,7 @@ class SplashScreen extends StatelessWidget {
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            const SizedBox(height: 70),
                             Text(
                               "موسوعة",
                               style: GoogleFonts.cairo(
@@ -91,9 +92,9 @@ class SplashScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 20),
                         TextApp.drSamyKhalilName,
-                        const SizedBox(height: 1),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 200),
                       ],
                     ),
                   ),

@@ -34,7 +34,10 @@ class EditOptionsScreen extends ConsumerWidget {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -61,34 +64,46 @@ class EditOptionsScreen extends ConsumerWidget {
                           children: [
                             // قائمة الاختيارات
                             SizedBox(
-                              width: isLandscape ? screenWidth * 0.85 : screenWidth * 0.9,
+                              width:
+                                  isLandscape
+                                      ? screenWidth * 0.85
+                                      : screenWidth * 0.9,
                               child: Column(
-                                children: options.map((option) {
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(vertical: 25),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: RadioListTile<String>(
-                                      value: option,
-                                      groupValue: selectedOption,
-                                      activeColor: const Color(0xfffcf3e8),
-                                      onChanged: (val) => ref
-                                          .read(selectedEditFieldProvider.notifier)
-                                          .state = val!,
-                                      title: Text(
-                                        option,
-                                        textAlign: TextAlign.right,
-                                        style: GoogleFonts.reemKufi(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
+                                children:
+                                    options.map((option) {
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 25,
                                         ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: RadioListTile<String>(
+                                          value: option,
+                                          groupValue: selectedOption,
+                                          activeColor: const Color(0xfffcf3e8),
+                                          onChanged:
+                                              (val) =>
+                                                  ref
+                                                      .read(
+                                                        selectedEditFieldProvider
+                                                            .notifier,
+                                                      )
+                                                      .state = val!,
+                                          title: Text(
+                                            option,
+                                            textAlign: TextAlign.right,
+                                            style: GoogleFonts.reemKufi(
+                                              color: Colors.white,
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
                               ),
                             ),
                             const SizedBox(height: 35),
@@ -109,9 +124,10 @@ class EditOptionsScreen extends ConsumerWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => EditHadithScreen(
-                                        selectedOption: selectedOption,
-                                      ),
+                                      builder:
+                                          (_) => EditHadithScreen(
+                                            selectedOption: selectedOption,
+                                          ),
                                     ),
                                   );
                                 } else {

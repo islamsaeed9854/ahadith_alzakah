@@ -304,7 +304,7 @@ class HadithDetails extends ConsumerWidget {
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                                    fontSize: 17,
+                                    fontSize: 15,
                                   ),
                                 ),
                                 Text(
@@ -312,7 +312,7 @@ class HadithDetails extends ConsumerWidget {
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                                    fontSize: 14,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],

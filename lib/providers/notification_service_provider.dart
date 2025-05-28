@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../notification_service.dart';
-import '../screens/settings_screen.dart'; // Import to access notificationsEnabledProvider
+import '../screens/settings_screen.dart';
 
 // Provider for NotificationService
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -16,7 +16,7 @@ final notificationInitProvider = FutureProvider<void>((ref) async {
 // Provider for scheduling daily notifications
 final scheduleNotificationProvider = FutureProvider<void>((ref) async {
   final notificationService = ref.read(notificationServiceProvider);
-  final notificationsEnabled = ref.read(notificationsEnabledProvider);
+  final notificationsEnabled = ref.watch(notificationsEnabledProvider);
   if (notificationsEnabled) {
     bool hasPermission = await notificationService.hasNotificationPermission();
     if (hasPermission) {

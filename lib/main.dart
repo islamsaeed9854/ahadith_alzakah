@@ -8,59 +8,82 @@ import 'providers/theme_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'screens/splash_screen.dart';
 import 'providers/notification_service_provider.dart';
+import 'screens/hadith_details.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-late ProviderContainer globalProviderContainer;
-
 class NotificationController {
   @pragma('vm:entry-point')
-  static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
-    debugPrint('Notification action received!');
+  static Future<void> onActionReceivedMethod(
+    ReceivedAction receivedAction,
+  ) async {
+    debugPrint('Notification action received at ${DateTime.now()}');
 
-    if (navigatorKey.currentState != null) {
-      globalProviderContainer.read(navigationProvider.notifier).changeTab(1);
+    if (navigatorKey.currentState != null &&
+        navigatorKey.currentContext != null) {
+      final container = ProviderScope.containerOf(navigatorKey.currentContext!);
+      // Reset innerBooksScreenProvider to prevent BooksScreen
+      container.read(innerBooksScreenProvider.notifier).state = null;
+      // Set navigation to HadithDetails tab (index 1)
+      container.read(navigationProvider.notifier).changeTab(1);
 
+      debugPrint('Set navigationProvider to index 1');
+      debugPrint(
+        'innerBooksScreenProvider reset to: ${container.read(innerBooksScreenProvider)}',
+      );
+
+      // Wait for state to propagate
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Navigate to HomeScreen with HadithDetails tab
       navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (_) => const HomeScreen(showHadithDetails: true),
+        ),
         (route) => false,
       );
+      debugPrint('Navigated to HomeScreen with showHadithDetails: true');
+    } else {
+      debugPrint('Navigator state or context is null');
+      // Fallback: Directly push HadithDetails
+      if (navigatorKey.currentState != null) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        navigatorKey.currentState!.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HadithDetails()),
+          (route) => false,
+        );
+        debugPrint('Fallback: Navigated directly to HadithDetails');
+      } else {
+        debugPrint('Cannot navigate: Navigator state is null');
+      }
     }
   }
 }
 
-final appInitializationProvider = FutureProvider<void>((ref) async {
-  try {
-    await ref.read(notificationInitProvider.future);
-
-    // Set notification action listener
-    AwesomeNotifications().setListeners(
-      onActionReceivedMethod: NotificationController.onActionReceivedMethod,
-    );
-
-    final pending = await AwesomeNotifications().listScheduledNotifications();
-    debugPrint('Pending notifications: ${pending.length}');
-  } catch (e) {
-    debugPrint('Error during app initialization: $e');
-  }
-});
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Supabase
+Future<void> _initializeApp() async {
   await Supabase.initialize(
     url: 'https://oqjnppmlqqehnqktejfl.supabase.co',
     anonKey:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xam5wcG1scXFlaG5xa3RlamZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5OTg0NzgsImV4cCI6MjA2MzU3NDQ3OH0.ponVTjJnEhFJsjO5Ol25PJt5d2zrYToJxxHXDsbcLLE",
   );
+}
 
-  globalProviderContainer = ProviderContainer();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(UncontrolledProviderScope(
-    container: globalProviderContainer,
-    child: const MyApp(),
-  ));
+  await _initializeApp();
+
+  // Check for initial notification (e.g., app opened from notification)
+  final initialNotification =
+      await AwesomeNotifications().getInitialNotificationAction();
+  if (initialNotification != null) {
+    debugPrint(
+      'App opened from initial notification: ${initialNotification.toString()}',
+    );
+    await NotificationController.onActionReceivedMethod(initialNotification);
+  }
+
+  runApp(ProviderScope(child: const MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -68,6 +91,9 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Initialize notifications via NotificationService
+    ref.read(notificationServiceProvider).init();
+
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
@@ -77,50 +103,7 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
-      home: const AppInitializer(),
-    );
-  }
-}
-
-class AppInitializer extends ConsumerWidget {
-  const AppInitializer({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final initializationAsync = ref.watch(appInitializationProvider);
-
-    return initializationAsync.when(
-      data: (_) {
-        // After initialization, go to SplashScreen
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const SplashScreen()),
-          );
-        });
-        return const _LoadingScreen();
-      },
-      loading: () => const _LoadingScreen(),
-      error: (error, stackTrace) {
-        debugPrint('Initialization error: $error');
-        // On error, still go to SplashScreen
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const SplashScreen()),
-          );
-        });
-        return const _LoadingScreen();
-      },
-    );
-  }
-}
-
-class _LoadingScreen extends StatelessWidget {
-  const _LoadingScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 
-// Dark Mode Status
-final isDarkModeProvider = StateProvider<bool>((ref) => false);
+// // Dark Mode Status
+ final isDarkModeProvider = StateProvider<bool>((ref) => false);
 
 // Font Size
 final fontSizeProvider = StateProvider<int>((ref) => 20);

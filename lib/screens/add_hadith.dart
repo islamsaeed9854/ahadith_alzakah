@@ -395,17 +395,7 @@ class AddHadithScreen extends ConsumerWidget {
               ),
               Container(
                 width: double.infinity,
-                height: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color.fromARGB(100, 0, 0, 0),
-                      Color.fromARGB(150, 0, 0, 0),
-                    ],
-                  ),
-                ),
+                height: double.infinity, 
               ),
               SingleChildScrollView(
                 padding: EdgeInsets.only(

@@ -1,4 +1,3 @@
-import 'package:ahadith_alzakah/screens/hadith_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
@@ -8,45 +7,65 @@ import 'settings_screen.dart';
 import 'about_screen.dart';
 import '../providers/theme_provider.dart';
 import '../core/constants.dart';
+import 'hadith_details.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  final bool showHadithDetails;
+  const HomeScreen({super.key, this.showHadithDetails = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Set HadithDetails tab if showHadithDetails is true
+    if (showHadithDetails) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(navigationProvider.notifier).changeTab(1);
+        ref.read(innerBooksScreenProvider.notifier).state = null;
+        debugPrint('Set navigation to HadithDetails tab (index 1)');
+      });
+    }
+
     final currentIndex = ref.watch(navigationProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     final innerBooksScreenPr = ref.watch(innerBooksScreenProvider);
     final isDarkMode = ref.watch(isDarkModeProvider);
 
+    debugPrint(
+      'HomeScreen rendered with currentIndex: $currentIndex, innerBooksScreenPr: $innerBooksScreenPr',
+    );
+
     // Screens for navigation with background
     final List<Widget> pages = [
       _buildScreenWithBackground(innerBooksScreenPr ?? BooksScreen()),
-      _buildScreenWithBackground(HadithDetails()),
+      _buildScreenWithBackground(const HadithDetails()), // Tab 1: HadithDetails
       _buildScreenWithBackground(SearchScreen()),
       _buildScreenWithBackground(SettingsScreen()),
       _buildScreenWithBackground(AboutScreen()),
     ];
 
     return PopScope(
-      canPop: currentIndex != 0 || ref.watch(innerBooksScreenProvider) != null ? false : true,
+      canPop: currentIndex != 0 || innerBooksScreenPr != null ? false : true,
       onPopInvokedWithResult: (didPop, Object? result) async {
         if (!didPop && currentIndex != 0) {
           navNotifier.changeTab(0);
+          ref.read(innerBooksScreenProvider.notifier).state = null;
+          debugPrint(
+            'Pop invoked: Switched to tab 0 and reset innerBooksScreenProvider',
+          );
         } else if (!didPop && currentIndex == 0 && innerBooksScreenPr != null) {
           ref.read(innerBooksScreenProvider.notifier).state = null;
+          debugPrint('Pop invoked: Reset innerBooksScreenProvider');
         }
       },
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
-          resizeToAvoidBottomInset: false, // Prevent resizing when keyboard appears
+          resizeToAvoidBottomInset: false,
           body: Stack(
             children: [
-              // Fixed background image for all pages rotated 180 degrees
+              // Fixed background image
               Positioned.fill(
                 child: Transform.rotate(
-                  angle: 3.14159, // 180 degrees in radians
+                  angle: 3.14159,
                   child: Image(
                     image: TextApp.appBackgroundImage,
                     fit: BoxFit.cover,
@@ -63,19 +82,24 @@ class HomeScreen extends ConsumerWidget {
             opacity: (isDarkMode && currentIndex == 1) ? 1 : .8,
             child: BottomNavigationBar(
               currentIndex: currentIndex,
-              backgroundColor: (isDarkMode && currentIndex == 1)
-                  ? const Color(0xff1c1c1c)
-                  : const Color.fromRGBO(252, 243, 232, 0.9),
+              backgroundColor:
+                  (isDarkMode && currentIndex == 1)
+                      ? const Color(0xff1c1c1c)
+                      : const Color.fromRGBO(252, 243, 232, 0.9),
               onTap: (index) {
                 if (index != 0) {
                   ref.read(innerBooksScreenProvider.notifier).state = null;
                 }
                 navNotifier.changeTab(index);
+                debugPrint(
+                  'BottomNavigationBar tapped: Switched to tab $index',
+                );
               },
               selectedItemColor: const Color.fromARGB(255, 192, 144, 76),
-              unselectedItemColor: (isDarkMode && currentIndex == 1)
-                  ? const Color(0xfffcead0)
-                  : const Color.fromARGB(255, 26, 23, 23),
+              unselectedItemColor:
+                  (isDarkMode && currentIndex == 1)
+                      ? const Color(0xfffcead0)
+                      : const Color.fromARGB(255, 26, 23, 23),
               showUnselectedLabels: true,
               type: BottomNavigationBarType.fixed,
               items: const [
@@ -102,12 +126,19 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
+          // Test button for immediate notification
+          // floatingActionButton: FloatingActionButton(
+          //   onPressed: () {
+          //     ref.read(notificationServiceProvider).sendImmediateNotification();
+          //     debugPrint('Triggered immediate notification');
+          //   },
+          //   child: const Icon(Icons.notification_add),
+          // ),
         ),
       ),
     );
   }
 
-  // Helper function to add background to screens
   Widget _buildScreenWithBackground(Widget child) {
     return Scaffold(
       backgroundColor: Colors.transparent,

@@ -4,8 +4,9 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../data/models/hadith.dart';
+import '../data/models/hadith.dart';
 import 'providers/data_manager_provider/data_manager/data_manager.dart';
+import '../main.dart';
 
 // Provider for storing the selected daily Hadith
 final dailyHadithProvider = StateNotifierProvider<DailyHadithNotifier, Hadith?>(
@@ -30,60 +31,64 @@ class NotificationService {
 
   static const String _lastHadithDateKey = 'daily_hadith_last_date';
   static const String _dailyHadithKey = 'daily_hadith_data';
-  static const String _hasRequestedPermissionKey = 'has_requested_permission';
-  static const String _permissionDeniedKey = 'permission_denied';
 
   NotificationService(this.ref);
 
   Future<void> init() async {
-    await AwesomeNotifications().initialize(
-      'resource://drawable/ic_launcher',
-      [
-        NotificationChannel(
-          channelKey: 'daily_hadith_channel',
-          channelName: 'Daily Hadith',
-          channelDescription: 'Daily Hadith notifications',
-          importance: NotificationImportance.High,
-          playSound: true,
-          enableVibration: true,
-          channelShowBadge: true,
-        ),
-      ],
-      debug: true,
+    // Initialize Awesome Notifications
+    await AwesomeNotifications().initialize('resource://drawable/ic_launcher', [
+      NotificationChannel(
+        channelKey: 'daily_hadith_channel',
+        channelName: 'Daily Hadith',
+        channelDescription: 'Daily Hadith notifications',
+        importance: NotificationImportance.High,
+        playSound: true,
+        enableVibration: true,
+        channelShowBadge: true,
+      ),
+    ], debug: true);
+
+    // Set notification listeners
+    await AwesomeNotifications().setListeners(
+      onActionReceivedMethod: NotificationController.onActionReceivedMethod,
     );
 
-    // Load notifications enabled state from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final bool notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+    final hasShownDialog =
+        prefs.getBool('has_shown_permission_dialog') ?? false;
 
-    // Check permission status
-    final hasRequestedPermission = await _secureStorage.read(key: _hasRequestedPermissionKey);
-    final bool permissionDenied = await isPermissionDenied(); // Renamed variable to avoid shadowing
+    if (!hasShownDialog) {
+      // First-time user: Request permission immediately
+      final bool hasPermission = await requestNotificationPermission();
+      await prefs.setBool('has_shown_permission_dialog', true);
 
-    if (hasRequestedPermission == null && !permissionDenied) {
-      // First app launch; don't request permission here, defer to SettingsScreen
-      await _secureStorage.write(key: _hasRequestedPermissionKey, value: 'true');
-    }
-
-    // Load or generate daily Hadith
-    await _loadOrGenerateDailyHadith();
-
-    // Only schedule notifications if enabled in SettingsScreen
-    if (notificationsEnabled && !permissionDenied) {
-      bool hasPermission = await hasNotificationPermission();
+      // If permission granted, enable notifications by default
       if (hasPermission) {
+        await prefs.setBool('notifications_enabled', true);
         await scheduleDailyHadithNotification();
       } else {
-        // If no permission, disable notifications
         await prefs.setBool('notifications_enabled', false);
-        await cancelNotifications();
       }
     } else {
-      await cancelNotifications();
+      // User has already seen the dialog, load their preference
+      bool notificationsEnabled =
+          prefs.getBool('notifications_enabled') ?? false;
+      final bool hasPermission = await hasNotificationPermission();
+
+      if (notificationsEnabled && hasPermission) {
+        await scheduleDailyHadithNotification();
+      } else {
+        await cancelNotifications();
+      }
     }
+
+    // Load or generate daily Hadith regardless of notification status
+    await _loadOrGenerateDailyHadith();
   }
 
   Future<void> scheduleDailyHadithNotification() async {
+    await cancelNotifications();
+
     final hadith = await _getDailyHadith();
 
     if (hadith != null) {
@@ -96,21 +101,22 @@ class NotificationService {
           notificationLayout: NotificationLayout.BigText,
           bigPicture: null,
           largeIcon: 'resource://drawable/ic_launcher',
+          actionType: ActionType.Default, // Ensure action triggers
         ),
         schedule: NotificationCalendar(
           hour: 12,
-          minute: 00,
+          minute: 0,
           second: 0,
           repeats: true,
           preciseAlarm: true,
           allowWhileIdle: true,
         ),
       );
-    }
+    } else {}
   }
 
   Future<Hadith?> _getDailyHadith() async {
-    final today = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
+    final today = DateTime.now().toIso8601String().split('T')[0];
 
     try {
       final lastHadithDate = await _secureStorage.read(key: _lastHadithDateKey);
@@ -119,7 +125,8 @@ class NotificationService {
         final savedHadithJson = await _secureStorage.read(key: _dailyHadithKey);
         if (savedHadithJson != null) {
           try {
-            final hadithMap = json.decode(savedHadithJson) as Map<String, dynamic>;
+            final hadithMap =
+                json.decode(savedHadithJson) as Map<String, dynamic>;
             return Hadith.fromJson(hadithMap);
           } catch (e) {
             print('Error decoding saved Hadith: $e');
@@ -142,16 +149,16 @@ class NotificationService {
       List<Hadith> allHadiths = [];
       hadithAsyncValue.when(
         data: (hadiths) => allHadiths = hadiths,
-        loading: () => allHadiths = [],
         error: (error, stack) => allHadiths = [],
+        loading: () => allHadiths = [],
       );
       if (allHadiths.isEmpty) {
         await dataManager.loadHadiths();
         final updatedAsyncValue = ref.read(DataProvider);
         updatedAsyncValue.when(
           data: (hadiths) => allHadiths = hadiths,
-          loading: () => allHadiths = [],
           error: (error, stack) => allHadiths = [],
+          loading: () => allHadiths = [],
         );
       }
 
@@ -159,7 +166,8 @@ class NotificationService {
         return null;
       }
 
-      final activeHadiths = allHadiths.where((hadith) => hadith.number != 0).toList();
+      final activeHadiths =
+          allHadiths.where((hadith) => hadith.number != 0).toList();
 
       if (activeHadiths.isEmpty) {
         return null;
@@ -168,7 +176,8 @@ class NotificationService {
       final today = DateTime.now();
       final seed = today.year * 10000 + today.month * 100 + today.day;
       final random = Random(seed);
-      final selectedHadith = activeHadiths[random.nextInt(activeHadiths.length)];
+      final selectedHadith =
+          activeHadiths[random.nextInt(activeHadiths.length)];
 
       await _saveDailyHadith(selectedHadith);
 
@@ -198,7 +207,7 @@ class NotificationService {
     final hadith = await _getDailyHadith();
     if (hadith != null) {
       ref.read(dailyHadithProvider.notifier).setDailyHadith(hadith);
-    }
+    } else {}
   }
 
   String _formatHadith(Hadith hadith) {
@@ -232,30 +241,16 @@ class NotificationService {
   }
 
   Future<bool> hasNotificationPermission() async {
-    return await AwesomeNotifications().isNotificationAllowed();
-  }
+    final isAllowed = await AwesomeNotifications().isNotificationAllowed();
 
-  Future<bool> requestNotificationPermission() async {
-    final isAllowed = await AwesomeNotifications().requestPermissionToSendNotifications();
-    if (!isAllowed) {
-      // Mark permission as denied if user rejects
-      await _secureStorage.write(key: _permissionDeniedKey, value: 'true');
-    } else {
-      // Clear denied flag if permission is granted
-      await _secureStorage.delete(key: _permissionDeniedKey);
-    }
-    await _secureStorage.write(key: _hasRequestedPermissionKey, value: 'true');
     return isAllowed;
   }
 
-  Future<bool> isPermissionDenied() async {
-    final isDenied = await _secureStorage.read(key: _permissionDeniedKey);
-    return isDenied == 'true';
-  }
+  Future<bool> requestNotificationPermission() async {
+    final isAllowed =
+        await AwesomeNotifications().requestPermissionToSendNotifications();
 
-  Future<void> resetPermissionRequest() async {
-    await _secureStorage.delete(key: _hasRequestedPermissionKey);
-    await _secureStorage.delete(key: _permissionDeniedKey);
+    return isAllowed;
   }
 
   Future<void> sendImmediateNotification() async {
@@ -269,13 +264,16 @@ class NotificationService {
           title: 'حديث اليوم',
           body: _formatHadith(hadith),
           notificationLayout: NotificationLayout.BigText,
+          actionType: ActionType.Default,
         ),
       );
-    }
+    } else {}
   }
 
   Future<int> getScheduledNotificationsCount() async {
-    final notifications = await AwesomeNotifications().listScheduledNotifications();
+    final notifications =
+        await AwesomeNotifications().listScheduledNotifications();
+
     return notifications.length;
   }
 
@@ -295,7 +293,9 @@ class NotificationService {
       final lastHadithDate = await _secureStorage.read(key: _lastHadithDateKey);
       final savedHadithJson = await _secureStorage.read(key: _dailyHadithKey);
 
-      return lastHadithDate == today && savedHadithJson != null;
+      final hasHadith = lastHadithDate == today && savedHadithJson != null;
+
+      return hasHadith;
     } catch (e) {
       print('Error checking today hadith: $e');
       return false;
@@ -304,16 +304,24 @@ class NotificationService {
 
   Future<String?> getLastHadithDate() async {
     try {
-      return await _secureStorage.read(key: _lastHadithDateKey);
+      final date = await _secureStorage.read(key: _lastHadithDateKey);
+
+      return date;
     } catch (e) {
       print('Error getting last hadith date: $e');
       return null;
     }
   }
 
-  // Method to check if notifications are enabled
   Future<bool> areNotificationsEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('notifications_enabled') ?? false;
+    final enabled = prefs.getBool('notifications_enabled') ?? false;
+
+    return enabled;
   }
 }
+
+// Provider for NotificationService
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService(ref);
+});

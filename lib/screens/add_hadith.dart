@@ -8,7 +8,10 @@ import '../../../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'package:logger/logger.dart';
 import '../providers/data_manager_provider/data_manager/data_loader.dart';
-import '../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
+import '../core/utils.dart';
+
+// Provider للتحكم في حالة الزر (معطل أو لا)
+final addButtonEnabledProvider = StateProvider<bool>((ref) => true);
 
 // Providers for text controllers
 final babControllerProvider = Provider<TextEditingController>((ref) {
@@ -60,6 +63,9 @@ class AddHadithScreen extends ConsumerWidget {
 
     // Get DataManager from provider
     final dataManager = ref.read(DataProvider.notifier);
+
+    // حالة الزر (معطل/شغال)
+    final isButtonEnabled = ref.watch(addButtonEnabledProvider);
 
     // Show message function using showSingleSnackBar
     void showMessage(BuildContext context, String message, {bool isSuccess = false}) {
@@ -148,7 +154,6 @@ class AddHadithScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Show chapter info if it exists
                   if (!isChapterMissing && existingChapterTitle != null)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,8 +185,6 @@ class AddHadithScreen extends ConsumerWidget {
                         SizedBox(height: 16),
                       ],
                     ),
-
-                  // Chapter title input (only if missing)
                   if (isChapterMissing)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,8 +207,6 @@ class AddHadithScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-
-                  // Section title input (if missing)
                   if (isSectionMissing)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +249,6 @@ class AddHadithScreen extends ConsumerWidget {
                   final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : existingChapterTitle;
                   final sectionTitle = isSectionMissing ? sectionTitleController.text.trim() : null;
 
-                  // Validate required fields
                   if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
                       (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
                     showMessage(context, 'يرجى إدخال جميع البيانات المطلوبة');
@@ -273,8 +273,12 @@ class AddHadithScreen extends ConsumerWidget {
 
     // Add hadith function
     Future<void> addHadith() async {
-      // Hide keyboard first
       _hideKeyboard();
+
+      if (!isButtonEnabled) return; // لا تعمل إذا كان الزر معطلاً
+
+      // تعطيل الزر أثناء العملية
+      ref.read(addButtonEnabledProvider.notifier).state = false;
 
       final bab = int.tryParse(babController.text.trim()) ?? -1;
       final fasl = int.tryParse(faslController.text.trim()) ?? -1;
@@ -284,25 +288,25 @@ class AddHadithScreen extends ConsumerWidget {
       final reference = referenceController.text.trim();
       final analysis = analysisController.text.trim();
 
-      // Basic validation
       if (bab <= 0 || fasl <= 0 || number <= 0) {
         showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
+        ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
         return;
       }
       if (text.isEmpty) {
         showMessage(context, 'نص الحديث مطلوب');
+        ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
         return;
       }
 
-      // Check internet connection
       final connectivityResult = await (Connectivity().checkConnectivity());
       if (connectivityResult == ConnectivityResult.none) {
         showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
+        ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
         return;
       }
 
       try {
-        // Check if chapter or section are missing
         final existenceCheck = await _checkChapterAndSectionExistence(bab, fasl);
         final isChapterMissing = existenceCheck['isChapterMissing'] as bool;
         final isSectionMissing = existenceCheck['isSectionMissing'] as bool;
@@ -311,7 +315,6 @@ class AddHadithScreen extends ConsumerWidget {
         String? chapterTitle = existingChapterTitle;
         String? sectionTitle;
 
-        // Show dialog if titles are missing
         if (isChapterMissing || isSectionMissing) {
           final result = await _showTitleInputDialog(
             context,
@@ -322,23 +325,21 @@ class AddHadithScreen extends ConsumerWidget {
 
           if (result == null) {
             showMessage(context, 'لا يمكن إضافة الحديث بدون إدخال البيانات المطلوبة');
+            ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
             return;
           }
 
-          if (isChapterMissing) {
-            chapterTitle = result['chapterTitle'];
-          }
+          if (isChapterMissing) chapterTitle = result['chapterTitle'];
           sectionTitle = result['sectionTitle'];
 
-          // Validate required titles
           if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
               (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
             showMessage(context, 'يرجى إدخال جميع العناوين المطلوبة');
+            ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
             return;
           }
         }
 
-        // Create new Hadith object
         final newHadith = Hadith(
           id: 0,
           deleted: false,
@@ -354,9 +355,8 @@ class AddHadithScreen extends ConsumerWidget {
         );
 
         await dataManager.addHadith(newHadith, 4, context);
-        showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
+        //showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
 
-        // Reset fields after successful addition
         babController.clear();
         faslController.clear();
         numberController.clear();
@@ -364,6 +364,9 @@ class AddHadithScreen extends ConsumerWidget {
         summaryController.clear();
         referenceController.clear();
         analysisController.clear();
+
+        // إعادة تفعيل الزر بعد النجاح
+        ref.read(addButtonEnabledProvider.notifier).state = true;
       } catch (e) {
         String errorMessage;
         if (e.toString().contains('network') || e.toString().contains('timeout')) {
@@ -376,6 +379,9 @@ class AddHadithScreen extends ConsumerWidget {
           errorMessage = 'حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا';
         }
         showMessage(context, errorMessage);
+
+        // إعادة تفعيل الزر بعد الخطأ
+        ref.read(addButtonEnabledProvider.notifier).state = true;
       }
     }
 
@@ -384,7 +390,7 @@ class AddHadithScreen extends ConsumerWidget {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         body: GestureDetector(
-          onTap: _hideKeyboard, // Hide keyboard when tapping outside
+          onTap: _hideKeyboard,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -395,7 +401,7 @@ class AddHadithScreen extends ConsumerWidget {
               ),
               Container(
                 width: double.infinity,
-                height: double.infinity, 
+                height: double.infinity,
               ),
               SingleChildScrollView(
                 padding: EdgeInsets.only(
@@ -540,7 +546,7 @@ class AddHadithScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                               ),
-                              onPressed: () => addHadith(),
+                              onPressed: isButtonEnabled ? () => addHadith() : null,
                               child: Text(
                                 "إضافة حديث",
                                 style: GoogleFonts.amiri(
@@ -647,7 +653,7 @@ class AddHadithScreen extends ConsumerWidget {
     double? heightFactor,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    final baseHeight = heightFactor != null ? screenHeight * heightFactor : screenHeight * 0.06;
+    final baseHeight = heightFactor != null ? screenHeight * heightFactor +10: screenHeight * 0.06;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -7,6 +7,7 @@ import '../data_sync_service/version_uploader.dart';
 import '../local_storage_service/local_json_handler.dart';
 import '../local_storage_service/local_version_handler.dart';
 import 'data_grouper.dart';
+import '../../../core/utils.dart';
 
 class DataDeleter {
   final AuthChecker _authChecker;
@@ -17,12 +18,12 @@ class DataDeleter {
   final HadithGrouper _grouper;
 
   DataDeleter()
-      : _authChecker = AuthChecker(),
-        _dataUploader = DataUploader(),
-        _versionUploader = VersionUploader(),
-        _jsonHandler = LocalJsonHandler(),
-        _versionHandler = LocalVersionHandler(),
-        _grouper = HadithGrouper();
+    : _authChecker = AuthChecker(),
+      _dataUploader = DataUploader(),
+      _versionUploader = VersionUploader(),
+      _jsonHandler = LocalJsonHandler(),
+      _versionHandler = LocalVersionHandler(),
+      _grouper = HadithGrouper();
 
   Future<void> deleteHadith(
     int bab,
@@ -33,34 +34,74 @@ class DataDeleter {
     AsyncValue<List<Hadith>> Function(List<Hadith>) updateState,
   ) async {
     if (bab <= 0 || fasl <= 0 || number <= 0) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('بيانات الحديث غير صالحة')));
+      if (context.mounted) {
+        showSingleSnackBar(
+          context,
+          message: 'بيانات الحديث غير صالحة',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
+      }
       return;
     }
 
-    final exists = current.any((h) => h.bab == bab && h.fasl == fasl && h.number == number);
+    final exists = current.any(
+      (h) => h.bab == bab && h.fasl == fasl && h.number == number,
+    );
     if (!exists) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الحديث غير موجود')));
+      if (context.mounted) {
+        showSingleSnackBar(
+          context,
+          message: 'الحديث غير موجود',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
+      }
       return;
     }
 
     if (!_authChecker.isUserAuthenticated()) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ لم يتم تسجيل الدخول، يرجى تسجيل الدخول أولاً')));
+      if (context.mounted) {
+        showSingleSnackBar(
+          context,
+          message: '⚠️ لم يتم تسجيل الدخول، يرجى تسجيل الدخول أولاً',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
+      }
+
       return;
     }
 
     try {
-      final stagedHadiths = current.where((h) => !(h.bab == bab && h.fasl == fasl && h.number == number)).toList();
+      final stagedHadiths =
+          current
+              .where(
+                (h) => !(h.bab == bab && h.fasl == fasl && h.number == number),
+              )
+              .toList();
       final version = DateTime.now().millisecondsSinceEpoch;
       final grouped = _grouper.groupHadithsByStructure(stagedHadiths);
       final jsonMap = {'version': version, 'chapters': grouped};
 
       await _dataUploader.uploadData(jsonMap, context);
-      await _versionUploader.uploadVersion(version, context, '🗑️ تم الحذف بنجاح');
+      await _versionUploader.uploadVersion(
+        version,
+        context,
+        '🗑️ تم الحذف بنجاح',
+      );
       updateState(stagedHadiths);
       await _jsonHandler.saveHadithJson(jsonMap);
       await _versionHandler.setLocalVersion(version);
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('حدث خطأ أثناء الحذف: ${e.toString()}')));
+      if (context.mounted) {
+        showSingleSnackBar(
+          context,
+          message: 'حدث خطأ أثناء الحذف: ${e.toString()}',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
+      }
     }
   }
 }

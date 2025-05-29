@@ -136,7 +136,6 @@ class NotificationService {
 
       return await _generateNewDailyHadith();
     } catch (e) {
-      print('Error reading from secure storage: $e');
       return await _generateNewDailyHadith();
     }
   }
@@ -320,8 +319,3 @@ class NotificationService {
     return enabled;
   }
 }
-
-// Provider for NotificationService
-final notificationServiceProvider = Provider<NotificationService>((ref) {
-  return NotificationService(ref);
-});

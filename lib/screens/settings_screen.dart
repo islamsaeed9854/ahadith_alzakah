@@ -12,8 +12,9 @@ import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../core/utils.dart';
 import '../providers/notification_service_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Provider for Supabase auth state
+import '../widgets/setting_card.dart';
+import '../widgets/clickable_setting_card.dart';
+import '../core/theme.dart';
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -21,21 +22,10 @@ final authStateProvider = StreamProvider<bool>((ref) {
   });
 });
 
-// Provider for notifications enabled state
 final notificationsEnabledProvider = StateProvider<bool>((ref) {
-  return false; // Default to false until loaded from SharedPreferences
+  return false;
 });
 
-// Provider for font size
-final fontSizeProvider = StateProvider<int>((ref) {
-  return 20; // Default font size
-});
-
-// Provider for last tap time and tap count (for secret login trigger)
-final lastTapTimeProvider = StateProvider<DateTime?>((ref) => null);
-final tapCountProvider = StateProvider<int>((ref) => 0);
-
-// Initialize all settings from SharedPreferences
 final settingsInitializerProvider = FutureProvider<void>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   final notificationService = ref.read(notificationServiceProvider);
@@ -77,7 +67,8 @@ class SettingsScreen extends ConsumerWidget {
     final lastTapTime = ref.read(lastTapTimeProvider);
     final tapCount = ref.read(tapCountProvider.notifier);
 
-    if (lastTapTime == null || now.difference(lastTapTime) > const Duration(seconds: 2)) {
+    if (lastTapTime == null ||
+        now.difference(lastTapTime) > const Duration(seconds: 2)) {
       tapCount.state = 1;
     } else {
       tapCount.state++;
@@ -87,12 +78,17 @@ class SettingsScreen extends ConsumerWidget {
 
     if (tapCount.state >= 5) {
       tapCount.state = 0;
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
   // Show logout confirmation dialog
-  Future<void> _showLogoutConfirmationDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showLogoutConfirmationDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -162,20 +158,19 @@ class SettingsScreen extends ConsumerWidget {
         duration: const Duration(seconds: 2),
       );
       ref.read(navigationProvider.notifier).changeTab(0);
-   //   Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       showSingleSnackBar(
         context,
-        message: e.toString().contains('network')
-            ? 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة'
-            : 'حدث خطأ أثناء تسجيل الخروج: $e',
+        message:
+            e.toString().contains('network')
+                ? 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة'
+                : 'حدث خطأ أثناء تسجيل الخروج: $e',
         backgroundColor: Colors.redAccent,
         duration: const Duration(seconds: 3),
       );
     }
   }
 
-  // Update font size and persist in SharedPreferences
   Future<void> _updateFontSize(int newSize, WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
     ref.read(fontSizeProvider.notifier).state = newSize;
@@ -189,20 +184,27 @@ class SettingsScreen extends ConsumerWidget {
     await prefs.setBool('dark_mode', value);
   }
 
-  Future<void> _toggleNotifications(bool value, WidgetRef ref, BuildContext context) async {
+  Future<void> _toggleNotifications(
+    bool value,
+    WidgetRef ref,
+    BuildContext context,
+  ) async {
     final notificationService = ref.read(notificationServiceProvider);
     final prefs = await SharedPreferences.getInstance();
 
     if (value) {
-      bool hasPermission = await notificationService.hasNotificationPermission();
+      bool hasPermission =
+          await notificationService.hasNotificationPermission();
       if (!hasPermission) {
-        hasPermission = await notificationService.requestNotificationPermission();
+        hasPermission =
+            await notificationService.requestNotificationPermission();
         if (!hasPermission) {
           ref.read(notificationsEnabledProvider.notifier).state = false;
           await prefs.setBool('notifications_enabled', false);
           showSingleSnackBar(
             context,
-            message: 'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
+            message:
+                'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
             backgroundColor: Colors.redAccent,
             duration: const Duration(seconds: 3),
           );
@@ -237,7 +239,8 @@ class SettingsScreen extends ConsumerWidget {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     final fontSize = ref.watch(fontSizeProvider);
     final isDarkMode = ref.watch(isDarkModeProvider);
     final isNotificationsEnabled = ref.watch(notificationsEnabledProvider);
@@ -248,7 +251,8 @@ class SettingsScreen extends ConsumerWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final contentWidth = isLandscape ? screenWidth * 0.6 : screenWidth * 0.9;
+            final contentWidth =
+                isLandscape ? screenWidth * 0.6 : screenWidth * 0.9;
 
             return Center(
               child: SingleChildScrollView(
@@ -270,10 +274,10 @@ class SettingsScreen extends ConsumerWidget {
                                   child: Text(
                                     'الإعدادات',
                                     style: GoogleFonts.cairo(
-                                      color: const Color(0xfffcead0),
-                                      fontSize: screenWidth * 0.06,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    color: AppTheme.secodaryColor,
+                                    fontSize: screenWidth * 0.08,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                   ),
                                 ),
                               ),
@@ -282,17 +286,22 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: screenHeight * 0.03),
 
-                          _buildSettingCard(
+                          buildSettingCard(
                             context,
                             label: 'حجم الخط',
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.remove, color: Color(0xff977c55)),
-                                  onPressed: fontSize > 10
-                                      ? () => _updateFontSize(fontSize - 1, ref)
-                                      : null,
+                                  icon: const Icon(
+                                    Icons.remove,
+                                    color: Color(0xff977c55),
+                                  ),
+                                  onPressed:
+                                      fontSize > 10
+                                          ? () =>
+                                              _updateFontSize(fontSize - 1, ref)
+                                          : null,
                                 ),
                                 Text(
                                   fontSize.toStringAsFixed(0),
@@ -302,17 +311,22 @@ class SettingsScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.add, color: Color(0xff977c55)),
-                                  onPressed: fontSize < 30
-                                      ? () => _updateFontSize(fontSize + 1, ref)
-                                      : null,
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: Color(0xff977c55),
+                                  ),
+                                  onPressed:
+                                      fontSize < 30
+                                          ? () =>
+                                              _updateFontSize(fontSize + 1, ref)
+                                          : null,
                                 ),
                               ],
                             ),
                           ),
                           SizedBox(height: screenHeight * 0.02),
 
-                          _buildSettingCard(
+                          buildSettingCard(
                             context,
                             label: 'القراءة الليلية',
                             child: Switch.adaptive(
@@ -324,12 +338,14 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: screenHeight * 0.02),
 
-                          _buildSettingCard(
+                          buildSettingCard(
                             context,
                             label: 'الإشعارات اليومية',
                             child: Switch.adaptive(
                               value: isNotificationsEnabled,
-                              onChanged: (value) => _toggleNotifications(value, ref, context),
+                              onChanged:
+                                  (value) =>
+                                      _toggleNotifications(value, ref, context),
                               activeColor: const Color(0xff977c55),
                               inactiveTrackColor: Colors.grey[300],
                             ),
@@ -341,75 +357,126 @@ class SettingsScreen extends ConsumerWidget {
                                 return Column(
                                   children: [
                                     SizedBox(height: screenHeight * 0.02),
-                                    _buildClickableSettingCard(
+                                    buildClickableSettingCard(
                                       context,
                                       label: 'إضافة حديث',
-                                      icon: const Icon(Icons.add, color: Color(0xff977c55), size: 20),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => const AddHadithScreen()),
+                                      icon: const Icon(
+                                        Icons.add,
+                                        color: Color(0xff977c55),
+                                        size: 20,
                                       ),
+                                      onTap:
+                                          () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) =>
+                                                      const AddHadithScreen(),
+                                            ),
+                                          ),
                                     ),
                                     SizedBox(height: screenHeight * 0.02),
-                                    _buildClickableSettingCard(
+                                    buildClickableSettingCard(
                                       context,
                                       label: 'حذف حديث',
-                                      icon: const Icon(Icons.delete, color: Color(0xff977c55), size: 20),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => const RemoveHadithScreen()),
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Color(0xff977c55),
+                                        size: 20,
                                       ),
+                                      onTap:
+                                          () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) =>
+                                                      const RemoveHadithScreen(),
+                                            ),
+                                          ),
                                     ),
                                     SizedBox(height: screenHeight * 0.02),
-                                    _buildClickableSettingCard(
+                                    buildClickableSettingCard(
                                       context,
                                       label: 'تعديل حديث',
-                                      icon: const Icon(Icons.edit, color: Color(0xff977c55), size: 20),
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        color: Color(0xff977c55),
+                                        size: 20,
+                                      ),
                                       onTap: () {
-                                        ref.watch(DataProvider).when(
+                                        ref
+                                            .watch(DataProvider)
+                                            .when(
                                               data: (hadiths) {
                                                 if (hadiths.isNotEmpty) {
-                                                  ref.read(selectedEditFieldProvider.notifier).state = '';
+                                                  ref
+                                                      .read(
+                                                        selectedEditFieldProvider
+                                                            .notifier,
+                                                      )
+                                                      .state = '';
                                                   Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
-                                                      builder: (_) => const EditOptionsScreen(),
+                                                      builder:
+                                                          (_) =>
+                                                              const EditOptionsScreen(),
                                                     ),
                                                   );
                                                 } else {
                                                   showSingleSnackBar(
                                                     context,
-                                                    message: 'لا يوجد أحاديث للتعديل',
-                                                    backgroundColor: Colors.redAccent,
-                                                    duration: const Duration(seconds: 2),
+                                                    message:
+                                                        'لا يوجد أحاديث للتعديل',
+                                                    backgroundColor:
+                                                        Colors.redAccent,
+                                                    duration: const Duration(
+                                                      seconds: 2,
+                                                    ),
                                                   );
                                                 }
                                               },
                                               loading: () {
                                                 showSingleSnackBar(
                                                   context,
-                                                  message: 'لا يوجد أحاديث للتعديل',
-                                                  backgroundColor: Colors.redAccent,
-                                                  duration: const Duration(seconds: 2),
+                                                  message:
+                                                      'لا يوجد أحاديث للتعديل',
+                                                  backgroundColor:
+                                                      Colors.redAccent,
+                                                  duration: const Duration(
+                                                    seconds: 2,
+                                                  ),
                                                 );
                                               },
                                               error: (error, stackTrace) {
                                                 showSingleSnackBar(
                                                   context,
-                                                  message: 'لا يوجد أحاديث للتعديل',
-                                                  backgroundColor: Colors.redAccent,
-                                                  duration: const Duration(seconds: 2),
+                                                  message:
+                                                      'لا يوجد أحاديث للتعديل',
+                                                  backgroundColor:
+                                                      Colors.redAccent,
+                                                  duration: const Duration(
+                                                    seconds: 2,
+                                                  ),
                                                 );
                                               },
                                             );
                                       },
                                     ),
                                     SizedBox(height: screenHeight * 0.02),
-                                    _buildClickableSettingCard(
+                                    buildClickableSettingCard(
                                       context,
                                       label: 'تسجيل الخروج',
-                                      icon: const Icon(Icons.logout, color: Color(0xff977c55), size: 20),
-                                      onTap: () => _showLogoutConfirmationDialog(context, ref),
+                                      icon: const Icon(
+                                        Icons.logout,
+                                        color: Color(0xff977c55),
+                                        size: 20,
+                                      ),
+                                      onTap:
+                                          () => _showLogoutConfirmationDialog(
+                                            context,
+                                            ref,
+                                          ),
                                     ),
                                   ],
                                 );
@@ -417,8 +484,13 @@ class SettingsScreen extends ConsumerWidget {
                                 return const SizedBox.shrink();
                               }
                             },
-                            loading: () => const Center(child: CircularProgressIndicator()),
-                            error: (error, stackTrace) => Center(child: Text('خطأ: $error')),
+                            loading:
+                                () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                            error:
+                                (error, stackTrace) =>
+                                    Center(child: Text('خطأ: $error')),
                           ),
                         ],
                       ),
@@ -430,63 +502,6 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
       ),
-    );
-  }
-
-  Widget _buildSettingCard(
-    BuildContext context, {
-    required String label,
-    required Widget child,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: screenHeight * 0.005),
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: screenHeight * 0.015,
-      ),
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(255, 255, 255, 0.8),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(158, 158, 158, 0.2),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.reemKufi(
-                color: Colors.brown.shade800,
-                fontSize: screenWidth * 0.045,
-              ),
-            ),
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClickableSettingCard(
-    BuildContext context, {
-    required String label,
-    required Widget icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: _buildSettingCard(context, label: label, child: icon),
     );
   }
 }

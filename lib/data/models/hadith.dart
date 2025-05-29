@@ -11,6 +11,7 @@ class Hadith {
   final String chapter_title;
   final String section_title;
 
+
   Hadith({
     required this.id,
     required this.number,

@@ -10,7 +10,7 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.of(
-       context
+        context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     });
 
@@ -25,14 +25,20 @@ class SplashScreen extends StatelessWidget {
               builder: (context, constraints) {
                 final isLandscape =
                     constraints.maxWidth > constraints.maxHeight;
+
                 final baseFontSize =
                     isLandscape
-                        ? constraints.maxHeight * 0.12
+                        ? constraints.maxHeight * 0.10
                         : constraints.maxWidth * 0.11;
                 final subFontSize =
                     isLandscape
-                        ? constraints.maxHeight * 0.10
+                        ? constraints.maxHeight * 0.08
                         : constraints.maxWidth * 0.095;
+
+                final topSpacing =
+                    isLandscape ? constraints.maxHeight * 0.05 : 70.0;
+                final bottomSpacing =
+                    isLandscape ? constraints.maxHeight * 0.1 : 200.0;
 
                 return SingleChildScrollView(
                   child: SizedBox(
@@ -40,11 +46,10 @@ class SplashScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const SizedBox(height: 1),
+                        SizedBox(height: topSpacing),
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const SizedBox(height: 70),
                             Text(
                               "موسوعة",
                               style: GoogleFonts.cairo(
@@ -53,7 +58,7 @@ class SplashScreen extends StatelessWidget {
                                 color: const Color(0xffecbd79),
                                 shadows: [
                                   Shadow(
-                                    blurRadius: 10,
+                                    blurRadius: isLandscape ? 8 : 10,
                                     color: const Color.fromRGBO(0, 0, 0, 0.3),
                                     offset: const Offset(2, 2),
                                   ),
@@ -68,7 +73,7 @@ class SplashScreen extends StatelessWidget {
                                 color: const Color(0xffecbd79),
                                 shadows: [
                                   Shadow(
-                                    blurRadius: 10,
+                                    blurRadius: isLandscape ? 8 : 10,
                                     color: const Color.fromRGBO(0, 0, 0, 0.3),
                                     offset: const Offset(2, 2),
                                   ),
@@ -83,7 +88,7 @@ class SplashScreen extends StatelessWidget {
                                 color: const Color(0xffecbd79),
                                 shadows: [
                                   Shadow(
-                                    blurRadius: 10,
+                                    blurRadius: isLandscape ? 8 : 10,
                                     color: const Color.fromRGBO(0, 0, 0, 0.3),
                                     offset: const Offset(2, 2),
                                   ),
@@ -94,7 +99,7 @@ class SplashScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         TextApp.drSamyKhalilName,
-                        const SizedBox(height: 200),
+                        SizedBox(height: bottomSpacing),
                       ],
                     ),
                   ),

@@ -8,68 +8,17 @@ import '../providers/navigation_provider.dart';
 import '../core/theme.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../widgets/chpter_card.dart';
-import '../screens/hadith_details.dart'; // استيراد HadithDetails
+import '../core/methods.dart';
 
-// Provider to track expanded sections
+
 final expandedSectionProvider = StateProvider<int?>((ref) => null);
 
-// مزود لتخزين الحديث المختار
 final selectedHadithProvider = StateProvider<Hadith?>((ref) => null);
 
 class ChaptersScreen extends ConsumerWidget {
   final int? chapterNumber;
 
   ChaptersScreen({super.key, this.chapterNumber});
-
-  String numberToArabicText(int number) {
-    const List<String> ones = [
-      '',
-      'الأول',
-      'الثاني',
-      'الثالث',
-      'الرابع',
-      'الخامس',
-      'السادس',
-      'السابع',
-      'الثامن',
-      'التاسع',
-    ];
-    const List<String> tens = [
-      '',
-      '',
-      'العشرون',
-      'الثلاثون',
-      'الأربعون',
-      'الخمسون',
-      'الستون',
-      'السبعون',
-      'الثمانون',
-      'التسعون',
-    ];
-    const List<String> teens = [
-      'العاشر',
-      'الحادي عشر',
-      'الثاني عشر',
-      'الثالث عشر',
-      'الرابع عشر',
-      'الخامس عشر',
-      'السادس عشر',
-      'السابع عشر',
-      'الثامن عشر',
-      'التاسع عشر',
-    ];
-
-    if (number == 0) return 'الصفر';
-    if (number >= 1 && number <= 9) return ones[number];
-    if (number >= 10 && number <= 19) return teens[number - 10];
-    if (number >= 20 && number <= 99) {
-      int ten = (number ~/ 10) * 10;
-      int one = number % 10;
-      if (one == 0) return tens[number ~/ 10];
-      return '${ones[one]} و${tens[number ~/ 10]}';
-    }
-    return number.toString();
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -168,7 +117,7 @@ class ChaptersScreen extends ConsumerWidget {
                                 Expanded(
                                   child: Text(
                                     dynamicChapters.isNotEmpty
-                                        ? 'الباب ${numberToArabicText(dynamicChapters[0]['chapter_number'] as int)}'
+                                        ? 'الباب ${Methods.numberToArabicText(dynamicChapters[0]['chapter_number'] as int)}'
                                         : 'الباب الأول',
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.cairo(
@@ -241,7 +190,7 @@ class ChaptersScreen extends ConsumerWidget {
                                       ),
                                       child: ChapterCard(
                                         title:
-                                            'الفصل ${numberToArabicText(section['section_number'] as int)}',
+                                            'الفصل ${Methods.numberToArabicText(section['section_number'] as int)}',
                                         text:
                                             section['section_title'] as String,
                                         isLandscape: isLandscape,

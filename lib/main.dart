@@ -22,8 +22,10 @@ class NotificationController {
     if (navigatorKey.currentState != null &&
         navigatorKey.currentContext != null) {
       final container = ProviderScope.containerOf(navigatorKey.currentContext!);
-      // Reset innerBooksScreenProvider to prevent BooksScreen
+      
+      // Reset innerBooksScreenProvider to ensure BooksScreen is not active
       container.read(innerBooksScreenProvider.notifier).state = null;
+      
       // Set navigation to HadithDetails tab (index 1)
       container.read(navigationProvider.notifier).changeTab(1);
 
@@ -32,30 +34,16 @@ class NotificationController {
         'innerBooksScreenProvider reset to: ${container.read(innerBooksScreenProvider)}',
       );
 
-      // Wait for state to propagate
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Navigate to HomeScreen with HadithDetails tab
+      // Clear all previous routes and navigate to HomeScreen
       navigatorKey.currentState!.pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => const HomeScreen(showHadithDetails: true),
         ),
-        (route) => false,
+        (Route<dynamic> route) => false, // Remove all previous routes
       );
       debugPrint('Navigated to HomeScreen with showHadithDetails: true');
     } else {
       debugPrint('Navigator state or context is null');
-      // Fallback: Directly push HadithDetails
-      if (navigatorKey.currentState != null) {
-        await Future.delayed(const Duration(milliseconds: 300));
-        navigatorKey.currentState!.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HadithDetails()),
-          (route) => false,
-        );
-        debugPrint('Fallback: Navigated directly to HadithDetails');
-      } else {
-        debugPrint('Cannot navigate: Navigator state is null');
-      }
     }
   }
 }
@@ -72,8 +60,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await _initializeApp();
-
-  // Check for initial notification (e.g., app opened from notification)
   final initialNotification =
       await AwesomeNotifications().getInitialNotificationAction();
   if (initialNotification != null) {
@@ -83,7 +69,7 @@ void main() async {
     await NotificationController.onActionReceivedMethod(initialNotification);
   }
 
-  runApp(ProviderScope(child: const MyApp()));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {

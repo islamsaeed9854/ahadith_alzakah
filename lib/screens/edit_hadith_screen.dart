@@ -7,7 +7,10 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'add_hadith.dart';
-import '../core/utils.dart'; // استيراد ملف utils.dart لاستخدام showSingleSnackBar
+import '../core/utils.dart';
+
+// Provider للتحكم في حالة زر التعديل (معطل أو لا)
+final editButtonEnabledProvider = StateProvider<bool>((ref) => true);
 
 class EditHadithScreen extends ConsumerWidget {
   final String selectedOption;
@@ -69,20 +72,12 @@ class EditHadithScreen extends ConsumerWidget {
                     section_title: '',
                   ));
 
-        // Clear fields on build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          babController.clear();
-          faslController.clear();
-          numberController.clear();
-          textController.clear();
-          summaryController.clear();
-          referenceController.clear();
-          analysisController.clear();
-        });
+        // حالة الزر (معطل/شغال)
+        final isButtonEnabled = ref.watch(editButtonEnabledProvider);
 
         // Show message function using showSingleSnackBar
         void showMessage(BuildContext context, String message, {bool isSuccess = false}) {
-          if (context.mounted) {
+          if (context.mounted && message.isNotEmpty) {
             showSingleSnackBar(
               context,
               message: message,
@@ -94,6 +89,14 @@ class EditHadithScreen extends ConsumerWidget {
 
         // Update hadith function
         Future<void> updateHadith() async {
+          if (!isButtonEnabled) return; // لا تعمل إذا كان الزر معطلاً
+
+          // إزالة التركيز عن الحقول لإخفاء اللوحة
+          FocusScope.of(context).unfocus();
+
+          // تعطيل الزر أثناء العملية
+          ref.read(editButtonEnabledProvider.notifier).state = false;
+
           final bab = int.tryParse(babController.text.trim()) ?? -1;
           final fasl = int.tryParse(faslController.text.trim()) ?? -1;
           final number = int.tryParse(numberController.text.trim()) ?? -1;
@@ -105,11 +108,13 @@ class EditHadithScreen extends ConsumerWidget {
           // Validation
           if (bab <= 0 || fasl <= 0 || number <= 0) {
             showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
+            ref.read(editButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
             return;
           }
 
           if (text.isEmpty && (selectedOption == 'نص الحديث' || selectedOption == 'الكل')) {
             showMessage(context, 'نص الحديث مطلوب');
+            ref.read(editButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
             return;
           }
 
@@ -117,6 +122,7 @@ class EditHadithScreen extends ConsumerWidget {
           final connectivityResult = await Connectivity().checkConnectivity();
           if (connectivityResult == ConnectivityResult.none) {
             showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
+            ref.read(editButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
             return;
           }
 
@@ -159,9 +165,9 @@ class EditHadithScreen extends ConsumerWidget {
             );
 
             await dataManager.addHadith(updatedHadith, flag, context);
-            showMessage(context, 'تم تعديل الحديث بنجاح', isSuccess: true);
+            // showMessage(context, 'تم تعديل الحديث بنجاح', isSuccess: true);
 
-            // Clear controllers
+            // Clear controllers after success
             babController.clear();
             faslController.clear();
             numberController.clear();
@@ -171,7 +177,7 @@ class EditHadithScreen extends ConsumerWidget {
             analysisController.clear();
 
             if (context.mounted) {
-              Navigator.pop(context);
+              // Navigator.pop(context);
             }
           } catch (e) {
             String errorMessage;
@@ -187,6 +193,9 @@ class EditHadithScreen extends ConsumerWidget {
               errorMessage = 'حدث خطأ أثناء التعديل، يرجى المحاولة لاحقًا';
             }
             showMessage(context, errorMessage);
+          } finally {
+            // إعادة تعيين حالة الزر
+            ref.read(editButtonEnabledProvider.notifier).state = true;
           }
         }
 
@@ -199,18 +208,7 @@ class EditHadithScreen extends ConsumerWidget {
               children: [
                 // Background
                 SizedBox.expand(child: TextApp.appBackgroundWidget),
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color.fromARGB(100, 0, 0, 0),
-                        Color.fromARGB(150, 0, 0, 0),
-                      ],
-                    ),
-                  ),
-                ),
+                Container(),
                 // Content
                 SingleChildScrollView(
                   padding: EdgeInsets.only(
@@ -370,27 +368,36 @@ class EditHadithScreen extends ConsumerWidget {
                             // Save Button
                             Align(
                               alignment: Alignment.center,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xff977c55),
-                                  foregroundColor: Color(0xff977c55),
-                                  overlayColor: Colors.transparent,
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isLandscape ? 30 : 24,
-                                    vertical: isSmallScreen ? 12 : isLandscape ? 10 : 14,
-                                  ),
-                                  minimumSize: Size(0, 0),
-                                  shape: RoundedRectangleBorder(
+                              child: SizedBox(
+                                width: isLandscape ? screenWidth * 0.3 : screenWidth * 0.4,
+                                height: isLandscape ? screenHeight * 0.1 : screenHeight * 0.06,
+                                child: Material(
+                                  color: isButtonEnabled ? const Color(0xff977c55) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(30),
+                                  child: InkWell(
                                     borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                onPressed: updateHadith,
-                                child: Text(
-                                  "حفظ التعديلات",
-                                  style: GoogleFonts.amiri(
-                                    color: Colors.white,
-                                    fontSize: buttonFontSize,
-                                    fontWeight: FontWeight.bold,
+                                    onTap: isButtonEnabled ? updateHadith : null,
+                                    splashColor: Colors.white.withOpacity(0.3),
+                                    highlightColor: Colors.white.withOpacity(0.1),
+                                    child: Center(
+                                      child: isButtonEnabled
+                                          ? Text(
+                                              "حفظ التعديلات",
+                                              style: GoogleFonts.amiri(
+                                                color: Colors.white,
+                                                fontSize: buttonFontSize,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            )
+                                          : const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:retry/retry.dart';
-
+import '../../../core/utils.dart';
 class DataUploader {
   final SupabaseClient _supabase = Supabase.instance.client;
   final Logger _logger = Logger();
@@ -57,23 +57,18 @@ class DataUploader {
         },
         onRetry: (e) => _logger.w('Retrying upload: $e'),
       );
-
-      // إغلاق مؤشر التحميل وعرض رسالة النجاح
       scaffoldMessenger.hideCurrentSnackBar();
-      // if (context.mounted) {
-      //   scaffoldMessenger.showSnackBar(
-      //     const SnackBar(
-      //       content: Text('تم الرفع بنجاح'),
-      //       backgroundColor: Colors.green,
-      //       duration: Duration(seconds: 3),
-      //     ),
-      //   );
-      // }
+      if (context.mounted) {
+        showSingleSnackBar(
+              context,
+              message: 'تم رفع البيانات بنجاح',
+              backgroundColor:   Colors.green  ,
+              duration: const Duration(seconds: 3),
+            );
+      }
     } catch (e) {
-      _logger.e('Data upload error: $e');
-      // إغلاق مؤشر التحميل في حالة حدوث خطأ
+      _logger.e('Data upload error: $e');  
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      // رمي الاستثناء ليتم التعامل معه في الطبقة الأعلى (مثل DataAdder)
       rethrow;
     }
   }

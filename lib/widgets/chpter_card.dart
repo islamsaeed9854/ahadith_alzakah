@@ -56,7 +56,7 @@ class ChapterCard extends StatelessWidget {
                         child: Text(
                           title,
                           style: ArabicTextStyle(
-                            arabicFont: ArabicFont.reemKufi,
+                            arabicFont: ArabicFont.cairo,
                             fontSize: isLandscape ? 20 : 18,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xffe6a345),

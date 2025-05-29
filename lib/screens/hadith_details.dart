@@ -7,8 +7,8 @@ import '../providers/navigation_provider.dart';
 import '../screens/chapters_screen.dart';
 import 'search_screen.dart';
 import '../notification_service.dart';
-import '../data/models/hadith.dart';
-
+import '../core/methods.dart';
+import '../providers/search_providers.dart';
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
@@ -170,64 +170,11 @@ class HadithDetails extends ConsumerWidget {
     String normalized =
         text
             .replaceAll(diacritics, '')
-            .replaceAll(
-              RegExp(r'[\u0622\u0623\u0625]'),
-              '\u0627',
-            ) 
-            .replaceAll('\u064A', '\u0649') 
+            .replaceAll(RegExp(r'[\u0622\u0623\u0625]'), '\u0627')
+            .replaceAll('\u064A', '\u0649')
             .replaceAll('\u0629', '\u0647')
             .toLowerCase();
     return normalized;
-  }
-
-  String numberToArabicText(int number) {
-    const List<String> ones = [
-      '',
-      'الأول',
-      'الثاني',
-      'الثالث',
-      'الرابع',
-      'الخامس',
-      'السادس',
-      'السابع',
-      'الثامن',
-      'التاسع',
-    ];
-    const List<String> tens = [
-      '',
-      '',
-      'العشرون',
-      'الثلاثون',
-      'الأربعون',
-      'الخمسون',
-      'الستون',
-      'السبعون',
-      'الثمانون',
-      'التسعون',
-    ];
-    const List<String> teens = [
-      'العاشر',
-      'الحادي عشر',
-      'الثاني عشر',
-      'الثالث عشر',
-      'الرابع عشر',
-      'الخامس عشر',
-      'السادس عشر',
-      'السابع عشر',
-      'الثامن عشر',
-      'التاسع عشر',
-    ];
-
-    if (number == 0) return 'الصفر';
-    if (number >= 1 && number <= 9) return ones[number];
-    if (number >= 10 && number <= 19) return teens[number - 10];
-    if (number >= 20 && number <= 99) {
-      int ten = (number ~/ 10) * 10;
-      int one = number % 10;
-      if (one == 0) return tens[number ~/ 10];
-      return '${ones[one]} و${tens[number ~/ 10]}';
-    }
-    return number.toString();
   }
 
   @override
@@ -298,20 +245,25 @@ class HadithDetails extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                               
                                 Text(
-                                  'الباب ${numberToArabicText(hadithToDisplay.bab)}:${hadithToDisplay.chapter_title}',
+                                  'الباب ${Methods.numberToArabicText(hadithToDisplay.bab)}:${hadithToDisplay.chapter_title}',
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
-                                    color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                    color:
+                                        isDark
+                                            ? AppTheme.primaryColor
+                                            : AppTheme.redBlackColer,
                                     fontSize: 15,
                                   ),
                                 ),
                                 Text(
-                                  'الفصل ${numberToArabicText(hadithToDisplay.fasl)}:${hadithToDisplay.section_title} | حديث رقم: ${hadithToDisplay.number}',
+                                  'الفصل ${Methods.numberToArabicText(hadithToDisplay.fasl)}:${hadithToDisplay.section_title} | حديث رقم: ${hadithToDisplay.number}',
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
-                                    color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                    color:
+                                        isDark
+                                            ? AppTheme.primaryColor
+                                            : AppTheme.redBlackColer,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -321,7 +273,10 @@ class HadithDetails extends ConsumerWidget {
                           IconButton(
                             icon: Icon(
                               Icons.arrow_forward,
-                              color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
+                              color:
+                                  isDark
+                                      ? AppTheme.arrowBackdark
+                                      : AppTheme.arrowBackLight,
                             ),
                             onPressed: () {
                               controller.state = '';
@@ -363,7 +318,10 @@ class HadithDetails extends ConsumerWidget {
                       ),
                       child: TabBar(
                         indicatorColor: AppTheme.redBlackColer,
-                        labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                        labelColor:
+                            isDark
+                                ? AppTheme.primaryColor
+                                : AppTheme.redBlackColer,
                         unselectedLabelColor: const Color(0xff977c55),
                         labelStyle: GoogleFonts.notoKufiArabic(
                           fontSize: fontSize.toDouble() * 0.8,
@@ -435,7 +393,9 @@ class TabContent extends ConsumerWidget {
     double fontSize,
   ) {
     List<TextSpan> spans = [];
-    String cleanSearchQuery = _removeDiacritics(searchQuery.toLowerCase().trim());
+    String cleanSearchQuery = _removeDiacritics(
+      searchQuery.toLowerCase().trim(),
+    );
     RegExp xPattern = RegExp(r'X([^X]+)X');
     int lastIndex = 0;
     Iterable<RegExpMatch> xMatches = xPattern.allMatches(text);
@@ -444,13 +404,25 @@ class TabContent extends ConsumerWidget {
       String beforeMatch = text.substring(lastIndex, match.start);
       if (beforeMatch.isNotEmpty) {
         spans.addAll(
-          _highlightSearchTerms(beforeMatch, cleanSearchQuery, isDark, fontSize, false),
+          _highlightSearchTerms(
+            beforeMatch,
+            cleanSearchQuery,
+            isDark,
+            fontSize,
+            false,
+          ),
         );
       }
 
       String boldText = match.group(1) ?? '';
       spans.addAll(
-        _highlightSearchTerms(boldText, cleanSearchQuery, isDark, fontSize, true),
+        _highlightSearchTerms(
+          boldText,
+          cleanSearchQuery,
+          isDark,
+          fontSize,
+          true,
+        ),
       );
 
       lastIndex = match.end;
@@ -459,7 +431,13 @@ class TabContent extends ConsumerWidget {
     if (lastIndex < text.length) {
       String remainingText = text.substring(lastIndex);
       spans.addAll(
-        _highlightSearchTerms(remainingText, cleanSearchQuery, isDark, fontSize, false),
+        _highlightSearchTerms(
+          remainingText,
+          cleanSearchQuery,
+          isDark,
+          fontSize,
+          false,
+        ),
       );
     }
 
@@ -499,7 +477,9 @@ class TabContent extends ConsumerWidget {
         j++
       ) {
         String potentialMatch = text.substring(i, j);
-        String cleanPotentialMatch = _removeDiacritics(potentialMatch.toLowerCase().trim());
+        String cleanPotentialMatch = _removeDiacritics(
+          potentialMatch.toLowerCase().trim(),
+        );
 
         if (cleanPotentialMatch == searchQuery) {
           if (i > lastIndex) {
@@ -557,12 +537,13 @@ class TabContent extends ConsumerWidget {
       r'[\u0617-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]',
       unicode: true,
     );
-    String normalized = text
-        .replaceAll(diacritics, '')
-        .replaceAll(RegExp(r'[\u0622\u0623\u0625]'), '\u0627')
-        .replaceAll('\u064A', '\u0649')
-        .replaceAll('\u0629', '\u0647')
-        .toLowerCase();
+    String normalized =
+        text
+            .replaceAll(diacritics, '')
+            .replaceAll(RegExp(r'[\u0622\u0623\u0625]'), '\u0627')
+            .replaceAll('\u064A', '\u0649')
+            .replaceAll('\u0629', '\u0647')
+            .toLowerCase();
     return normalized;
   }
 

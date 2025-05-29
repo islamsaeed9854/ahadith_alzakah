@@ -49,7 +49,7 @@ class EditOptionsScreen extends ConsumerWidget {
                           "تعديل حديث",
                           style: GoogleFonts.cairo(
                             color: AppTheme.secodaryColor,
-                            fontSize: screenWidth * 0.06,
+                            fontSize: screenWidth * 0.08,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

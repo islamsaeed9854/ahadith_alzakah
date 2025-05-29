@@ -8,6 +8,7 @@ import '../network_service/remote_json_fetcher.dart';
 import '../local_storage_service/local_version_handler.dart';
 import '../local_storage_service/local_json_handler.dart';
 import '../data_parser/data_list_parser.dart';
+import 'data_grouper.dart'; // Import HadithGrouper
 
 class DataLoader {
   final NetworkChecker _networkChecker;
@@ -16,7 +17,8 @@ class DataLoader {
   final LocalVersionHandler _versionHandler;
   final LocalJsonHandler _jsonHandler;
   final HadithListParser _parser;
-  dynamic _jsonData; // Store JSON data
+  dynamic _jsonData;
+  final Logger _logger;
 
   DataLoader()
       : _networkChecker = NetworkChecker(),
@@ -24,53 +26,84 @@ class DataLoader {
         _jsonFetcher = RemoteJsonFetcher(),
         _versionHandler = LocalVersionHandler(),
         _jsonHandler = LocalJsonHandler(),
-        _parser = HadithListParser();
+        _parser = HadithListParser(),
+        _logger = Logger(
+            printer: PrettyPrinter(
+              methodCount: 0,
+              errorMethodCount: 5,
+              lineLength: 50,
+              colors: true,
+              printEmojis: true,
+              printTime: true,
+            ));
 
-  Future<List<Hadith>> loadHadiths(AsyncValue<List<Hadith>> Function(List<Hadith>?) updateState) async {
+  Future<List<Hadith>> loadHadiths(
+      AsyncValue<List<Hadith>> Function(List<Hadith>?) updateState) async {
+    _logger.i('Starting to load hadiths...');
     try {
       final connected = await _networkChecker.isConnectedToInternet();
       List<Hadith> hadiths = [];
+
       if (connected) {
+        _logger.d('Internet connection available. Checking versions...');
         final remoteVersion = await _versionFetcher.fetchRemoteVersion();
         final localVersion = await _versionHandler.getLocalVersion();
-        final Logger _logger = Logger();
-        _logger.d('remoteVersion= $remoteVersion localVersion= $localVersion');
+        _logger.d('remoteVersion=$remoteVersion, localVersion=$localVersion');
+
         if (remoteVersion > localVersion) {
+          _logger.i('Remote version is newer. Fetching remote JSON...');
           final remoteJson = await _jsonFetcher.fetchRemoteJson();
           if (remoteJson != null) {
-            _jsonData = remoteJson; // Store the remote JSON data
+            _jsonData = remoteJson;
             hadiths = _parser.parseHadithList(remoteJson);
             if (hadiths.isNotEmpty) {
+              _logger.i('Successfully parsed ${hadiths.length} hadiths from remote JSON.');
               await _jsonHandler.saveHadithJson(remoteJson);
               await _versionHandler.setLocalVersion(remoteVersion);
-              updateState(hadiths); // Pass non-null list
+              updateState(hadiths);
               return hadiths;
             }
           }
         }
       }
+
       final localJson = await _jsonHandler.getLocalHadithJson();
       if (localJson != null) {
-        _jsonData = json.decode(localJson); // Store the local JSON data
+        _logger.i('Loading hadiths from local JSON.');
+        _jsonData = json.decode(localJson);
         hadiths = _parser.parseHadithList(_jsonData);
       }
-      updateState(hadiths.isEmpty ? null : hadiths); // Pass null or non-null list
+
+      updateState(hadiths.isEmpty ? null : hadiths);
       return hadiths;
     } catch (e, st) {
-      final Logger _logger = Logger();
-      _logger.d('i am here');
-      updateState(null); // Pass null on error
+      _logger.e('Error loading hadiths', error: e, stackTrace: st);
+      updateState(null);
       rethrow;
     }
   }
 
   Future<dynamic> getJsonData() async {
+    _logger.i('Fetching JSON data...');
     if (_jsonData == null) {
-      // Call loadHadiths to populate _jsonData
-      await loadHadiths((hadiths) {
-        return AsyncValue.data(hadiths ?? []); // Ensure non-null list for AsyncValue.data
-      });
+      _logger.d('JSON data not available. Loading hadiths to populate it...');
+      await loadHadiths((hadiths) => AsyncValue.data(hadiths ?? []));
     }
     return _jsonData;
+  }
+
+  Future<void> updateJsonData(List<Hadith> hadiths,dataVersion) async {
+    _logger.i('Updating JSON data with new hadiths...');
+    try {
+      final grouped = HadithGrouper().groupHadithsByStructure(hadiths);
+      final version = dataVersion;
+      _jsonData = {'version': version, 'chapters': grouped};
+      await _jsonHandler.saveHadithJson(_jsonData);
+      await _versionHandler.setLocalVersion(version);
+      _logger.i('JSON data updated successfully.');
+    } catch (e, st) {
+      _logger.e('Error updating JSON data', error: e, stackTrace: st);
+      rethrow;
+    }
   }
 }

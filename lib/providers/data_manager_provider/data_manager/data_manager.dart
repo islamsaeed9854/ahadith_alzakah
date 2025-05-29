@@ -5,7 +5,7 @@ import 'data_loader.dart';
 import 'data_adder.dart';
 import 'data_deleter.dart';
 import '../data_search_service/data_searcher.dart';
-
+import '../local_storage_service/local_version_handler.dart';
 final DataProvider =
     StateNotifierProvider<DataManager, AsyncValue<List<Hadith>>>(
       (ref) => DataManager(ref),
@@ -17,13 +17,15 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
   final DataAdder _adder;
   final DataDeleter _deleter;
   final DataSearcher _searcher;
+  final LocalVersionHandler _versionHandler;
 
   DataManager(this.ref)
-    : _loader = DataLoader(),
-      _adder = DataAdder(),
-      _deleter = DataDeleter(),
-      _searcher = DataSearcher(),
-      super(const AsyncValue.loading()) {
+      : _loader = DataLoader(),
+        _adder = DataAdder(ref),
+        _deleter = DataDeleter(),
+        _searcher = DataSearcher(),
+         _versionHandler = LocalVersionHandler(),
+        super(const AsyncValue.loading()) {
     loadHadiths();
   }
 
@@ -41,15 +43,14 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
         }
         return state;
       });
-      if (hadiths != null && hadiths.isNotEmpty)
-        state = AsyncValue.data(hadiths);
+      if (hadiths != null && hadiths.isNotEmpty) state = AsyncValue.data(hadiths);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
   Future<dynamic> getJsonData() async {
-    return await _loader.getJsonData(); 
+    return await _loader.getJsonData();
   }
 
   Future<List<Map<String, dynamic>>> searchHadiths(
@@ -68,13 +69,21 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
     int flag,
     BuildContext context,
   ) async {
-    await _adder.addHadith(
-      newHadith,
-      flag,
-      context,
-      state.valueOrNull ?? [],
-      (hadiths) => state = AsyncValue.data(hadiths),
-    );
+    try {
+      await _adder.addHadith(
+        newHadith,
+        flag,
+        context,
+        state.valueOrNull ?? [],
+        (hadiths) => state = AsyncValue.data(hadiths),
+      );
+
+      if (state.valueOrNull != null) {
+        await _loader.updateJsonData(state.valueOrNull!,await _versionHandler.getLocalVersion());
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> deleteHadith(
@@ -93,7 +102,6 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
     );
   }
 
-  // دالة جديدة لاسترجاع حديث بناءً على bab و fasl و number
   Future<Hadith> retrieveHadith(
     int bab,
     int fasl,
@@ -101,24 +109,17 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
     BuildContext context,
   ) async {
     try {
-      // التأكد من أن الأحاديث تم تحميلها
       if (state.valueOrNull == null) {
         await loadHadiths();
       }
-
-      // البحث عن الحديث في القائمة الحالية
       final currentHadiths = state.valueOrNull ?? [];
       final hadith = currentHadiths.firstWhere(
         (h) => h.bab == bab && h.fasl == fasl && h.number == number,
-        orElse:
-            () =>
-                Hadith.empty(), // إرجاع حديث فارغ إذا لم يتم العثور على الحديث
+        orElse: () => Hadith.empty(),
       );
-
       return hadith;
     } catch (e) {
-      // إذا حدث خطأ، يمكننا إرجاع حديث فارغ أو رمي استثناء بناءً على الحاجة
-      rethrow; // رمي الاستثناء ليتم التعامل معه في الشاشة المستدعية
+      rethrow;
     }
   }
 }

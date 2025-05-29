@@ -3,64 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../core/constants.dart';
 import '../providers/navigation_provider.dart';
-import 'chapters_screen.dart';
+import '../widgets/bab_card.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../core/utils.dart';
-
+import '../core/methods.dart';
 class BooksScreen extends ConsumerWidget {
   BooksScreen({super.key});
 
-  String numberToArabicText(int number) {
-    const List<String> ones = [
-      '',
-      'الأول',
-      'الثاني',
-      'الثالث',
-      'الرابع',
-      'الخامس',
-      'السادس',
-      'السابع',
-      'الثامن',
-      'التاسع',
-    ];
-    const List<String> tens = [
-      '',
-      '',
-      'العشرون',
-      'الثلاثون',
-      'الأربعون',
-      'الخمسون',
-      'الستون',
-      'السبعون',
-      'الثمانون',
-      'التسعون',
-    ];
-    const List<String> teens = [
-      'العاشر',
-      'الحادي عشر',
-      'الثاني عشر',
-      'الثالث عشر',
-      'الرابع عشر',
-      'الخامس عشر',
-      'السادس عشر',
-      'السابع عشر',
-      'الثامن عشر',
-      'التاسع عشر',
-    ];
-
-    if (number == 0) return 'الصفر';
-    if (number >= 1 && number <= 9) return ones[number];
-    if (number >= 10 && number <= 19) return teens[number - 10];
-    if (number >= 20 && number <= 99) {
-      int ten = (number ~/ 10) * 10;
-      int one = number % 10;
-      if (one == 0) return tens[number ~/ 10];
-      return '${ones[one]} و${tens[number ~/ 10]}';
-    }
-    return number.toString();
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -203,7 +153,7 @@ class BooksScreen extends ConsumerWidget {
                               return buildBabCard(
                                 context,
                                 ref,
-                                'الباب ${numberToArabicText(chapter['chapter_number'] as int)}',
+                                'الباب ${Methods.numberToArabicText(chapter['chapter_number'] as int)}',
                                 chapter['chapter_title'] as String,
                                 isLandscape,
                                 chapter['chapter_number'] as int,
@@ -289,65 +239,3 @@ class BooksScreen extends ConsumerWidget {
   }
 }
 
-Widget buildBabCard(
-  BuildContext context,
-  WidgetRef ref,
-  String title,
-  String text,
-  bool isLandscape,
-  int chapterNumber,
-) {
-  return Directionality(
-    textDirection: TextDirection.rtl,
-    child: GestureDetector(
-      onTap: () {
-        ref.read(innerBooksScreenProvider.notifier).state = ChaptersScreen(
-          chapterNumber: chapterNumber,
-        );
-      },
-      child: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.transparent,
-        child: IntrinsicWidth(
-          child: IntrinsicHeight(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: const Color.fromRGBO(255, 255, 255, 0.8),
-                border: Border.all(color: const Color(0xffe6a345), width: 3),
-              ),
-              padding: EdgeInsets.all(isLandscape ? 8 : 6),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: ArabicTextStyle(
-                      arabicFont: ArabicFont.amiri,
-                      fontSize: isLandscape ? 22 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xffe6a345),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    text,
-                    textAlign: TextAlign.center,
-                    style: ArabicTextStyle(
-                      arabicFont: ArabicFont.amiri,
-                      fontSize: isLandscape ? 20 : 16,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}

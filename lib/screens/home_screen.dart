@@ -8,22 +8,33 @@ import 'about_screen.dart';
 import '../providers/theme_provider.dart';
 import '../core/constants.dart';
 import 'hadith_details.dart';
+import '../providers/notification_service_provider.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final bool showHadithDetails;
   const HomeScreen({super.key, this.showHadithDetails = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+
     // Set HadithDetails tab if showHadithDetails is true
-    if (showHadithDetails) {
+    if (widget.showHadithDetails) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(navigationProvider.notifier).changeTab(1);
         ref.read(innerBooksScreenProvider.notifier).state = null;
         debugPrint('Set navigation to HadithDetails tab (index 1)');
       });
     }
+  }
 
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     final innerBooksScreenPr = ref.watch(innerBooksScreenProvider);
@@ -43,7 +54,7 @@ class HomeScreen extends ConsumerWidget {
     ];
 
     return PopScope(
-      canPop: currentIndex != 0 || innerBooksScreenPr != null ? false : true,
+      canPop: currentIndex == 0 && innerBooksScreenPr == null,
       onPopInvokedWithResult: (didPop, Object? result) async {
         if (!didPop && currentIndex != 0) {
           navNotifier.changeTab(0);
@@ -54,7 +65,7 @@ class HomeScreen extends ConsumerWidget {
         } else if (!didPop && currentIndex == 0 && innerBooksScreenPr != null) {
           ref.read(innerBooksScreenProvider.notifier).state = null;
           debugPrint('Pop invoked: Reset innerBooksScreenProvider');
-        }
+        } 
       },
       child: Directionality(
         textDirection: TextDirection.rtl,

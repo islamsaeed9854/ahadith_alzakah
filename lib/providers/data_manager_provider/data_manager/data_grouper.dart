@@ -4,7 +4,7 @@ class HadithGrouper {
   List<Map<String, dynamic>> groupHadithsByStructure(List<Hadith> hadiths) {
     final Map<int, Map<int, List<Hadith>>> grouped = {};
     
-    // تجميع الأحاديث حسب الباب والفصل
+
     for (final hadith in hadiths) {
       grouped
           .putIfAbsent(hadith.bab, () => {})
@@ -13,14 +13,14 @@ class HadithGrouper {
     }
 
     return grouped.entries.map((babEntry) {
-      // الحصول على اسم الباب من أول حديث في المجموعة
+  
       final chapterTitle = babEntry.value.isNotEmpty && 
                          babEntry.value.values.first.isNotEmpty
           ? babEntry.value.values.first.first.chapter_title
           : 'باب رقم ${babEntry.key}';
 
       final sections = babEntry.value.entries.map((faslEntry) {
-        // الحصول على اسم الفصل من أول حديث في المجموعة
+
         final sectionTitle = faslEntry.value.isNotEmpty
             ? faslEntry.value.first.section_title
             : 'قسم رقم ${faslEntry.key}';
@@ -36,7 +36,7 @@ class HadithGrouper {
             'reference': h.reference,
             'analysis': h.analysis,
             'summary': h.summary,
-            // إزالة الحقول الزائدة هنا
+          
           }).toList(),
         };
       }).toList()

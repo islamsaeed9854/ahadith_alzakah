@@ -6,34 +6,32 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/login_providers.dart';
-import '../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
+import '../core/utils.dart';
 import '../widgets/login_text_field.dart';
 
-// مزود لـ SupabaseClient
 final supabaseProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
 
-// مزود لحالة التحميل
 final isLoadingProvider = StateProvider<bool>((ref) => false);
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
-  // دالة للتحقق من صحة البريد الإلكتروني
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
   }
 
-  // دالة تسجيل الدخول
   Future<void> _login(BuildContext context, WidgetRef ref) async {
+    // إزالة التركيز عن الحقول لإخفاء اللوحة
+    FocusScope.of(context).unfocus();
+
     final loginFormState = ref.read(loginFormProvider);
     final email = loginFormState.emailController.text.trim();
     final password = loginFormState.passwordController.text.trim();
     final supabase = ref.read(supabaseProvider);
 
-    // التحقق من المدخلات قبل تسجيل الدخول
     if (email.isEmpty || password.isEmpty) {
       showSingleSnackBar(
         context,
@@ -68,7 +66,6 @@ class LoginScreen extends ConsumerWidget {
       return;
     }
 
-    // تعيين حالة التحميل
     ref.read(isLoadingProvider.notifier).state = true;
 
     try {
@@ -78,23 +75,19 @@ class LoginScreen extends ConsumerWidget {
       );
 
       if (response.user != null) {
-        // مسح الحقول بعد تسجيل الدخول الناجح
         loginFormState.emailController.clear();
         loginFormState.passwordController.clear();
 
-        // عرض SnackBar عند النجاح
         showSingleSnackBar(
           context,
           message: 'تم تسجيل الدخول بنجاح! مرحبًا بك',
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         );
-        // الانتقال إلى الصفحة الرئيسية
         ref.read(navigationProvider.notifier).changeTab(3);
         Navigator.of(context, rootNavigator: true).pop();
       }
     } catch (e) {
-      // معالجة الأخطاء مع رسائل واضحة
       String errorMessage;
       if (e.toString().contains('Invalid login credentials')) {
         errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
@@ -110,7 +103,6 @@ class LoginScreen extends ConsumerWidget {
         duration: const Duration(seconds: 3),
       );
     } finally {
-      // إعادة تعيين حالة التحميل
       ref.read(isLoadingProvider.notifier).state = false;
     }
   }
@@ -131,11 +123,7 @@ class LoginScreen extends ConsumerWidget {
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            // Background Image - ثابت ولا يتأثر بالكيبورد
             Positioned.fill(child: TextApp.appBackgroundWidget),
-            // Gradient Overlay
-
-            // Content
             SingleChildScrollView(
               padding: EdgeInsets.only(
                 top: screenHeight * 0.04,
@@ -181,7 +169,6 @@ class LoginScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Back Button at Top Left - ثابت في أعلى يسار الشاشة
             Positioned(
               top: screenHeight * 0.1,
               left: screenWidth * 0.05,

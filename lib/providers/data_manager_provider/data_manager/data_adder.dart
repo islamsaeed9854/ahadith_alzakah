@@ -7,6 +7,8 @@ import '../data_sync_service/version_uploader.dart';
 import '../local_storage_service/local_json_handler.dart';
 import '../local_storage_service/local_version_handler.dart';
 import 'data_grouper.dart';
+import 'data_loader.dart'; // Import DataLoader
+import '../../../core/utils.dart';
 
 class DataAdder {
   final AuthChecker _authChecker;
@@ -15,14 +17,15 @@ class DataAdder {
   final LocalJsonHandler _jsonHandler;
   final LocalVersionHandler _versionHandler;
   final HadithGrouper _grouper;
+  final Ref ref;
 
-  DataAdder()
-      : _authChecker = AuthChecker(),
-        _dataUploader = DataUploader(),
-        _versionUploader = VersionUploader(),
-        _jsonHandler = LocalJsonHandler(),
-        _versionHandler = LocalVersionHandler(),
-        _grouper = HadithGrouper();
+  DataAdder(this.ref)
+    : _authChecker = AuthChecker(),
+      _dataUploader = DataUploader(),
+      _versionUploader = VersionUploader(),
+      _jsonHandler = LocalJsonHandler(),
+      _versionHandler = LocalVersionHandler(),
+      _grouper = HadithGrouper();
 
   Future<void> addHadith(
     Hadith newHadith,
@@ -33,18 +36,29 @@ class DataAdder {
   ) async {
     if (newHadith.bab <= 0 || newHadith.fasl <= 0 || newHadith.number <= 0) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('بيانات الحديث غير صالحة')),
+        showSingleSnackBar(
+          context,
+          message: 'بيانات الحديث غير صالحة',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
       return;
     }
 
-    final existingIndex = current.indexWhere((h) => h.bab == newHadith.bab && h.fasl == newHadith.fasl && h.number == newHadith.number);
+    final existingIndex = current.indexWhere(
+      (h) =>
+          h.bab == newHadith.bab &&
+          h.fasl == newHadith.fasl &&
+          h.number == newHadith.number,
+    );
     if (!_authChecker.isUserAuthenticated()) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ لم يتم تسجيل الدخول، يرجى تسجيل الدخول أولاً')),
+        showSingleSnackBar(
+          context,
+          message: '⚠️ لم يتم تسجيل الدخول، يرجى تسجيل الدخول أولاً',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
       return;
@@ -56,8 +70,11 @@ class DataAdder {
         case 4:
           if (existingIndex != -1) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الحديث موجود مسبقاً')),
+              showSingleSnackBar(
+                context,
+                message: 'الحديث موجود مسبقاً',
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3),
               );
             }
             return;
@@ -67,57 +84,79 @@ class DataAdder {
         case 3:
           if (existingIndex == -1) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الحديث غير موجود')),
+              showSingleSnackBar(
+                context,
+                message: 'الحديث غير موجود',
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3),
               );
             }
             return;
           }
-          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(text: newHadith.text);
+          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(
+            text: newHadith.text,
+          );
           break;
         case 2:
           if (existingIndex == -1) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الحديث غير موجود')),
+              showSingleSnackBar(
+                context,
+                message: 'الحديث غير موجود',
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3),
               );
             }
             return;
           }
-          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(reference: newHadith.reference);
+          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(
+            reference: newHadith.reference,
+          );
           break;
         case 1:
           if (existingIndex == -1) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الحديث غير موجود')),
+              showSingleSnackBar(
+                context,
+                message: "الحديث غير موجود",
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3),
               );
             }
             return;
           }
-          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(analysis: newHadith.analysis);
+          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(
+            analysis: newHadith.analysis,
+          );
           break;
         case 0:
           if (existingIndex == -1) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الحديث غير موجود')),
+              showSingleSnackBar(
+                context,
+                message: 'الحديث غير موجود',
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3),
               );
             }
             return;
           }
-          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(summary: newHadith.summary);
+          stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(
+            summary: newHadith.summary,
+          );
           break;
         case 5:
           if (existingIndex == -1) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الحديث غير موجود، لا يمكن التعديل')),
+              showSingleSnackBar(
+                context,
+                message: 'الحديث غير موجود، لا يمكن التعديل',
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3),
               );
             }
             return;
           }
-          // تعديل جميع الحقول (text, summary, reference, analysis)
           stagedHadiths[existingIndex] = stagedHadiths[existingIndex].copyWith(
             text: newHadith.text,
             summary: newHadith.summary,
@@ -127,8 +166,11 @@ class DataAdder {
           break;
         default:
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('عملية غير صالحة')),
+            showSingleSnackBar(
+              context,
+              message: 'عملية غير صالحة',
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 3),
             );
           }
           return;
@@ -148,51 +190,54 @@ class DataAdder {
 
       // رفع البيانات
       await _dataUploader.uploadData(jsonMap, context);
-      await _versionUploader.uploadVersion(version, context, ''); // نرفع النسخة بدون رسالة نجاح مباشرة
+      await _versionUploader.uploadVersion(version, context, '');
 
       // حفظ البيانات محليًا
       await _jsonHandler.saveHadithJson(jsonMap);
       await _versionHandler.setLocalVersion(version);
 
+      // تحديث _jsonData في DataLoader
+      final dataLoader =
+          DataLoader(); // Create instance (or use a singleton if preferred)
+      await dataLoader.updateJsonData(stagedHadiths, version);
+
       // تحديث الحالة
       updateState(stagedHadiths);
 
-      // عرض رسالة النجاح فقط بعد التأكد من النجاح
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم التعديل بنجاح!'), // تم تعديل الرسالة لتعكس التعديل
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text('تم التعديل بنجاح!'),
+        //     backgroundColor: Colors.green,
+        //     duration: Duration(seconds: 2),
+        //   ),
+        // );
       }
     } catch (e) {
-      // معالجة الأخطاء بطريقة مفهومة
       String errorMessage;
-      if (e.toString().contains('network') || e.toString().contains('timeout')) {
-        errorMessage = 'فشل الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة';
-      } else if (e.toString().contains('permission') || e.toString().contains('unauthorized')) {
-        errorMessage = 'لا يوجد إذن كافٍ لإضافة الحديث، يرجى التحقق من الصلاحيات';
-      } else if (e.toString().contains('storage') || e.toString().contains('io')) {
-        errorMessage = 'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
+      if (e.toString().contains('network') ||
+          e.toString().contains('timeout')) {
+        errorMessage =
+            'فشل الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة';
+      } else if (e.toString().contains('permission') ||
+          e.toString().contains('unauthorized')) {
+        errorMessage =
+            'لا يوجد إذن كافٍ لإضافة الحديث، يرجى التحقق من الصلاحيات';
+      } else if (e.toString().contains('storage') ||
+          e.toString().contains('io')) {
+        errorMessage =
+            'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
       } else {
         errorMessage = 'حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا';
       }
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.redAccent,
-            duration: const Duration(seconds: 3),
-          ),
+        showSingleSnackBar(
+          context,
+          message: errorMessage,
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         );
       }
     }
   }
 }
-
-// مزود لـ DataAdder
-final dataAdderProvider = Provider<DataAdder>((ref) {
-  return DataAdder();
-});

@@ -7,6 +7,7 @@ void showSingleSnackBar(
   Color backgroundColor = Colors.green,
   Duration duration = const Duration(seconds: 2),
 }) {
+  
   ScaffoldMessenger.of(context).removeCurrentSnackBar();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

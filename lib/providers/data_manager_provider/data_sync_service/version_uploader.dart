@@ -36,12 +36,12 @@ class VersionUploader {
             .timeout(const Duration(seconds: 100));
       }, onRetry: (e) => _logger.w('Retrying version upload: $e'));
       if (context.mounted) {
-        showSingleSnackBar(
-          context,
-          message: successMessage,
-          backgroundColor: Colors.green, 
-          duration: const Duration(seconds: 3), 
-        );
+        // showSingleSnackBar(
+        //   context,
+        //   message: successMessage,
+        //   backgroundColor: Colors.green, 
+        //   duration: const Duration(seconds: 3), 
+        // );
       }
     } catch (e) {
       _logger.e('Version upload error: $e');

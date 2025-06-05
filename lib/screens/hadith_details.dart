@@ -5,176 +5,86 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../screens/chapters_screen.dart';
-import 'search_screen.dart';
 import '../notification_service.dart';
-import '../core/methods.dart';
 import '../providers/search_providers.dart';
+import '../core/methods.dart';
+
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
-  List<TextSpan> _buildFormattedText(
-    String text,
-    String searchQuery,
-    bool isDark,
-    double fontSize,
-  ) {
+  List<TextSpan> _buildFormattedText(String text, bool isDark, double fontSize) {
     List<TextSpan> spans = [];
+    
+    // Helper function to add spans with proper spacing
+    void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
+      if (text.isEmpty) return;
+      // Clean the text while preserving single spaces between words
+      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      // Only add a space if it's not already there and we need one
+      bool needsSpace = addSpace && !text.endsWith(' ') && text != '*';
+      spans.add(TextSpan(text: text + (needsSpace ? ' ' : ''), style: style));
+    }
 
-    String cleanSearchQuery = _removeDiacritics(
-      searchQuery.toLowerCase().trim(),
+    // Base text style
+    final baseStyle = TextStyle(
+      color: isDark ? Colors.white : Colors.black,
+      fontSize: fontSize,
+      height: 1.8,
     );
 
-    RegExp xPattern = RegExp(r'X([^X]+)X');
-
+    // Clean input text and normalize newlines
+    text = text.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    
+    RegExp pattern = RegExp(r'(X[^X]+X|O[^O]+O|\[[^\]]+\]|\*)');
     int lastIndex = 0;
-
-    Iterable<RegExpMatch> xMatches = xPattern.allMatches(text);
-
-    for (RegExpMatch match in xMatches) {
-      String beforeMatch = text.substring(lastIndex, match.start);
-      if (beforeMatch.isNotEmpty) {
-        spans.addAll(
-          _highlightSearchTerms(
-            beforeMatch,
-            cleanSearchQuery,
-            isDark,
-            fontSize,
-            false,
-          ),
-        );
+    
+    for (final match in pattern.allMatches(text)) {
+      // Add text before match
+      String before = text.substring(lastIndex, match.start).trim();
+      if (before.isNotEmpty) {
+        addTextSpan(before, baseStyle);
       }
 
-      String boldText = match.group(1) ?? '';
-      spans.addAll(
-        _highlightSearchTerms(
-          boldText,
-          cleanSearchQuery,
-          isDark,
-          fontSize,
-          true,
-        ),
-      );
-
+      // Handle special formatting
+      String matchText = match.group(0)!;
+      if (matchText.startsWith('X') && matchText.endsWith('X')) {
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: Colors.green)
+        );
+      } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: Colors.red)
+        );
+      } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: Colors.blue)
+        );
+      } else if (matchText == '*') {
+        addTextSpan(
+          matchText,
+          baseStyle.copyWith(fontWeight: FontWeight.bold),
+          addSpace: false
+        );
+      }
       lastIndex = match.end;
     }
 
+    // Add remaining text
     if (lastIndex < text.length) {
-      String remainingText = text.substring(lastIndex);
-      spans.addAll(
-        _highlightSearchTerms(
-          remainingText,
-          cleanSearchQuery,
-          isDark,
-          fontSize,
-          false,
-        ),
-      );
-    }
-
-    return spans;
-  }
-
-  List<TextSpan> _highlightSearchTerms(
-    String text,
-    String searchQuery,
-    bool isDark,
-    double fontSize,
-    bool isBold,
-  ) {
-    List<TextSpan> spans = [];
-
-    if (searchQuery.isEmpty) {
-      spans.add(
-        TextSpan(
-          text: text,
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
-            fontSize: fontSize,
-            height: 1.8,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      );
-      return spans;
-    }
-
-    int lastIndex = 0;
-
-    for (int i = 0; i <= text.length - 1; i++) {
-      for (
-        int j = i + searchQuery.length;
-        j <= text.length && j <= i + searchQuery.length + 10;
-        j++
-      ) {
-        String potentialMatch = text.substring(i, j);
-        String cleanPotentialMatch = _removeDiacritics(
-          potentialMatch.toLowerCase().trim(),
+      String remaining = text.substring(lastIndex).trim();
+      if (remaining.isNotEmpty) {
+        addTextSpan(
+          remaining,
+          baseStyle,
+          addSpace: false
         );
-
-        if (cleanPotentialMatch == searchQuery) {
-          if (i > lastIndex) {
-            spans.add(
-              TextSpan(
-                text: text.substring(lastIndex, i),
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black,
-                  fontSize: fontSize,
-                  height: 1.8,
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            );
-          }
-
-          spans.add(
-            TextSpan(
-              text: potentialMatch,
-              style: TextStyle(
-                color: AppTheme.redBlackColer,
-                fontSize: fontSize,
-                height: 1.8,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-
-          lastIndex = j;
-          i = j - 1;
-          break;
-        }
       }
     }
 
-    if (lastIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastIndex),
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
-            fontSize: fontSize,
-            height: 1.8,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      );
-    }
-
     return spans;
-  }
-
-  String _removeDiacritics(String text) {
-    final diacritics = RegExp(
-      r'[\u0617-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]',
-      unicode: true,
-    );
-    String normalized =
-        text
-            .replaceAll(diacritics, '')
-            .replaceAll(RegExp(r'[\u0622\u0623\u0625]'), '\u0627')
-            .replaceAll('\u064A', '\u0649')
-            .replaceAll('\u0629', '\u0647')
-            .toLowerCase();
-    return normalized;
   }
 
   @override
@@ -188,40 +98,33 @@ class HadithDetails extends ConsumerWidget {
     final selectedHadith = ref.watch(selectedHadithProvider);
     final dailyHadith = ref.watch(dailyHadithProvider);
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
-    final searchQuery = controller.state;
-
-    // Use selected hadith or fall back to daily hadith
+    final backgroundColor = theme.scaffoldBackgroundColor;
     final hadithToDisplay = selectedHadith ?? dailyHadith;
+
     if (hadithToDisplay == null) {
       return Scaffold(
+        backgroundColor: backgroundColor,
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.book_outlined,
-                size: 64,
-                color: isDark ? Colors.white54 : Colors.black54,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'لا يوجد حديث متاح',
-                style: TextStyle(
-                  fontSize: fontSize.toDouble(),
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-            ],
+          child: SizedBox(
+            width: 80,
+            height: 80,
+            child: CircularProgressIndicator(
+              strokeWidth: 7,
+              valueColor: AlwaysStoppedAnimation<Color>(isDark ? Colors.white : AppTheme.primaryColor),
+              backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
+            ),
           ),
         ),
       );
     }
 
-    return WillPopScope(
-      onWillPop: () async {
-        controller.state = '';
-        navNotifier.changeTab(0);
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          controller.state = '';
+          navNotifier.changeTab(0);
+        }
       },
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -230,79 +133,71 @@ class HadithDetails extends ConsumerWidget {
           child: DefaultTabController(
             length: 3,
             child: Scaffold(
-              body: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top + 16,
-                        right: 16,
-                        left: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'الباب ${Methods.numberToArabicText(hadithToDisplay.bab)}:${hadithToDisplay.chapter_title}',
-                                  style: GoogleFonts.cairo(
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        isDark
-                                            ? AppTheme.primaryColor
-                                            : AppTheme.redBlackColer,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                Text(
-                                  'الفصل ${Methods.numberToArabicText(hadithToDisplay.fasl)}:${hadithToDisplay.section_title} | حديث رقم: ${hadithToDisplay.number}',
-                                  style: GoogleFonts.cairo(
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        isDark
-                                            ? AppTheme.primaryColor
-                                            : AppTheme.redBlackColer,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_forward,
-                              color:
-                                  isDark
-                                      ? AppTheme.arrowBackdark
-                                      : AppTheme.arrowBackLight,
-                            ),
-                            onPressed: () {
-                              controller.state = '';
-                              navNotifier.changeTab(0);
-                            },
-                          ),
-                        ],
-                      ),
+              backgroundColor: backgroundColor,
+              body: Column(
+                children: [
+                  // Header section
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      right: 16,
+                      left: 16,
                     ),
-
-                    SizedBox(height: screenHeight * 0.02),
-
-                    Container(
-                      margin: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: screenHeight * 0.00,
-                      ),
-                      height: screenHeight * 0.4,
-                      padding: EdgeInsets.all(screenWidth * 0.01),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'الباب ${Methods.numberToArabicText(hadithToDisplay.bab)}: ${hadithToDisplay.chapter_title}',
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                'الفصل ${Methods.numberToArabicText(hadithToDisplay.fasl)}: ${hadithToDisplay.section_title} | حديث رقم: ${hadithToDisplay.number}',
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.arrow_forward,
+                            color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
+                            size: 30,
+                          ),
+                          onPressed: () {
+                            controller.state = '';
+                            navNotifier.changeTab(0);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.02),
+                  
+                  // Main hadith text section
+                  Container(
+                    height: screenHeight * 0.35,
+                    margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
                       child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
                         child: RichText(
                           textAlign: TextAlign.justify,
                           text: TextSpan(
                             children: _buildFormattedText(
-                              hadithToDisplay.text.trim(),
-                              searchQuery,
+                              hadithToDisplay.text.trim().replaceAll(RegExp(r'\s+'), ' '),
                               isDark,
                               fontSize.toDouble(),
                             ),
@@ -310,61 +205,47 @@ class HadithDetails extends ConsumerWidget {
                         ),
                       ),
                     ),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 2.0,
-                        vertical: 1.0,
-                      ),
-                      child: TabBar(
-                        indicatorColor: AppTheme.redBlackColer,
-                        labelColor:
-                            isDark
-                                ? AppTheme.primaryColor
-                                : AppTheme.redBlackColer,
-                        unselectedLabelColor: const Color(0xff977c55),
-                        labelStyle: GoogleFonts.notoKufiArabic(
-                          fontSize: fontSize.toDouble() * 0.8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        unselectedLabelStyle: GoogleFonts.notoKufiArabic(
-                          fontSize: fontSize.toDouble() * 0.8,
-                        ),
-                        tabs: const [
-                          Tab(text: 'الخلاصة'),
-                          Tab(text: 'التخريج'),
-                          Tab(text: 'الدراسة'),
-                        ],
-                      ),
+                  ),
+                  
+                  // TabBar
+                  TabBar(
+                    indicatorColor: AppTheme.redBlackColer,
+                    labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                    unselectedLabelColor: const Color(0xff977c55),
+                    labelStyle: GoogleFonts.notoKufiArabic(
+                      fontSize: fontSize.toDouble() * 0.8,
+                      fontWeight: FontWeight.bold,
                     ),
-
-                    Container(
-                      height: screenHeight * 0.5,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                      ),
-                      child: TabBarView(
-                        children: [
-                          TabContent(
-                            text: hadithToDisplay.summary,
-                            isDark: isDark,
-                            searchQuery: searchQuery,
-                          ),
-                          TabContent(
-                            text: hadithToDisplay.reference,
-                            isDark: isDark,
-                            searchQuery: searchQuery,
-                          ),
-                          TabContent(
-                            text: hadithToDisplay.analysis,
-                            isDark: isDark,
-                            searchQuery: searchQuery,
-                          ),
-                        ],
-                      ),
+                    unselectedLabelStyle: GoogleFonts.notoKufiArabic(
+                      fontSize: fontSize.toDouble() * 0.8,
                     ),
-                  ],
-                ),
+                    tabs: const [
+                      Tab(text: 'الخلاصة'),
+                      Tab(text: 'التخريج'),
+                      Tab(text: 'الدراسة'),
+                    ],
+                  ),
+                  
+                  // Tab content section
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        TabContent(
+                          text: hadithToDisplay.summary,
+                          isDark: isDark,
+                        ),
+                        TabContent(
+                          text: hadithToDisplay.reference,
+                          isDark: isDark,
+                        ),
+                        TabContent(
+                          text: hadithToDisplay.analysis,
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -377,191 +258,108 @@ class HadithDetails extends ConsumerWidget {
 class TabContent extends ConsumerWidget {
   final String text;
   final bool isDark;
-  final String searchQuery;
 
   const TabContent({
-    super.key,
+    Key? key,
     required this.text,
     required this.isDark,
-    this.searchQuery = '',
-  });
+  }) : super(key: key);
 
-  List<TextSpan> _buildFormattedText(
-    String text,
-    String searchQuery,
-    bool isDark,
-    double fontSize,
-  ) {
+  List<TextSpan> _buildFormattedText(String text, bool isDark, double fontSize) {
     List<TextSpan> spans = [];
-    String cleanSearchQuery = _removeDiacritics(
-      searchQuery.toLowerCase().trim(),
-    );
-    RegExp xPattern = RegExp(r'X([^X]+)X');
-    int lastIndex = 0;
-    Iterable<RegExpMatch> xMatches = xPattern.allMatches(text);
+    
+    // Helper function to add spans with proper spacing
+    void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
+      if (text.isEmpty) return;
+      // Clean the text while preserving single spaces between words
+      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      // Only add a space if it's not already there and we need one
+      bool needsSpace = addSpace && !text.endsWith(' ') && text != '*';
+      spans.add(TextSpan(text: text + (needsSpace ? ' ' : ''), style: style));
+    }
 
-    for (RegExpMatch match in xMatches) {
-      String beforeMatch = text.substring(lastIndex, match.start);
-      if (beforeMatch.isNotEmpty) {
-        spans.addAll(
-          _highlightSearchTerms(
-            beforeMatch,
-            cleanSearchQuery,
-            isDark,
-            fontSize,
-            false,
-          ),
-        );
+    // Base text style
+    final baseStyle = TextStyle(
+      color: isDark ? const Color(0xffd6c9b3) : const Color(0xffa37635),
+      fontSize: fontSize,
+      height: 1.8,
+    );
+
+    // Clean input text and normalize newlines
+    text = text.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    
+    RegExp pattern = RegExp(r'(X[^X]+X|O[^O]+O|\[[^\]]+\]|\*)');
+    int lastIndex = 0;
+    
+    for (final match in pattern.allMatches(text)) {
+      // Add text before match
+      String before = text.substring(lastIndex, match.start).trim();
+      if (before.isNotEmpty) {
+        addTextSpan(before, baseStyle);
       }
 
-      String boldText = match.group(1) ?? '';
-      spans.addAll(
-        _highlightSearchTerms(
-          boldText,
-          cleanSearchQuery,
-          isDark,
-          fontSize,
-          true,
-        ),
-      );
-
+      // Handle special formatting
+      String matchText = match.group(0)!;
+      if (matchText.startsWith('X') && matchText.endsWith('X')) {
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: Colors.green)
+        );
+      } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: Colors.red)
+        );
+      } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: Colors.blue)
+        );
+      } else if (matchText == '*') {
+        addTextSpan(
+          matchText,
+          baseStyle.copyWith(fontWeight: FontWeight.bold),
+          addSpace: false
+        );
+      }
       lastIndex = match.end;
     }
 
+    // Add remaining text
     if (lastIndex < text.length) {
-      String remainingText = text.substring(lastIndex);
-      spans.addAll(
-        _highlightSearchTerms(
-          remainingText,
-          cleanSearchQuery,
-          isDark,
-          fontSize,
-          false,
-        ),
-      );
-    }
-
-    return spans;
-  }
-
-  List<TextSpan> _highlightSearchTerms(
-    String text,
-    String searchQuery,
-    bool isDark,
-    double fontSize,
-    bool isBold,
-  ) {
-    List<TextSpan> spans = [];
-
-    if (searchQuery.isEmpty) {
-      spans.add(
-        TextSpan(
-          text: text,
-          style: TextStyle(
-            color: isDark ? Color(0xffd6c9b3) : const Color(0xffa37635),
-            fontSize: fontSize,
-            height: 1.8,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      );
-      return spans;
-    }
-
-    int lastIndex = 0;
-
-    for (int i = 0; i <= text.length - 1; i++) {
-      for (
-        int j = i + searchQuery.length;
-        j <= text.length && j <= i + searchQuery.length + 10;
-        j++
-      ) {
-        String potentialMatch = text.substring(i, j);
-        String cleanPotentialMatch = _removeDiacritics(
-          potentialMatch.toLowerCase().trim(),
+      String remaining = text.substring(lastIndex).trim();
+      if (remaining.isNotEmpty) {
+        addTextSpan(
+          remaining,
+          baseStyle,
+          addSpace: false
         );
-
-        if (cleanPotentialMatch == searchQuery) {
-          if (i > lastIndex) {
-            spans.add(
-              TextSpan(
-                text: text.substring(lastIndex, i),
-                style: TextStyle(
-                  color: isDark ? Color(0xffd6c9b3) : const Color(0xffa37635),
-                  fontSize: fontSize,
-                  height: 1.8,
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            );
-          }
-
-          spans.add(
-            TextSpan(
-              text: potentialMatch,
-              style: TextStyle(
-                color: AppTheme.redBlackColer,
-                fontSize: fontSize,
-                height: 1.8,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-
-          lastIndex = j;
-          i = j - 1;
-          break;
-        }
       }
     }
 
-    if (lastIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastIndex),
-          style: TextStyle(
-            color: isDark ? Color(0xffd6c9b3) : const Color(0xffa37635),
-            fontSize: fontSize,
-            height: 1.8,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      );
-    }
-
     return spans;
   }
-
-  String _removeDiacritics(String text) {
-    final diacritics = RegExp(
-      r'[\u0617-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]',
-      unicode: true,
-    );
-    String normalized =
-        text
-            .replaceAll(diacritics, '')
-            .replaceAll(RegExp(r'[\u0622\u0623\u0625]'), '\u0627')
-            .replaceAll('\u064A', '\u0649')
-            .replaceAll('\u0629', '\u0647')
-            .toLowerCase();
-    return normalized;
-  }
-
+  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fontSize = ref.watch(fontSizeProvider);
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        child: RichText(
-          textAlign: TextAlign.justify,
-          text: TextSpan(
-            children: _buildFormattedText(
-              text.trim(),
-              searchQuery,
-              isDark,
-              fontSize.toDouble(),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          scrollbars: false,
+          overscroll: false,
+        ),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: RichText(
+            textAlign: TextAlign.justify,
+            text: TextSpan(
+              children: _buildFormattedText(
+                text,
+                isDark,
+                fontSize.toDouble(),
+              ),
             ),
           ),
         ),

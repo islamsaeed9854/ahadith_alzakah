@@ -8,7 +8,6 @@ import 'about_screen.dart';
 import '../providers/theme_provider.dart';
 import '../core/constants.dart';
 import 'hadith_details.dart';
-import '../providers/notification_service_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final bool showHadithDetails;

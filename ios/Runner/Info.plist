@@ -8,17 +8,15 @@
 		<string>remote-notification</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Learning Firebase</string>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>	<key>CFBundleDisplayName</key>
+	<string>أحاديث الزكاة</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>learning_firebase</string>
+	<string>6.0</string>	<key>CFBundleName</key>
+	<string>أحاديث الزكاة</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -60,5 +58,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>نحتاج إلى إرسال إشعارات يومية لإظهار الأحاديث المختارة</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app does not require camera access</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app does not require microphone access</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app does not require photo library access</string>
 </dict>
 </plist>

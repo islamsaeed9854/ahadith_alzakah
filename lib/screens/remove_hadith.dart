@@ -9,7 +9,7 @@ import 'add_hadith.dart';
 import '../data/models/hadith.dart';
 import '../core/utils.dart';
 
-// 1. إنشاء مزود لحالة الحذف
+
 final isDeletingProvider = StateProvider<bool>((ref) => false);
 
 class RemoveHadithScreen extends ConsumerWidget {
@@ -21,15 +21,14 @@ class RemoveHadithScreen extends ConsumerWidget {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final isDeleting = ref.watch(isDeletingProvider);
 
-    // جلب الـ Controllers من المزودات
+    
     final babController = ref.watch(babControllerProvider);
     final faslController = ref.watch(faslControllerProvider);
     final numberController = ref.watch(numberControllerProvider);
 
-    // جلب DataManager من المزود
+
     final dataManager = ref.read(DataProvider.notifier);
 
-    // دالة لعرض رسالة الخطأ أو النجاح
     void _showMessage(
       BuildContext context,
       String message, {
@@ -44,8 +43,6 @@ class RemoveHadithScreen extends ConsumerWidget {
         );
       }
     }
-
-    // دالة لحذف الحديث
     Future<void> deleteHadith(BuildContext dialogContext) async {
       ref.read(isDeletingProvider.notifier).state = true;
       
@@ -53,7 +50,6 @@ class RemoveHadithScreen extends ConsumerWidget {
       final fasl = int.tryParse(faslController.text.trim()) ?? -1;
       final number = int.tryParse(numberController.text.trim()) ?? -1;
 
-      // التحقق من البيانات الأساسية
       if (bab <= 0 || fasl <= 0 || number <= 0) {
         _showMessage(
           context,
@@ -62,8 +58,6 @@ class RemoveHadithScreen extends ConsumerWidget {
         ref.read(isDeletingProvider.notifier).state = false;
         return;
       }
-
-      // التحقق من الاتصال بالإنترنت
       final connectivityResult = await (Connectivity().checkConnectivity());
       if (connectivityResult == ConnectivityResult.none) {
         _showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
@@ -72,7 +66,6 @@ class RemoveHadithScreen extends ConsumerWidget {
       }
 
       try {
-        // البحث عن الحديث بناءً على الأرقام المدخلة
         final currentHadiths = ref.read(DataProvider).value ?? [];
         final hadithToDelete = currentHadiths.firstWhere(
           (hadith) =>
@@ -82,7 +75,6 @@ class RemoveHadithScreen extends ConsumerWidget {
           orElse: () => Hadith.empty(),
         );
 
-        // حذف الحديث باستخدام DataManager
         await dataManager.deleteHadith(
           hadithToDelete.bab,
           hadithToDelete.fasl,
@@ -90,12 +82,9 @@ class RemoveHadithScreen extends ConsumerWidget {
           context,
         );
 
-        // إعادة تعيين الحقول بعد الحذف الناجح
         babController.clear();
         faslController.clear();
         numberController.clear();
-
-        // العودة إلى الشاشة السابقة
         //if (context.mounted) Navigator.pop(context);
       } catch (e) {
         String errorMessage;
@@ -204,9 +193,7 @@ class RemoveHadithScreen extends ConsumerWidget {
                                     onPressed: isDeleting
                                         ? null
                                         : () {
-                                            // إخفاء الكيبورد أولاً
                                             FocusManager.instance.primaryFocus?.unfocus();
-                                            // انتظار قليل لضمان إخفاء الكيبورد
                                             Future.delayed(const Duration(milliseconds: 100), () {
                                               _showConfirmationDialog(
                                                 context,

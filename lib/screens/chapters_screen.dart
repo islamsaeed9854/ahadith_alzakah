@@ -10,7 +10,6 @@ import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../widgets/chpter_card.dart';
 import '../core/methods.dart';
 
-
 final expandedSectionProvider = StateProvider<int?>((ref) => null);
 
 final selectedHadithProvider = StateProvider<Hadith?>((ref) => null);
@@ -19,6 +18,23 @@ class ChaptersScreen extends ConsumerWidget {
   final int? chapterNumber;
 
   ChaptersScreen({super.key, this.chapterNumber});
+
+  // Function to mask X and O while preserving numbers
+  String maskEnglishLetters(String text) {
+    // Keep numbers within brackets intact
+    text = text.replaceAllMapped(
+      RegExp(r'\[(\d+)\]'),
+      (match) => '⟨${match.group(1)}⟩' // Temporarily replace brackets with other characters
+    );
+
+    // Mask X and O but preserve numbers
+    text = text.replaceAll(RegExp(r'[XO]'), '');
+
+    // Restore original brackets
+    text = text.replaceAll('⟨', '[').replaceAll('⟩', ']');
+
+    return text;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,8 +48,7 @@ class ChaptersScreen extends ConsumerWidget {
           final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
 
           return hadithState.when(
-            data: (hadiths) {
-              // تجميع الأحاديث حسب الباب والقسم
+            data: (hadiths) {              // Group hadiths by chapter and section
               final chaptersMap = <int, Map<String, dynamic>>{};
               for (final hadith in hadiths) {
                 if (!hadith.deleted &&
@@ -305,8 +320,8 @@ class ChaptersScreen extends ConsumerWidget {
                                                       ),
                                                   child: Text(
                                                     hadith.text.length > 50
-                                                        ? '${hadith.text.trim().substring(0, 50)}...'
-                                                        : hadith.text,
+                                                        ? '${maskEnglishLetters(hadith.text.trim()).substring(0, 50)}...'
+                                                        : maskEnglishLetters(hadith.text),
                                                     style: ArabicTextStyle(
                                                       arabicFont:
                                                           ArabicFont.reemKufi,
@@ -325,15 +340,14 @@ class ChaptersScreen extends ConsumerWidget {
                                                     0xffe6a345,
                                                   ),
                                                 ),
-                                                onTap: () {
-                                                  // تحديث الحديث المختار
+                                                onTap: () {                                                  // Update selected hadith
                                                   ref
                                                       .read(
                                                         selectedHadithProvider
                                                             .notifier,
                                                       )
                                                       .state = hadith;
-                                                  // الانتقال إلى HadithDetails
+                                                  // Navigate to HadithDetails
                                                   navNotifier.changeTab(1);
                                                 },
                                               );

@@ -6,11 +6,10 @@ class Hadith {
   final String reference;
   final String analysis;
   final String summary;
-  final int bab; // Chapter number
-  final int fasl; // Section number
+  final int bab;
+  final int fasl;
   final String chapter_title;
   final String section_title;
-
 
   Hadith({
     required this.id,
@@ -53,8 +52,8 @@ class Hadith {
       'summary': summary,
       'chapter_title': chapter_title,
       'section_title': section_title,
-      'bab':bab,
-      'fasl':fasl,
+      'bab': bab,
+      'fasl': fasl,
     };
   }
 
@@ -86,7 +85,6 @@ class Hadith {
     );
   }
 
-  // إضافة مصنف empty
   factory Hadith.empty() {
     return Hadith(
       id: 0,

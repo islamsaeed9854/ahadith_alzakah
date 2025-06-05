@@ -8,7 +8,6 @@ import 'providers/theme_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'screens/splash_screen.dart';
 import 'providers/notification_service_provider.dart';
-import 'screens/hadith_details.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

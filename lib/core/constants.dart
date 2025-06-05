@@ -29,7 +29,6 @@ class TextApp {
   static const AssetImage appBackgroundImage = AssetImage(
     'assets/opening-screen-crupped-blured.webp',
   );
-  // زر الرجوع الذي يستخدم navigationProvider
   static IconButton backButton(WidgetRef ref) {
     final navNotifier = ref.read(navigationProvider.notifier);
     return IconButton(

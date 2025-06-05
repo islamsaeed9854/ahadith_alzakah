@@ -2,7 +2,9 @@ import 'package:ahadith_alzakah/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:async/async.dart';
 import '../core/constants.dart';
+import '../providers/search_state_provider.dart';
 import '../data/models/hadith.dart';
 import '../providers/navigation_provider.dart';
 import 'chapters_screen.dart';
@@ -19,7 +21,7 @@ class SearchScreen extends ConsumerWidget {
     final orientation = MediaQuery.of(context).orientation;
     final isLandscape = orientation == Orientation.landscape;
     final filteredResults = ref.watch(filteredResultsProvider);
-
+    final screenWidth = MediaQuery.of(context).size.width;
     final double horizontalPadding =
         isLandscape ? screenSize.width * 0.01 : screenSize.width * 0.04;
 
@@ -39,14 +41,38 @@ class SearchScreen extends ConsumerWidget {
         isLandscape ? screenSize.width * 0.016 : screenSize.width * 0.045;
 
     final controller = ref.watch(searchControllerProvider);
-    final filterSearch = ref.read(filterSearchProvider);
+    final filterSearch = ref.read(filterSearchProvider);    void performSearch() {
+      if (controller.text.trim().isEmpty) return;
 
-    void performSearch() {
-  
-      filterSearch(controller.text, context);
-      FocusScope.of(context).unfocus();
+      try {
+        final searchStateNotifier = ref.read(searchStateProvider.notifier);
+        
+        // Cancel any existing search operation
+        searchStateNotifier.stopSearch();
+
+        // Create a new cancellable search operation
+        final operation = CancelableOperation.fromFuture(
+          Future(() async {
+            await filterSearch(controller.text, context);
+            if (context.mounted) {
+              FocusScope.of(context).unfocus();
+            }
+          }),
+        );
+
+        // Start the new search operation
+        searchStateNotifier.startSearch(operation);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('حدث خطأ أثناء البحث: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
-final isEnabled = ValueNotifier<bool>(true);
     return Scaffold(
       
       backgroundColor: Colors.transparent,
@@ -58,7 +84,7 @@ final isEnabled = ValueNotifier<bool>(true);
                 ? Row(
                   children: [
                     Container(
-                      width: screenSize.width * 0.35,
+                      width:  isLandscape ? screenWidth * 0.6 : screenWidth * 0.9,
                       padding: EdgeInsets.symmetric(
                         horizontal: horizontalPadding,
                         vertical: screenSize.height * 0.02,
@@ -537,7 +563,7 @@ final isEnabled = ValueNotifier<bool>(true);
                                             ),
                                             border: Border.all(
                                               color: const Color(0xffe6a345),
-                                              width: 7,
+                                              width: 3,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
@@ -594,55 +620,47 @@ final isEnabled = ValueNotifier<bool>(true);
     bool isLandscape,
     double screenWidth,
   ) {
-    List<TextSpan> spans = [];
     final double fontSize = isLandscape ? screenWidth * 0.012 : 12;
+    final normalStyle = GoogleFonts.cairo(
+      color: const Color(0xff513c2e),
+      fontWeight: FontWeight.bold,
+      fontSize: fontSize,
+    );
+    final highlightStyle = GoogleFonts.cairo(
+      color: AppTheme.redBlackColer,
+      fontSize: fontSize,
+      fontWeight: FontWeight.bold,
+    );
 
-    if (start >= 0 && end <= text.length) {
-      if (start > 0) {
-        spans.add(
-          TextSpan(
-            text: text.substring(0, start),
-            style: GoogleFonts.cairo(
-              color: Color(0xff513c2e),
-              fontWeight: FontWeight.bold,
-              fontSize: fontSize,
-            ),
-          ),
-        );
-      }
-
-      spans.add(
-        TextSpan(
-          text: text.substring(start, end),
-          style: GoogleFonts.cairo(
-            color: AppTheme.redBlackColer,
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-
-      if (end < text.length) {
-        spans.add(
-          TextSpan(
-            text: text.substring(end),
-            style: GoogleFonts.cairo(
-              color: Color(0xff513c2e),
-              fontSize: fontSize,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
-      }
-    } else {
-      spans.add(
-        TextSpan(
-          text: text,
-          style: GoogleFonts.cairo(color: Colors.white, fontSize: fontSize),
-        ),
-      );
+    // Helper: remove English letters only (a-zA-Z)
+    String removeEnglishLetters(String s) {
+      return s.replaceAll(RegExp(r'[a-zA-Z]'), '');
     }
 
+    List<TextSpan> spans = [];
+    if (start >= 0 && end <= text.length) {
+      if (start > 0) {
+        spans.add(TextSpan(
+          text: removeEnglishLetters(text.substring(0, start)),
+          style: normalStyle,
+        ));
+      }
+      spans.add(TextSpan(
+        text: removeEnglishLetters(text.substring(start, end)),
+        style: highlightStyle,
+      ));
+      if (end < text.length) {
+        spans.add(TextSpan(
+          text: removeEnglishLetters(text.substring(end)),
+          style: normalStyle,
+        ));
+      }
+    } else {
+      spans.add(TextSpan(
+        text: removeEnglishLetters(text),
+        style: normalStyle,
+      ));
+    }
     return spans;
   }
 }

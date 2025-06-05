@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/setting_card.dart';
 import '../widgets/clickable_setting_card.dart';
 import '../core/theme.dart';
+
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -25,6 +26,10 @@ final authStateProvider = StreamProvider<bool>((ref) {
 final notificationsEnabledProvider = StateProvider<bool>((ref) {
   return false;
 });
+
+// Providers to manage tap count and timing
+final tapCountProvider = StateProvider<int>((ref) => 0);
+final lastTapTimeProvider = StateProvider<DateTime?>((ref) => null);
 
 final settingsInitializerProvider = FutureProvider<void>((ref) async {
   final prefs = await SharedPreferences.getInstance();
@@ -78,9 +83,9 @@ class SettingsScreen extends ConsumerWidget {
 
     if (tapCount.state >= 5) {
       tapCount.state = 0;
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoginScreen())
+      );
     }
   }
 
@@ -236,7 +241,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(settingsInitializerProvider);
-
+    final screenSize = MediaQuery.of(context).size;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isLandscape =
@@ -245,47 +250,68 @@ class SettingsScreen extends ConsumerWidget {
     final isDarkMode = ref.watch(isDarkModeProvider);
     final isNotificationsEnabled = ref.watch(notificationsEnabledProvider);
     final authState = ref.watch(authStateProvider);
+    final double horizontalPadding =
+        isLandscape ? screenSize.width * 0.01 : screenSize.width * 0.04;
+
+    final double titleFontSize =
+        isLandscape ? screenSize.width * 0.02 : screenSize.width * 0.09;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final contentWidth =
-                isLandscape ? screenWidth * 0.6 : screenWidth * 0.9;
-
-            return Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Container(
-                      width: contentWidth,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: GestureDetector(
-                                  onTap: () => _handleTitleTap(context, ref),
-                                  child: Text(
-                                    'الإعدادات',
-                                    style: GoogleFonts.cairo(
-                                    color: AppTheme.secodaryColor,
-                                    fontSize: screenWidth * 0.08,
+      resizeToAvoidBottomInset: false,
+      body: Container(
+        height: screenSize.height,
+        child: isLandscape
+            ? Row(
+                children: [
+                  Container(
+                    width: isLandscape ? screenWidth * 0.6 : screenWidth * 0.9,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: screenSize.height * 0.02,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: () => _handleTitleTap(context, ref),
+                                child: Text(
+                                  'الاعدادات',
+                                  style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
-                                  ),
+                                    fontSize: titleFontSize,
+                                    color: const Color(0xfffcead0),
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 4,
+                                        color: Colors.black.withOpacity(0.3),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                              TextApp.backButton(ref),
-                            ],
-                          ),
-                          SizedBox(height: screenHeight * 0.03),
-
+                            ),
+                            TextApp.backButton(ref),
+                          ],
+                        ),
+                        SizedBox(height: screenSize.height * 0.01),
+                      ],
+                    ),
+                  ),
+                  Container(width: 1, color: Colors.white.withOpacity(0.3)),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: screenSize.height * 0.02,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           buildSettingCard(
                             context,
                             label: 'حجم الخط',
@@ -297,11 +323,9 @@ class SettingsScreen extends ConsumerWidget {
                                     Icons.remove,
                                     color: Color(0xff977c55),
                                   ),
-                                  onPressed:
-                                      fontSize > 10
-                                          ? () =>
-                                              _updateFontSize(fontSize - 1, ref)
-                                          : null,
+                                  onPressed: fontSize > 10
+                                      ? () => _updateFontSize(fontSize - 1, ref)
+                                      : null,
                                 ),
                                 Text(
                                   fontSize.toStringAsFixed(0),
@@ -315,17 +339,14 @@ class SettingsScreen extends ConsumerWidget {
                                     Icons.add,
                                     color: Color(0xff977c55),
                                   ),
-                                  onPressed:
-                                      fontSize < 30
-                                          ? () =>
-                                              _updateFontSize(fontSize + 1, ref)
-                                          : null,
+                                  onPressed: fontSize < 30
+                                      ? () => _updateFontSize(fontSize + 1, ref)
+                                      : null,
                                 ),
                               ],
                             ),
                           ),
                           SizedBox(height: screenHeight * 0.02),
-
                           buildSettingCard(
                             context,
                             label: 'القراءة الليلية',
@@ -337,20 +358,17 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           SizedBox(height: screenHeight * 0.02),
-
                           buildSettingCard(
                             context,
                             label: 'الإشعارات اليومية',
                             child: Switch.adaptive(
                               value: isNotificationsEnabled,
-                              onChanged:
-                                  (value) =>
-                                      _toggleNotifications(value, ref, context),
+                              onChanged: (value) =>
+                                  _toggleNotifications(value, ref, context),
                               activeColor: const Color(0xff977c55),
                               inactiveTrackColor: Colors.grey[300],
                             ),
                           ),
-
                           authState.when(
                             data: (isAuthenticated) {
                               if (isAuthenticated) {
@@ -365,15 +383,12 @@ class SettingsScreen extends ConsumerWidget {
                                         color: Color(0xff977c55),
                                         size: 20,
                                       ),
-                                      onTap:
-                                          () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (_) =>
-                                                      const AddHadithScreen(),
-                                            ),
-                                          ),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const AddHadithScreen(),
+                                        ),
+                                      ),
                                     ),
                                     SizedBox(height: screenHeight * 0.02),
                                     buildClickableSettingCard(
@@ -384,15 +399,13 @@ class SettingsScreen extends ConsumerWidget {
                                         color: Color(0xff977c55),
                                         size: 20,
                                       ),
-                                      onTap:
-                                          () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (_) =>
-                                                      const RemoveHadithScreen(),
-                                            ),
-                                          ),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const RemoveHadithScreen(),
+                                        ),
+                                      ),
                                     ),
                                     SizedBox(height: screenHeight * 0.02),
                                     buildClickableSettingCard(
@@ -404,63 +417,53 @@ class SettingsScreen extends ConsumerWidget {
                                         size: 20,
                                       ),
                                       onTap: () {
-                                        ref
-                                            .watch(DataProvider)
-                                            .when(
-                                              data: (hadiths) {
-                                                if (hadiths.isNotEmpty) {
-                                                  ref
-                                                      .read(
-                                                        selectedEditFieldProvider
-                                                            .notifier,
-                                                      )
-                                                      .state = '';
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder:
-                                                          (_) =>
-                                                              const EditOptionsScreen(),
-                                                    ),
-                                                  );
-                                                } else {
-                                                  showSingleSnackBar(
-                                                    context,
-                                                    message:
-                                                        'لا يوجد أحاديث للتعديل',
-                                                    backgroundColor:
-                                                        Colors.redAccent,
-                                                    duration: const Duration(
-                                                      seconds: 2,
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                              loading: () {
-                                                showSingleSnackBar(
-                                                  context,
-                                                  message:
-                                                      'لا يوجد أحاديث للتعديل',
-                                                  backgroundColor:
-                                                      Colors.redAccent,
-                                                  duration: const Duration(
-                                                    seconds: 2,
-                                                  ),
-                                                );
-                                              },
-                                              error: (error, stackTrace) {
-                                                showSingleSnackBar(
-                                                  context,
-                                                  message:
-                                                      'لا يوجد أحاديث للتعديل',
-                                                  backgroundColor:
-                                                      Colors.redAccent,
-                                                  duration: const Duration(
-                                                    seconds: 2,
-                                                  ),
-                                                );
-                                              },
+                                        ref.watch(DataProvider).when(
+                                          data: (hadiths) {
+                                            if (hadiths.isNotEmpty) {
+                                              ref
+                                                  .read(
+                                                    selectedEditFieldProvider
+                                                        .notifier,
+                                                  )
+                                                  .state = '';
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const EditOptionsScreen(),
+                                                ),
+                                              );
+                                            } else {
+                                              showSingleSnackBar(
+                                                context,
+                                                message:
+                                                    'لا يوجد أحاديث للتعديل',
+                                                backgroundColor:
+                                                    Colors.redAccent,
+                                                duration:
+                                                    const Duration(seconds: 2),
+                                              );
+                                            }
+                                          },
+                                          loading: () {
+                                            showSingleSnackBar(
+                                              context,
+                                              message: 'لا يوجد أحاديث للتعديل',
+                                              backgroundColor: Colors.redAccent,
+                                              duration:
+                                                  const Duration(seconds: 2),
                                             );
+                                          },
+                                          error: (error, stackTrace) {
+                                            showSingleSnackBar(
+                                              context,
+                                              message: 'لا يوجد أحاديث للتعديل',
+                                              backgroundColor: Colors.redAccent,
+                                              duration:
+                                                  const Duration(seconds: 2),
+                                            );
+                                          },
+                                        );
                                       },
                                     ),
                                     SizedBox(height: screenHeight * 0.02),
@@ -472,11 +475,10 @@ class SettingsScreen extends ConsumerWidget {
                                         color: Color(0xff977c55),
                                         size: 20,
                                       ),
-                                      onTap:
-                                          () => _showLogoutConfirmationDialog(
-                                            context,
-                                            ref,
-                                          ),
+                                      onTap: () => _showLogoutConfirmationDialog(
+                                        context,
+                                        ref,
+                                      ),
                                     ),
                                   ],
                                 );
@@ -484,23 +486,248 @@ class SettingsScreen extends ConsumerWidget {
                                 return const SizedBox.shrink();
                               }
                             },
-                            loading:
-                                () => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                            error:
-                                (error, stackTrace) =>
-                                    Center(child: Text('خطأ: $error')),
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            error: (error, stackTrace) =>
+                                Center(child: Text('خطأ: $error')),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
+                ],
+              )
+            : Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                      bottom: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: GestureDetector(
+                            onTap: () => _handleTitleTap(context, ref),
+                            child: Text(
+                              'الاعدادات',
+                              style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.bold,
+                                fontSize: titleFontSize,
+                                color: const Color(0xfffcead0),
+                                shadows: [
+                                  Shadow(
+                                    blurRadius: 4,
+                                    color: Colors.black.withOpacity(0.3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        TextApp.backButton(ref),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: screenHeight * 0.02,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          buildSettingCard(
+                            context,
+                            label: 'حجم الخط',
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove,
+                                    color: Color(0xff977c55),
+                                  ),
+                                  onPressed: fontSize > 10
+                                      ? () => _updateFontSize(fontSize - 1, ref)
+                                      : null,
+                                ),
+                                Text(
+                                  fontSize.toStringAsFixed(0),
+                                  style: GoogleFonts.cairo(
+                                    color: Colors.brown.shade800,
+                                    fontSize: screenWidth * 0.045,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: Color(0xff977c55),
+                                  ),
+                                  onPressed: fontSize < 30
+                                      ? () => _updateFontSize(fontSize + 1, ref)
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          buildSettingCard(
+                            context,
+                            label: 'القراءة الليلية',
+                            child: Switch.adaptive(
+                              value: isDarkMode,
+                              onChanged: (value) => _toggleDarkMode(value, ref),
+                              activeColor: const Color(0xff977c55),
+                              inactiveTrackColor: Colors.grey[300],
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          buildSettingCard(
+                            context,
+                            label: 'الإشعارات اليومية',
+                            child: Switch.adaptive(
+                              value: isNotificationsEnabled,
+                              onChanged: (value) =>
+                                  _toggleNotifications(value, ref, context),
+                              activeColor: const Color(0xff977c55),
+                              inactiveTrackColor: Colors.grey[300],
+                            ),
+                          ),
+                          authState.when(
+                            data: (isAuthenticated) {
+                              if (isAuthenticated) {
+                                return Column(
+                                  children: [
+                                    SizedBox(height: screenHeight * 0.02),
+                                    buildClickableSettingCard(
+                                      context,
+                                      label: 'إضافة حديث',
+                                      icon: const Icon(
+                                        Icons.add,
+                                        color: Color(0xff977c55),
+                                        size: 20,
+                                      ),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const AddHadithScreen(),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: screenHeight * 0.02),
+                                    buildClickableSettingCard(
+                                      context,
+                                      label: 'حذف حديث',
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Color(0xff977c55),
+                                        size: 20,
+                                      ),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const RemoveHadithScreen(),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: screenHeight * 0.02),
+                                    buildClickableSettingCard(
+                                      context,
+                                      label: 'تعديل حديث',
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        color: Color(0xff977c55),
+                                        size: 20,
+                                      ),
+                                      onTap: () {
+                                        ref.watch(DataProvider).when(
+                                          data: (hadiths) {
+                                            if (hadiths.isNotEmpty) {
+                                              ref
+                                                  .read(
+                                                    selectedEditFieldProvider
+                                                        .notifier,
+                                                  )
+                                                  .state = '';
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const EditOptionsScreen(),
+                                                ),
+                                              );
+                                            } else {
+                                              showSingleSnackBar(
+                                                context,
+                                                message:
+                                                    'لا يوجد أحاديث للتعديل',
+                                                backgroundColor:
+                                                    Colors.redAccent,
+                                                duration:
+                                                    const Duration(seconds: 2),
+                                              );
+                                            }
+                                          },
+                                          loading: () {
+                                            showSingleSnackBar(
+                                              context,
+                                              message: 'لا يوجد أحاديث للتعديل',
+                                              backgroundColor: Colors.redAccent,
+                                              duration:
+                                                  const Duration(seconds: 2),
+                                            );
+                                          },
+                                          error: (error, stackTrace) {
+                                            showSingleSnackBar(
+                                              context,
+                                              message: 'لا يوجد أحاديث للتعديل',
+                                              backgroundColor: Colors.redAccent,
+                                              duration:
+                                                  const Duration(seconds: 2),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    SizedBox(height: screenHeight * 0.02),
+                                    buildClickableSettingCard(
+                                      context,
+                                      label: 'تسجيل الخروج',
+                                      icon: const Icon(
+                                        Icons.logout,
+                                        color: Color(0xff977c55),
+                                        size: 20,
+                                      ),
+                                      onTap: () => _showLogoutConfirmationDialog(
+                                        context,
+                                        ref,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                return const SizedBox.shrink();
+                              }
+                            },
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            error: (error, stackTrace) =>
+                                Center(child: Text('خطأ: $error')),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
-        ),
       ),
     );
   }

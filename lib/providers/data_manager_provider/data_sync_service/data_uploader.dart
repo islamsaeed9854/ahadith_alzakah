@@ -10,9 +10,8 @@ class DataUploader {
   final Logger _logger = Logger();
   final String _bucket = 'ahadith.alzakah.app';
   final String _dataPath = 'ahadith_alzakah_data/ahadith_zakah.json';
-  final RetryOptions _retryOptions = const RetryOptions(
-    maxAttempts: 3, // زيادة عدد المحاولات للتعامل مع الإنترنت البطيء
-    delayFactor: Duration(seconds: 1), // تأخير أطول بين المحاولات
+  final RetryOptions _retryOptions = const RetryOptions(    maxAttempts: 3, // Increase attempts to handle slow internet
+    delayFactor: Duration(seconds: 1), // Longer delay between attempts
     maxDelay: Duration(seconds: 5),
   );
 
@@ -25,9 +24,7 @@ class DataUploader {
       }
 
       final jsonData = json.encode(jsonMap);
-      final fileBytes = Uint8List.fromList(utf8.encode(jsonData));
-
-      // عرض مؤشر التحميل
+      final fileBytes = Uint8List.fromList(utf8.encode(jsonData));      // Show loading indicator
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       scaffoldMessenger.showSnackBar(
         const SnackBar(
@@ -38,7 +35,7 @@ class DataUploader {
               Text('جارٍ المزامنة مع السيرفر...'),
             ],
           ),
-          duration: Duration(days: 1), // مدة طويلة جدًا لضمان بقاء الـ SnackBar حتى انتهاء الرفع
+          duration: Duration(days: 1), // Very long duration to keep SnackBar visible until upload completes
         ),
       );
 

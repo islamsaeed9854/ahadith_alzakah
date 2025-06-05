@@ -275,9 +275,9 @@ class AddHadithScreen extends ConsumerWidget {
     Future<void> addHadith() async {
       _hideKeyboard();
 
-      if (!isButtonEnabled) return; // لا تعمل إذا كان الزر معطلاً
+      if (!isButtonEnabled) return; 
 
-      // تعطيل الزر أثناء العملية
+
       ref.read(addButtonEnabledProvider.notifier).state = false;
 
       final bab = int.tryParse(babController.text.trim()) ?? -1;
@@ -365,7 +365,6 @@ class AddHadithScreen extends ConsumerWidget {
         referenceController.clear();
         analysisController.clear();
 
-        // إعادة تفعيل الزر بعد النجاح
         ref.read(addButtonEnabledProvider.notifier).state = true;
       } catch (e) {
         String errorMessage;
@@ -380,7 +379,6 @@ class AddHadithScreen extends ConsumerWidget {
         }
         showMessage(context, errorMessage);
 
-        // إعادة تفعيل الزر بعد الخطأ
         ref.read(addButtonEnabledProvider.notifier).state = true;
       }
     }

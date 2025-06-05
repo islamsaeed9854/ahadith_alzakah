@@ -4,7 +4,7 @@ import 'edit_hadith_screen.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../core/utils.dart'; // استيراد ملف utils.dart لاستخدام showSingleSnackBar
+import '../core/utils.dart'; // Import utils.dart for using showSingleSnackBar
 
 final selectedEditFieldProvider = StateProvider<String>((ref) => '');
 
@@ -23,9 +23,8 @@ class EditOptionsScreen extends ConsumerWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        body: Stack(
-          children: [
-            // الخلفية
+        body: Stack(          children: [
+            // Background
             Positioned.fill(
               child: Image.asset(
                 'assets/opening-screen-crupped-blured.webp',
@@ -39,9 +38,8 @@ class EditOptionsScreen extends ConsumerWidget {
                   vertical: 10,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // العنوان والعودة
+                  crossAxisAlignment: CrossAxisAlignment.start,                  children: [
+                    // Title and back button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -55,14 +53,12 @@ class EditOptionsScreen extends ConsumerWidget {
                         ),
                         TextApp.backButtonLoginAddRemovePages(context),
                       ],
-                    ),
-                    const SizedBox(height: 30),
-                    // المحتوى الرئيسي (اختيارات + زر)
+                    ),                    const SizedBox(height: 30),
+                    // Main content (options + button)
                     Expanded(
                       child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            // قائمة الاختيارات
+                        child: Column(                          children: [
+                            // Options list
                             SizedBox(
                               width:
                                   isLandscape
@@ -105,9 +101,8 @@ class EditOptionsScreen extends ConsumerWidget {
                                       );
                                     }).toList(),
                               ),
-                            ),
-                            const SizedBox(height: 35),
-                            // زر التالي
+                            ),                            const SizedBox(height: 35),
+                            // Next button
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff977c55),

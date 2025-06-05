@@ -188,17 +188,15 @@ class DataAdder {
       final grouped = _grouper.groupHadithsByStructure(stagedHadiths);
       final jsonMap = {'version': version, 'chapters': grouped};
 
-      // رفع البيانات
       await _dataUploader.uploadData(jsonMap, context);
       await _versionUploader.uploadVersion(version, context, '');
 
-      // حفظ البيانات محليًا
       await _jsonHandler.saveHadithJson(jsonMap);
       await _versionHandler.setLocalVersion(version);
 
-      // تحديث _jsonData في DataLoader
+
       final dataLoader =
-          DataLoader(); // Create instance (or use a singleton if preferred)
+          DataLoader(); 
       await dataLoader.updateJsonData(stagedHadiths, version);
 
       // تحديث الحالة

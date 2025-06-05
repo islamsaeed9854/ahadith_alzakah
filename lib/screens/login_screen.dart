@@ -23,8 +23,7 @@ class LoginScreen extends ConsumerWidget {
     return emailRegex.hasMatch(email);
   }
 
-  Future<void> _login(BuildContext context, WidgetRef ref) async {
-    // إزالة التركيز عن الحقول لإخفاء اللوحة
+  Future<void> _login(BuildContext context, WidgetRef ref) async {    // Remove focus from fields to hide keyboard
     FocusScope.of(context).unfocus();
 
     final loginFormState = ref.read(loginFormProvider);

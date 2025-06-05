@@ -27,9 +27,9 @@ Widget buildBabCard(
     textDirection: TextDirection.rtl,
     child: GestureDetector(
       onTap: () {
-        // Update the provider to navigate to Chapters
-        // Screen
-        
+        // Reset expanded section when opening a new chapter
+        ref.read(expandedSectionProvider.notifier).state = null;
+        // Update the provider to navigate to ChaptersScreen
         ref.read(innerBooksScreenProvider.notifier).state = ChaptersScreen(
           chapterNumber: chapterNumber,
         );

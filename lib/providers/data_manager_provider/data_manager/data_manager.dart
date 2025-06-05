@@ -6,6 +6,7 @@ import 'data_adder.dart';
 import 'data_deleter.dart';
 import '../data_search_service/data_searcher.dart';
 import '../local_storage_service/local_version_handler.dart';
+
 final DataProvider =
     StateNotifierProvider<DataManager, AsyncValue<List<Hadith>>>(
       (ref) => DataManager(ref),
@@ -20,12 +21,12 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
   final LocalVersionHandler _versionHandler;
 
   DataManager(this.ref)
-      : _loader = DataLoader(),
-        _adder = DataAdder(ref),
-        _deleter = DataDeleter(),
-        _searcher = DataSearcher(),
-         _versionHandler = LocalVersionHandler(),
-        super(const AsyncValue.loading()) {
+    : _loader = DataLoader(),
+      _adder = DataAdder(ref),
+      _deleter = DataDeleter(),
+      _searcher = DataSearcher(),
+      _versionHandler = LocalVersionHandler(),
+      super(const AsyncValue.loading()) {
     loadHadiths();
   }
 
@@ -43,7 +44,8 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
         }
         return state;
       });
-      if (hadiths != null && hadiths.isNotEmpty) state = AsyncValue.data(hadiths);
+      if (hadiths != null && hadiths.isNotEmpty)
+        state = AsyncValue.data(hadiths);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -79,7 +81,10 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
       );
 
       if (state.valueOrNull != null) {
-        await _loader.updateJsonData(state.valueOrNull!,await _versionHandler.getLocalVersion());
+        await _loader.updateJsonData(
+          state.valueOrNull!,
+          await _versionHandler.getLocalVersion(),
+        );
       }
     } catch (e) {
       rethrow;
@@ -100,6 +105,13 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
       state.valueOrNull ?? [],
       (hadiths) => state = AsyncValue.data(hadiths),
     );
+    // Update the JSON data after deletion
+    if (state.valueOrNull != null) {
+      await _loader.updateJsonData(
+        state.valueOrNull!,
+        await _versionHandler.getLocalVersion(),
+      );
+    }
   }
 
   Future<Hadith> retrieveHadith(

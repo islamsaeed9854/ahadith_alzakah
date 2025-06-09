@@ -100,6 +100,7 @@ class MyApp extends ConsumerWidget {
           child: DefaultTextStyle(
             style: DefaultTextStyle.of(context).style.copyWith(
               fontSize: fontSize.toDouble(), // Apply your custom size
+              fontFamily: 'Roboto',
             ),
             child: child!,
           ),

@@ -179,7 +179,7 @@ class SearchScreen extends ConsumerWidget {
                                   backgroundColor: const Color(0xFF937848),
                                   padding: EdgeInsets.symmetric(
                                     vertical: screenSize.height * 0.012,
-                                    horizontal: screenSize.width * 0.05,
+                                    horizontal: screenSize.width * 0.03,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(55),

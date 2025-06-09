@@ -39,11 +39,11 @@ final themeProvider = Provider<ThemeData>((ref) {
     iconTheme: IconThemeData(
       color: isDarkMode ? Colors.amber[200] : Colors.brown,
     ),
-    // tabBarTheme: TabBarTheme(
-    //   labelColor: isDarkMode ? Colors.amber[200] : const Color(0xff912929),
-    //   unselectedLabelColor: isDarkMode ? Colors.grey[500] : Colors.brown,
-    //   labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-    // ),
+    tabBarTheme: TabBarTheme(
+      labelColor: isDarkMode ? Colors.amber[200] : const Color(0xff912929),
+      unselectedLabelColor: isDarkMode ? Colors.grey[500] : Colors.brown,
+      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+    ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: isDarkMode ? const Color(0xFF1c1c1c) : const Color(0xFFFDF5EC),
       selectedItemColor: isDarkMode ? Colors.amber[200] : const Color.fromARGB(255, 192, 144, 76),

@@ -21,10 +21,10 @@ class NotificationController {
     if (navigatorKey.currentState != null &&
         navigatorKey.currentContext != null) {
       final container = ProviderScope.containerOf(navigatorKey.currentContext!);
-      
+
       // Reset innerBooksScreenProvider to ensure BooksScreen is not active
       container.read(innerBooksScreenProvider.notifier).state = null;
-      
+
       // Set navigation to HadithDetails tab (index 1)
       container.read(navigationProvider.notifier).changeTab(1);
 
@@ -88,6 +88,23 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final fontSize = ref.read(
+          fontSizeProvider,
+        ); // Get your custom font size
+
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(1.0), // Lock scaling to 100%
+          ),
+          child: DefaultTextStyle(
+            style: DefaultTextStyle.of(context).style.copyWith(
+              fontSize: fontSize.toDouble(), // Apply your custom size
+            ),
+            child: child!,
+          ),
+        );
+      },
       home: const SplashScreen(),
     );
   }

@@ -18,7 +18,7 @@ Widget buildBabCard(
 
   // Adjust padding based on screen width
   final screenWidth = MediaQuery.of(context).size.width;
-  final padding = screenWidth * 0.015; // Reduced to 1.5% for better fit
+  final padding = screenWidth * 0.0; // Reduced to 1.5% for better fit
 
   return Directionality(
     textDirection: TextDirection.rtl,
@@ -44,7 +44,7 @@ Widget buildBabCard(
                 color: const Color.fromRGBO(255, 255, 255, 0.8),
                 border: Border.all(color: const Color(0xffe6a345), width: 3),
               ),
-              padding: EdgeInsets.all(padding),
+   
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,

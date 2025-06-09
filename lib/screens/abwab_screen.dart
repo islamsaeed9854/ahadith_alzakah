@@ -17,8 +17,9 @@ class BooksScreen extends ConsumerWidget {
     final hadithState = ref.watch(DataProvider);
     final size = MediaQuery.of(context).size;
     final isLandscape = size.width > size.height;
-    final double baseFontSize = size.width * 0.04;
-
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    final double baseFontSize = size.width * 0.04 * textScaleFactor;
+     
     return Scaffold(
       backgroundColor: Colors.transparent, // Inherit HomeScreen background
       body: LayoutBuilder(

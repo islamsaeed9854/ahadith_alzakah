@@ -115,8 +115,8 @@ class HadithDetails extends ConsumerWidget {
                     Padding(
                       padding: EdgeInsets.only(
                         top: 16,
-                        left: MediaQuery.of(context).padding.left + 16,
-                        right: MediaQuery.of(context).padding.right + 16,
+                        left: screenWidth > screenHeight ? 0 : MediaQuery.of(context).padding.left + 16,
+                        right: screenWidth > screenHeight ? 0 :  MediaQuery.of(context).padding.right + 16,
                       ),
                       child: Row(
                         children: [
@@ -165,7 +165,7 @@ class HadithDetails extends ConsumerWidget {
                       flex: 2, // نسبة أكبر لنص الحديث
                       child: Container(
                         margin: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).padding.left + screenWidth * 0.04,
+                          horizontal: screenWidth > screenHeight ?0  :  MediaQuery.of(context).padding.left + screenWidth * 0.06,
                         ),
                         child: ScrollConfiguration(
                           behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -207,20 +207,26 @@ class HadithDetails extends ConsumerWidget {
                     
                     // Tab content section
                     Expanded(
-                      flex: 3, // نسبة أكبر لمحتوى التبويب
+                      flex: 2, // نسبة أكبر لمحتوى التبويب
                       child: TabBarView(
                         children: [
                           TabContent(
                             text: hadithToDisplay.summary,
                             isDark: isDark,
+                            screenWidth: screenWidth,
+                            screenHight:screenHeight,
                           ),
                           TabContent(
                             text: hadithToDisplay.reference,
                             isDark: isDark,
+                            screenHight: screenHeight,
+                            screenWidth: screenWidth,
                           ),
                           TabContent(
                             text: hadithToDisplay.analysis,
                             isDark: isDark,
+                            screenWidth: screenWidth,
+                            screenHight: screenHeight,
                           ),
                         ],
                       ),
@@ -239,11 +245,14 @@ class HadithDetails extends ConsumerWidget {
 class TabContent extends ConsumerWidget {
   final String text;
   final bool isDark;
-
+  final screenHight;
+  final screenWidth;
   const TabContent({
     Key? key,
     required this.text,
     required this.isDark,
+    required this.screenHight,
+    required this.screenWidth,
   }) : super(key: key);
 
   List<TextSpan> _buildFormattedText(String text, bool isDark, double fontSize) {
@@ -300,7 +309,7 @@ class TabContent extends ConsumerWidget {
     final fontSize = ref.watch(fontSizeProvider);
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: MediaQuery.of(context).padding.left + 8.0,
+        horizontal:   MediaQuery.of(context).padding.left + screenHight < screenWidth ? 8.0 : 22.0,
         vertical: MediaQuery.of(context).padding.right + 8.0,
       ),
       child: ScrollConfiguration(

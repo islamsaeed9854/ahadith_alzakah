@@ -8,7 +8,7 @@ import '../screens/chapters_screen.dart';
 import '../notification_service.dart';
 import '../providers/search_providers.dart';
 import '../core/methods.dart';
-
+import 'settings_screen.dart';
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
@@ -63,6 +63,7 @@ class HadithDetails extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(settingsInitializerProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final theme = ref.watch(themeProvider);

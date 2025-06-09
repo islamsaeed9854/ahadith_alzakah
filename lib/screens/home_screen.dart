@@ -34,7 +34,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(settingsInitializerProvider);
     final currentIndex = ref.watch(navigationProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     final innerBooksScreenPr = ref.watch(innerBooksScreenProvider);

@@ -9,7 +9,6 @@ import 'add_hadith.dart';
 import '../data/models/hadith.dart';
 import '../core/utils.dart';
 
-
 final isDeletingProvider = StateProvider<bool>((ref) => false);
 
 class RemoveHadithScreen extends ConsumerWidget {
@@ -21,11 +20,9 @@ class RemoveHadithScreen extends ConsumerWidget {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final isDeleting = ref.watch(isDeletingProvider);
 
-    
     final babController = ref.watch(babControllerProvider);
     final faslController = ref.watch(faslControllerProvider);
     final numberController = ref.watch(numberControllerProvider);
-
 
     final dataManager = ref.read(DataProvider.notifier);
 
@@ -43,9 +40,10 @@ class RemoveHadithScreen extends ConsumerWidget {
         );
       }
     }
+
     Future<void> deleteHadith(BuildContext dialogContext) async {
       ref.read(isDeletingProvider.notifier).state = true;
-      
+
       final bab = int.tryParse(babController.text.trim()) ?? -1;
       final fasl = int.tryParse(faslController.text.trim()) ?? -1;
       final number = int.tryParse(numberController.text.trim()) ?? -1;
@@ -113,120 +111,128 @@ class RemoveHadithScreen extends ConsumerWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            SizedBox.expand(child: TextApp.appBackgroundWidget),
-            Container(color: const Color.fromRGBO(0, 0, 0, 0.3)),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    top: screenSize.height * 0.04,
-                    bottom: keyboardHeight > 0 ? keyboardHeight + 30 : 30,
-                    left: 16.0,
-                    right: 16.0,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight - keyboardHeight,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: Container( // إضافة Container للتحكم في الخلفية
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: TextApp.appBackgroundWidget.image, // استخدام الخلفية الموجودة
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: SafeArea(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        top: screenSize.height * 0.04,
+                        bottom: keyboardHeight > 0 ? keyboardHeight + 30 : 30,
+                        left: 16.0,
+                        right: 16.0,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - keyboardHeight,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
                             children: [
-                              Text(
-                                'حذف حديث',
-                                style: GoogleFonts.cairo(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenSize.width * 0.09,
-                                  color: const Color(0xfffcead0),
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: screenSize.width * 0.03,
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'حذف حديث',
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: screenSize.width * 0.09,
                                       color: const Color(0xfffcead0),
+                                      shadows: [
+                                        Shadow(
+                                          blurRadius: screenSize.width * 0.03,
+                                          color: const Color(0xfffcead0),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  TextApp.backButtonLoginAddRemovePages(context),
+                                ],
+                              ),
+                              SizedBox(height: screenSize.height * 0.04),
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildLabeledInputField(
+                                      'رقم الباب',
+                                      babController,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildLabeledInputField(
+                                      'رقم الفصل',
+                                      faslController,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildLabeledInputField(
+                                      'رقم الحديث',
+                                      numberController,
+                                    ),
+                                    const SizedBox(height: 30),
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xff912929),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 16,
+                                          ),
+                                          minimumSize: const Size(0, 0),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        onPressed: isDeleting
+                                            ? null
+                                            : () {
+                                                FocusManager.instance.primaryFocus?.unfocus();
+                                                Future.delayed(const Duration(milliseconds: 100), () {
+                                                  _showConfirmationDialog(
+                                                    context,
+                                                    deleteHadith,
+                                                  );
+                                                });
+                                              },
+                                        child: isDeleting
+                                            ? const CircularProgressIndicator(
+                                                color: AppTheme.secodaryColor,
+                                              )
+                                            : Text(
+                                                'حذف الحديث',
+                                                style: GoogleFonts.reemKufi(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppTheme.secodaryColor,
+                                                ),
+                                              ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              TextApp.backButtonLoginAddRemovePages(context),
+                              const SizedBox(height: 20),
                             ],
                           ),
-                          SizedBox(height: screenSize.height * 0.04),
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildLabeledInputField(
-                                  'رقم الباب',
-                                  babController,
-                                ),
-                                const SizedBox(height: 20),
-                                _buildLabeledInputField(
-                                  'رقم الفصل',
-                                  faslController,
-                                ),
-                                const SizedBox(height: 20),
-                                _buildLabeledInputField(
-                                  'رقم الحديث',
-                                  numberController,
-                                ),
-                                const SizedBox(height: 30),
-                                Align(
-                                  alignment: Alignment.center,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xff912929),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 24,
-                                        vertical: 16,
-                                      ),
-                                      minimumSize: const Size(0, 0),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: isDeleting
-                                        ? null
-                                        : () {
-                                            FocusManager.instance.primaryFocus?.unfocus();
-                                            Future.delayed(const Duration(milliseconds: 100), () {
-                                              _showConfirmationDialog(
-                                                context,
-                                                deleteHadith,
-                                              );
-                                            });
-                                          },
-                                    child: isDeleting
-                                        ? const CircularProgressIndicator(
-                                            color: AppTheme.secodaryColor,
-                                          )
-                                        : Text(
-                                            'حذف الحديث',
-                                            style: GoogleFonts.reemKufi(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppTheme.secodaryColor,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

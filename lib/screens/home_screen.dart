@@ -34,6 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(settingsInitializerProvider);
     final currentIndex = ref.watch(navigationProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     final innerBooksScreenPr = ref.watch(innerBooksScreenProvider);
@@ -72,18 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           resizeToAvoidBottomInset: false,
           body: Stack(
             children: [
-              // Fixed background image
-              Positioned.fill(
-                child: Transform.rotate(
-                  angle: 3.14159,
-                  child: Image(
-                    image: TextApp.appBackgroundImage,
-                    fit: BoxFit.cover,
-                    color: Colors.black26,
-                    colorBlendMode: BlendMode.darken,
-                  ),
-                ),
-              ),
+          TextApp.appBackgroundWidget,
               // Current page content
               pages[currentIndex],
             ],

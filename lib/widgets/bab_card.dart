@@ -11,16 +11,13 @@ Widget buildBabCard(
   String text,
   bool isLandscape,
   int chapterNumber,
+  {required double baseFontSize} // Add baseFontSize as a required parameter
 ) {
-  // Get the screen width and height for responsive sizing
+  // Calculate subFontSize based on baseFontSize with clamping
+  final subFontSize = (baseFontSize * 0.85).clamp(12.0, 18.0); // Adjusted for readability
+
+  // Adjust padding based on screen width
   final screenWidth = MediaQuery.of(context).size.width;
-  final screenHeight = MediaQuery.of(context).size.height;
-
-  // Calculate font sizes based on screen width with more balanced ranges
-  final baseFontSize = (screenWidth * 0.04).clamp(14.0, 22.0); // More conservative range
-  final subFontSize = (screenWidth * 0.035).clamp(12.0, 18.0); // Adjusted for readability
-
-  // Adjust padding based on screen size
   final padding = screenWidth * 0.015; // Reduced to 1.5% for better fit
 
   return Directionality(
@@ -52,28 +49,32 @@ Widget buildBabCard(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2, // Allow up to 2 lines for long titles
-                    overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
-                    style: ArabicTextStyle(
-                      arabicFont: ArabicFont.cairo,
-                      fontSize: baseFontSize,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xffe6a345),
+                  Flexible(
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2, // Allow up to 2 lines for long titles
+                      overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
+                      style: ArabicTextStyle(
+                        arabicFont: ArabicFont.cairo,
+                        fontSize: baseFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xffe6a345),
+                      ),
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.01), // 1% of screen height
-                  Text(
-                    text,
-                    textAlign: TextAlign.center,
-                    maxLines: 3, // Allow up to 3 lines for longer text
-                    overflow: TextOverflow.ellipsis, // Handle overflow
-                    style: ArabicTextStyle(
-                      arabicFont: ArabicFont.reemKufi,
-                      fontSize: subFontSize,
-                      color: Colors.black87,
+                  SizedBox(height: baseFontSize * 0.2), // Dynamic spacing based on font size
+                  Flexible(
+                    child: Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      maxLines: 3, // Allow up to 3 lines for longer text
+                      overflow: TextOverflow.ellipsis, // Handle overflow
+                      style: ArabicTextStyle(
+                        arabicFont: ArabicFont.reemKufi,
+                        fontSize: subFontSize,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
                 ],

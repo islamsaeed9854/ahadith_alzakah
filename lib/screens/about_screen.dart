@@ -19,24 +19,7 @@ class AboutScreen extends ConsumerWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with 180-degree rotation
-          Transform(
-            transform: Matrix4.rotationZ(math.pi), // Rotate 180 degrees
-            alignment: Alignment.center,
-            child: Image(
-              image: TextApp.appBackgroundImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black26,
-              colorBlendMode: BlendMode.darken,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey,
-                ); // Fallback if image fails
-              },
-            ),
-          ),
+            TextApp.appBackgroundWidget,
           // Content
           SafeArea(
             child: Column(

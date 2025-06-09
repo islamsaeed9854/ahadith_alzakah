@@ -275,8 +275,7 @@ class AddHadithScreen extends ConsumerWidget {
     Future<void> addHadith() async {
       _hideKeyboard();
 
-      if (!isButtonEnabled) return; 
-
+      if (!isButtonEnabled) return;
 
       ref.read(addButtonEnabledProvider.notifier).state = false;
 
@@ -290,19 +289,19 @@ class AddHadithScreen extends ConsumerWidget {
 
       if (bab <= 0 || fasl <= 0 || number <= 0) {
         showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
-        ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+        ref.read(addButtonEnabledProvider.notifier).state = true;
         return;
       }
       if (text.isEmpty) {
         showMessage(context, 'نص الحديث مطلوب');
-        ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+        ref.read(addButtonEnabledProvider.notifier).state = true;
         return;
       }
 
       final connectivityResult = await (Connectivity().checkConnectivity());
       if (connectivityResult == ConnectivityResult.none) {
         showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
-        ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+        ref.read(addButtonEnabledProvider.notifier).state = true;
         return;
       }
 
@@ -325,7 +324,7 @@ class AddHadithScreen extends ConsumerWidget {
 
           if (result == null) {
             showMessage(context, 'لا يمكن إضافة الحديث بدون إدخال البيانات المطلوبة');
-            ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+            ref.read(addButtonEnabledProvider.notifier).state = true;
             return;
           }
 
@@ -335,7 +334,7 @@ class AddHadithScreen extends ConsumerWidget {
           if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
               (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
             showMessage(context, 'يرجى إدخال جميع العناوين المطلوبة');
-            ref.read(addButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+            ref.read(addButtonEnabledProvider.notifier).state = true;
             return;
           }
         }
@@ -387,182 +386,183 @@ class AddHadithScreen extends ConsumerWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: GestureDetector(
-          onTap: _hideKeyboard,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-                child: TextApp.appBackgroundWidget,
-              ),
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-              ),
-              SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  top: screenHeight * 0.04 + (keyboardHeight > 0 ? keyboardHeight * 0.1 : 0),
-                  bottom: keyboardHeight > 0 ? keyboardHeight + 40 : 40,
-                  left: screenWidth * 0.04,
-                  right: screenWidth * 0.04,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: screenHeight - keyboardHeight,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
+        body: Container( // إضافة Container للتحكم في الخلفية
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: TextApp.appBackgroundWidget.image, // استخدام الخلفية الموجودة
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: SafeArea(
+            child: GestureDetector(
+              onTap: _hideKeyboard,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      top: screenHeight * 0.04,
+                      bottom: keyboardHeight > 0 ? keyboardHeight + 40 : 40,
+                      left: screenWidth * 0.04,
+                      right: screenWidth * 0.04,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: screenHeight - keyboardHeight,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Column(
                             children: [
-                              Text(
-                                'إضافة حديث',
-                                style: GoogleFonts.cairo(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth * 0.09,
-                                  color: const Color(0xfffcead0),
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: screenWidth * 0.03,
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'إضافة حديث',
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: screenWidth * 0.09,
                                       color: const Color(0xfffcead0),
+                                      shadows: [
+                                        Shadow(
+                                          blurRadius: screenWidth * 0.03,
+                                          color: const Color(0xfffcead0),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  TextApp.backButtonLoginAddRemovePages(context),
+                                ],
+                              ),
+                              Container(
+                                padding: EdgeInsets.all(isSmallScreen ? 12 : 18),
+                                width: isSmallScreen ? screenWidth * 0.9 : screenWidth * 0.9,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color.fromRGBO(0, 0, 0, 0.1),
+                                      blurRadius: isSmallScreen ? 5 : 10,
+                                      spreadRadius: isSmallScreen ? 1 : 3,
                                     ),
                                   ],
                                 ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildNumberInputRow(
+                                      'رقم الباب',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: babController,
+                                      isSmallScreen: isSmallScreen,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.015),
+                                    _buildNumberInputRow(
+                                      'رقم الفصل',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: faslController,
+                                      isSmallScreen: isSmallScreen,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.015),
+                                    _buildNumberInputRow(
+                                      'رقم الحديث',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: numberController,
+                                      isSmallScreen: isSmallScreen,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.02),
+                                    Divider(
+                                      color: Colors.white,
+                                      thickness: 2.0,
+                                      indent: 16.0,
+                                      endIndent: 16.0,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.015),
+                                    _buildTextInputField(
+                                      'نص الحديث',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: textController,
+                                      isSmallScreen: isSmallScreen,
+                                      maxLines: 3,
+                                      heightFactor: 0.08,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.015),
+                                    _buildTextInputField(
+                                      'الخلاصة',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: summaryController,
+                                      isSmallScreen: isSmallScreen,
+                                      maxLines: 3,
+                                      heightFactor: 0.08,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.015),
+                                    _buildTextInputField(
+                                      'التخريج',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: referenceController,
+                                      isSmallScreen: isSmallScreen,
+                                      maxLines: 3,
+                                      heightFactor: 0.08,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.015),
+                                    _buildTextInputField(
+                                      'الدراسة',
+                                      screenWidth,
+                                      screenHeight,
+                                      controller: analysisController,
+                                      isSmallScreen: isSmallScreen,
+                                      maxLines: 3,
+                                      heightFactor: 0.08,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.04),
+                                  ],
+                                ),
                               ),
-                              TextApp.backButtonLoginAddRemovePages(context),
+                              SizedBox(height: screenHeight * 0.02),
+                              Align(
+                                alignment: Alignment.center,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xff977c55),
+                                    foregroundColor: const Color(0xff977c55),
+                                    overlayColor: Colors.transparent,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: isSmallScreen ? 12 : 14,
+                                    ),
+                                    minimumSize: const Size(0, 0),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                  onPressed: isButtonEnabled ? () => addHadith() : null,
+                                  child: Text(
+                                    "إضافة حديث",
+                                    style: GoogleFonts.amiri(
+                                      color: Colors.white,
+                                      fontSize: isSmallScreen ? 16 : 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          Container(
-                            padding: EdgeInsets.all(isSmallScreen ? 12 : 18),
-                            width: isSmallScreen ? screenWidth * 0.9 : screenWidth * 0.9,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color.fromRGBO(0, 0, 0, 0.1),
-                                  blurRadius: isSmallScreen ? 5 : 10,
-                                  spreadRadius: isSmallScreen ? 1 : 3,
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildNumberInputRow(
-                                  'رقم الباب',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: babController,
-                                  isSmallScreen: isSmallScreen,
-                                ),
-                                SizedBox(height: screenHeight * 0.015),
-                                _buildNumberInputRow(
-                                  'رقم الفصل',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: faslController,
-                                  isSmallScreen: isSmallScreen,
-                                ),
-                                SizedBox(height: screenHeight * 0.015),
-                                _buildNumberInputRow(
-                                  'رقم الحديث',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: numberController,
-                                  isSmallScreen: isSmallScreen,
-                                ),
-                                SizedBox(height: screenHeight * 0.02),
-                                Divider(
-                                  color: Colors.white,
-                                  thickness: 2.0,
-                                  indent: 16.0,
-                                  endIndent: 16.0,
-                                ),
-                                SizedBox(height: screenHeight * 0.015),
-                                _buildTextInputField(
-                                  'نص الحديث',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: textController,
-                                  isSmallScreen: isSmallScreen,
-                                  maxLines: 3,
-                                  heightFactor: 0.08,
-                                ),
-                                SizedBox(height: screenHeight * 0.015),
-                                _buildTextInputField(
-                                  'الخلاصة',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: summaryController,
-                                  isSmallScreen: isSmallScreen,
-                                  maxLines: 3,
-                                  heightFactor: 0.08,
-                                ),
-                                SizedBox(height: screenHeight * 0.015),
-                                _buildTextInputField(
-                                  'التخريج',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: referenceController,
-                                  isSmallScreen: isSmallScreen,
-                                  maxLines: 3,
-                                  heightFactor: 0.08,
-                                ),
-                                SizedBox(height: screenHeight * 0.015),
-                                _buildTextInputField(
-                                  'الدراسة',
-                                  screenWidth,
-                                  screenHeight,
-                                  controller: analysisController,
-                                  isSmallScreen: isSmallScreen,
-                                  maxLines: 3,
-                                  heightFactor: 0.08,
-                                ),
-                                SizedBox(height: screenHeight * 0.04),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: screenHeight * 0.02),
-                          Align(
-                            alignment: Alignment.center,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff977c55),
-                                foregroundColor: const Color(0xff977c55),
-                                overlayColor: Colors.transparent,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: isSmallScreen ? 12 : 14,
-                                ),
-                                minimumSize: const Size(0, 0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              onPressed: isButtonEnabled ? () => addHadith() : null,
-                              child: Text(
-                                "إضافة حديث",
-                                style: GoogleFonts.amiri(
-                                  color: Colors.white,
-                                  fontSize: isSmallScreen ? 16 : 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
+                          SizedBox(height: 20),
                         ],
                       ),
-                      SizedBox(height: 20),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -651,7 +651,7 @@ class AddHadithScreen extends ConsumerWidget {
     double? heightFactor,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    final baseHeight = heightFactor != null ? screenHeight * heightFactor +10: screenHeight * 0.06;
+    final baseHeight = heightFactor != null ? screenHeight * heightFactor + 10 : screenHeight * 0.06;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

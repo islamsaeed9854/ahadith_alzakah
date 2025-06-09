@@ -84,7 +84,7 @@ class SettingsScreen extends ConsumerWidget {
     if (tapCount.state >= 5) {
       tapCount.state = 0;
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const LoginScreen())
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
   }
@@ -242,492 +242,221 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(settingsInitializerProvider);
     final screenSize = MediaQuery.of(context).size;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final fontSize = ref.watch(fontSizeProvider);
     final isDarkMode = ref.watch(isDarkModeProvider);
     final isNotificationsEnabled = ref.watch(notificationsEnabledProvider);
     final authState = ref.watch(authStateProvider);
-    final double horizontalPadding =
-        isLandscape ? screenSize.width * 0.01 : screenSize.width * 0.04;
+    final double padding = screenWidth * 0.04;
 
-    final double titleFontSize =
-        isLandscape ? screenSize.width * 0.02 : screenSize.width * 0.09;
+    final double titleFontSize = isLandscape ? screenWidth * 0.06 : screenWidth * 0.09;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: false,
-      body: Container(
-        height: screenSize.height,
-        child: isLandscape
-            ? Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: isLandscape ? screenWidth * 0.6 : screenWidth * 0.9,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: screenSize.height * 0.02,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: GestureDetector(
-                                onTap: () => _handleTitleTap(context, ref),
-                                child: Text(
-                                  'الاعدادات',
-                                  style: GoogleFonts.cairo(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: titleFontSize,
-                                    color: const Color(0xfffcead0),
-                                    shadows: [
-                                      Shadow(
-                                        blurRadius: 4,
-                                        color: Colors.black.withOpacity(0.3),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                  Flexible(
+                    child: GestureDetector(
+                      onTap: () => _handleTitleTap(context, ref),
+                      child: Text(
+                        'الاعدادات',
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.bold,
+                          fontSize: titleFontSize,
+                          color: const Color(0xfffcead0),
+                          shadows: [
+                            Shadow(
+                              blurRadius: 4,
+                              color: Colors.black.withOpacity(0.3),
                             ),
-                            TextApp.backButton(ref),
                           ],
                         ),
-                        SizedBox(height: screenSize.height * 0.01),
-                      ],
-                    ),
-                  ),
-                  Container(width: 1, color: Colors.white.withOpacity(0.3)),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                        vertical: screenSize.height * 0.02,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          buildSettingCard(
-                            context,
-                            label: 'حجم الخط',
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.remove,
-                                    color: Color(0xff977c55),
-                                  ),
-                                  onPressed: fontSize > 10
-                                      ? () => _updateFontSize(fontSize - 1, ref)
-                                      : null,
-                                ),
-                                Text(
-                                  fontSize.toStringAsFixed(0),
-                                  style: GoogleFonts.cairo(
-                                    color: Colors.brown.shade800,
-                                    fontSize: screenWidth * 0.045,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.add,
-                                    color: Color(0xff977c55),
-                                  ),
-                                  onPressed: fontSize < 30
-                                      ? () => _updateFontSize(fontSize + 1, ref)
-                                      : null,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: screenHeight * 0.02),
-                          buildSettingCard(
-                            context,
-                            label: 'القراءة الليلية',
-                            child: Switch.adaptive(
-                              value: isDarkMode,
-                              onChanged: (value) => _toggleDarkMode(value, ref),
-                              activeColor: const Color(0xff977c55),
-                              inactiveTrackColor: Colors.grey[300],
-                            ),
-                          ),
-                          SizedBox(height: screenHeight * 0.02),
-                          buildSettingCard(
-                            context,
-                            label: 'الإشعارات اليومية',
-                            child: Switch.adaptive(
-                              value: isNotificationsEnabled,
-                              onChanged: (value) =>
-                                  _toggleNotifications(value, ref, context),
-                              activeColor: const Color(0xff977c55),
-                              inactiveTrackColor: Colors.grey[300],
-                            ),
-                          ),
-                          authState.when(
-                            data: (isAuthenticated) {
-                              if (isAuthenticated) {
-                                return Column(
-                                  children: [
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'إضافة حديث',
-                                      icon: const Icon(
-                                        Icons.add,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const AddHadithScreen(),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'حذف حديث',
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const RemoveHadithScreen(),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'تعديل حديث',
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () {
-                                        ref.watch(DataProvider).when(
-                                          data: (hadiths) {
-                                            if (hadiths.isNotEmpty) {
-                                              ref
-                                                  .read(
-                                                    selectedEditFieldProvider
-                                                        .notifier,
-                                                  )
-                                                  .state = '';
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      const EditOptionsScreen(),
-                                                ),
-                                              );
-                                            } else {
-                                              showSingleSnackBar(
-                                                context,
-                                                message:
-                                                    'لا يوجد أحاديث للتعديل',
-                                                backgroundColor:
-                                                    Colors.redAccent,
-                                                duration:
-                                                    const Duration(seconds: 2),
-                                              );
-                                            }
-                                          },
-                                          loading: () {
-                                            showSingleSnackBar(
-                                              context,
-                                              message: 'لا يوجد أحاديث للتعديل',
-                                              backgroundColor: Colors.redAccent,
-                                              duration:
-                                                  const Duration(seconds: 2),
-                                            );
-                                          },
-                                          error: (error, stackTrace) {
-                                            showSingleSnackBar(
-                                              context,
-                                              message: 'لا يوجد أحاديث للتعديل',
-                                              backgroundColor: Colors.redAccent,
-                                              duration:
-                                                  const Duration(seconds: 2),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'تسجيل الخروج',
-                                      icon: const Icon(
-                                        Icons.logout,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () => _showLogoutConfirmationDialog(
-                                        context,
-                                        ref,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              } else {
-                                return const SizedBox.shrink();
-                              }
-                            },
-                            loading: () => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            error: (error, stackTrace) =>
-                                Center(child: Text('خطأ: $error')),
-                          ),
-                        ],
                       ),
                     ),
                   ),
+                  TextApp.backButton(ref),
                 ],
-              )
-            : Column(
-                children: [
-                  Container(
-                    padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top + 16,
-                      left: horizontalPadding,
-                      right: horizontalPadding,
-                      bottom: 16,
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              buildSettingCard(
+                context,
+                label: 'حجم الخط',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.remove,
+                        color: Color(0xff977c55),
+                      ),
+                      onPressed: fontSize > 10
+                          ? () => _updateFontSize(fontSize - 1, ref)
+                          : null,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Text(
+                      fontSize.toStringAsFixed(0),
+                      style: GoogleFonts.cairo(
+                        color: Colors.brown.shade800,
+                        fontSize: screenWidth * 0.045,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.add,
+                        color: Color(0xff977c55),
+                      ),
+                      onPressed: fontSize < 30
+                          ? () => _updateFontSize(fontSize + 1, ref)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              buildSettingCard(
+                context,
+                label: 'القراءة الليلية',
+                child: Switch.adaptive(
+                  value: isDarkMode,
+                  onChanged: (value) => _toggleDarkMode(value, ref),
+                  activeColor: const Color(0xff977c55),
+                  inactiveTrackColor: Colors.grey[300],
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              buildSettingCard(
+                context,
+                label: 'الإشعارات اليومية',
+                child: Switch.adaptive(
+                  value: isNotificationsEnabled,
+                  onChanged: (value) => _toggleNotifications(value, ref, context),
+                  activeColor: const Color(0xff977c55),
+                  inactiveTrackColor: Colors.grey[300],
+                ),
+              ),
+              authState.when(
+                data: (isAuthenticated) {
+                  if (isAuthenticated) {
+                    return Column(
                       children: [
-                        Flexible(
-                          child: GestureDetector(
-                            onTap: () => _handleTitleTap(context, ref),
-                            child: Text(
-                              'الاعدادات',
-                              style: GoogleFonts.cairo(
-                                fontWeight: FontWeight.bold,
-                                fontSize: titleFontSize,
-                                color: const Color(0xfffcead0),
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 4,
-                                    color: Colors.black.withOpacity(0.3),
-                                  ),
-                                ],
-                              ),
+                        SizedBox(height: screenHeight * 0.02),
+                        buildClickableSettingCard(
+                          context,
+                          label: 'إضافة حديث',
+                          icon: const Icon(
+                            Icons.add,
+                            color: Color(0xff977c55),
+                            size: 20,
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AddHadithScreen(),
                             ),
                           ),
                         ),
-                        TextApp.backButton(ref),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                        vertical: screenHeight * 0.02,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          buildSettingCard(
+                        SizedBox(height: screenHeight * 0.02),
+                        buildClickableSettingCard(
+                          context,
+                          label: 'حذف حديث',
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Color(0xff977c55),
+                            size: 20,
+                          ),
+                          onTap: () => Navigator.push(
                             context,
-                            label: 'حجم الخط',
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.remove,
-                                    color: Color(0xff977c55),
-                                  ),
-                                  onPressed: fontSize > 10
-                                      ? () => _updateFontSize(fontSize - 1, ref)
-                                      : null,
-                                ),
-                                Text(
-                                  fontSize.toStringAsFixed(0),
-                                  style: GoogleFonts.cairo(
-                                    color: Colors.brown.shade800,
-                                    fontSize: screenWidth * 0.045,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.add,
-                                    color: Color(0xff977c55),
-                                  ),
-                                  onPressed: fontSize < 30
-                                      ? () => _updateFontSize(fontSize + 1, ref)
-                                      : null,
-                                ),
-                              ],
+                            MaterialPageRoute(
+                              builder: (_) => const RemoveHadithScreen(),
                             ),
                           ),
-                          SizedBox(height: screenHeight * 0.02),
-                          buildSettingCard(
-                            context,
-                            label: 'القراءة الليلية',
-                            child: Switch.adaptive(
-                              value: isDarkMode,
-                              onChanged: (value) => _toggleDarkMode(value, ref),
-                              activeColor: const Color(0xff977c55),
-                              inactiveTrackColor: Colors.grey[300],
-                            ),
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        buildClickableSettingCard(
+                          context,
+                          label: 'تعديل حديث',
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Color(0xff977c55),
+                            size: 20,
                           ),
-                          SizedBox(height: screenHeight * 0.02),
-                          buildSettingCard(
-                            context,
-                            label: 'الإشعارات اليومية',
-                            child: Switch.adaptive(
-                              value: isNotificationsEnabled,
-                              onChanged: (value) =>
-                                  _toggleNotifications(value, ref, context),
-                              activeColor: const Color(0xff977c55),
-                              inactiveTrackColor: Colors.grey[300],
-                            ),
-                          ),
-                          authState.when(
-                            data: (isAuthenticated) {
-                              if (isAuthenticated) {
-                                return Column(
-                                  children: [
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'إضافة حديث',
-                                      icon: const Icon(
-                                        Icons.add,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const AddHadithScreen(),
-                                        ),
-                                      ),
+                          onTap: () {
+                            ref.watch(DataProvider).when(
+                              data: (hadiths) {
+                                if (hadiths.isNotEmpty) {
+                                  ref
+                                      .read(selectedEditFieldProvider.notifier)
+                                      .state = '';
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const EditOptionsScreen(),
                                     ),
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'حذف حديث',
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const RemoveHadithScreen(),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'تعديل حديث',
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () {
-                                        ref.watch(DataProvider).when(
-                                          data: (hadiths) {
-                                            if (hadiths.isNotEmpty) {
-                                              ref
-                                                  .read(
-                                                    selectedEditFieldProvider
-                                                        .notifier,
-                                                  )
-                                                  .state = '';
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      const EditOptionsScreen(),
-                                                ),
-                                              );
-                                            } else {
-                                              showSingleSnackBar(
-                                                context,
-                                                message:
-                                                    'لا يوجد أحاديث للتعديل',
-                                                backgroundColor:
-                                                    Colors.redAccent,
-                                                duration:
-                                                    const Duration(seconds: 2),
-                                              );
-                                            }
-                                          },
-                                          loading: () {
-                                            showSingleSnackBar(
-                                              context,
-                                              message: 'لا يوجد أحاديث للتعديل',
-                                              backgroundColor: Colors.redAccent,
-                                              duration:
-                                                  const Duration(seconds: 2),
-                                            );
-                                          },
-                                          error: (error, stackTrace) {
-                                            showSingleSnackBar(
-                                              context,
-                                              message: 'لا يوجد أحاديث للتعديل',
-                                              backgroundColor: Colors.redAccent,
-                                              duration:
-                                                  const Duration(seconds: 2),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                    SizedBox(height: screenHeight * 0.02),
-                                    buildClickableSettingCard(
-                                      context,
-                                      label: 'تسجيل الخروج',
-                                      icon: const Icon(
-                                        Icons.logout,
-                                        color: Color(0xff977c55),
-                                        size: 20,
-                                      ),
-                                      onTap: () => _showLogoutConfirmationDialog(
-                                        context,
-                                        ref,
-                                      ),
-                                    ),
-                                  ],
+                                  );
+                                } else {
+                                  showSingleSnackBar(
+                                    context,
+                                    message: 'لا يوجد أحاديث للتعديل',
+                                    backgroundColor: Colors.redAccent,
+                                    duration: const Duration(seconds: 2),
+                                  );
+                                }
+                              },
+                              loading: () {
+                                showSingleSnackBar(
+                                  context,
+                                  message: 'لا يوجد أحاديث للتعديل',
+                                  backgroundColor: Colors.redAccent,
+                                  duration: const Duration(seconds: 2),
                                 );
-                              } else {
-                                return const SizedBox.shrink();
-                              }
-                            },
-                            loading: () => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            error: (error, stackTrace) =>
-                                Center(child: Text('خطأ: $error')),
+                              },
+                              error: (error, stackTrace) {
+                                showSingleSnackBar(
+                                  context,
+                                  message: 'لا يوجد أحاديث للتعديل',
+                                  backgroundColor: Colors.redAccent,
+                                  duration: const Duration(seconds: 2),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        buildClickableSettingCard(
+                          context,
+                          label: 'تسجيل الخروج',
+                          icon: const Icon(
+                            Icons.logout,
+                            color: Color(0xff977c55),
+                            size: 20,
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                          onTap: () => _showLogoutConfirmationDialog(context, ref),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, stackTrace) => Center(child: Text('خطأ: $error')),
               ),
+              SizedBox(height: screenHeight * 0.02),
+            ],
+          ),
+        ),
       ),
     );
   }

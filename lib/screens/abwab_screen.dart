@@ -8,9 +8,9 @@ import '../widgets/bab_card.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../core/utils.dart';
 import '../core/methods.dart';
+
 class BooksScreen extends ConsumerWidget {
   BooksScreen({super.key});
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +25,7 @@ class BooksScreen extends ConsumerWidget {
         builder: (context, constraints) {
           final double paddingHorizontal = constraints.maxWidth < 600 ? 35 : 60;
           final double gridMaxWidth =
-              isLandscape ? constraints.maxWidth / 3 : constraints.maxWidth / 2;
+              isLandscape ? constraints.maxWidth / 3.2 : constraints.maxWidth / 2.1; // تعديل لضمان 3 كروت
 
           return hadithState.when(
             data: (hadiths) {
@@ -107,7 +107,7 @@ class BooksScreen extends ConsumerWidget {
                               margin: const EdgeInsets.symmetric(vertical: 10),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 14,
-                                vertical: .02,
+                                vertical: 0.02,
                               ),
                               decoration: BoxDecoration(
                                 color: const Color.fromRGBO(255, 255, 255, 0.9),
@@ -141,12 +141,11 @@ class BooksScreen extends ConsumerWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: dynamicChapters.length,
-                            gridDelegate:
-                                SliverGridDelegateWithMaxCrossAxisExtent(
+                            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: gridMaxWidth,
-                              crossAxisSpacing: isLandscape ? 68 : 77,
-                              mainAxisSpacing: isLandscape ? 33 : 55,
-                              childAspectRatio: isLandscape ? 1.4 : 1.2,
+                              crossAxisSpacing: isLandscape ? 80 : 80, // تقليل المسافة في Landscape
+                              mainAxisSpacing: isLandscape ? 50 : 55, // تقليل المسافة في Landscape
+                              childAspectRatio: isLandscape ? 1.6 : 1.3, // زيادة الطول النسبي
                             ),
                             itemBuilder: (context, index) {
                               final chapter = dynamicChapters[index];
@@ -157,6 +156,7 @@ class BooksScreen extends ConsumerWidget {
                                 chapter['chapter_title'] as String,
                                 isLandscape,
                                 chapter['chapter_number'] as int,
+                                baseFontSize: baseFontSize, // تمرير حجم الخط لضبط النص
                               );
                             },
                           ),
@@ -238,4 +238,3 @@ class BooksScreen extends ConsumerWidget {
     );
   }
 }
-

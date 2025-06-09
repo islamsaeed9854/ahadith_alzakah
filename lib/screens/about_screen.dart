@@ -14,7 +14,7 @@ class AboutScreen extends ConsumerWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final double horizontalPadding = isLandscape ? screenWidth * 0.01 : screenWidth * 0.04;
-    final double titleFontSize = isLandscape ? screenWidth * 0.02 : screenWidth * 0.09;
+    final double titleFontSize = isLandscape ? screenWidth * 0.06 : screenWidth * 0.09;
 
     return Scaffold(
       body: Stack(

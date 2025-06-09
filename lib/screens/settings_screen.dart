@@ -240,7 +240,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-   // ref.watch(settingsInitializerProvider);
+    ref.watch(settingsInitializerProvider);
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;

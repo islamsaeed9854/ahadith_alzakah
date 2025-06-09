@@ -14,7 +14,7 @@ Widget buildBabCard(
   {required double baseFontSize} // Add baseFontSize as a required parameter
 ) {
   // Calculate subFontSize based on baseFontSize with clamping
-  final subFontSize = (baseFontSize * 0.85).clamp(12.0, 18.0); // Adjusted for readability
+  final subFontSize = (baseFontSize * 0.7).clamp(2.0, 18.0); // Adjusted for readability
 
   // Adjust padding based on screen width
   final screenWidth = MediaQuery.of(context).size.width;
@@ -50,6 +50,7 @@ Widget buildBabCard(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Flexible(
+                    flex: 5,
                     child: Text(
                       title,
                       textAlign: TextAlign.center,

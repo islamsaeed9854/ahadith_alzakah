@@ -23,7 +23,7 @@ class HadithDetails extends ConsumerWidget {
     }
 
     final baseStyle = TextStyle(
-      color: isDark ? Colors.white : Colors.black,
+      color: isDark ? Colors.white : Color(0xff513c2e),
       fontSize: fontSize,
       height: 1.8,
     );
@@ -38,12 +38,15 @@ class HadithDetails extends ConsumerWidget {
       if (before.isNotEmpty) addTextSpan(before, baseStyle);
 
       String matchText = match.group(0)!;
-      if (matchText.startsWith('X') && matchText.endsWith('X')) {
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: Colors.green));
+       if (matchText.startsWith('X') && matchText.endsWith('X')) {
+         final mcolor = isDark ?  Color(0xff10834b) :  Color(0xff10834b);
+        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: Colors.red));
+         final mcolor = isDark ?  Color(0xff912929) :  Color(0xff912929);
+        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color:mcolor));
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: Colors.blue));
+         final mcolor = isDark ?  Color(0xffa37635) :  Color(0xffa37635);
+        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color:mcolor));
       } else if (matchText == '*') {
         addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold), addSpace: false);
       }
@@ -185,7 +188,7 @@ class HadithDetails extends ConsumerWidget {
                     
                     // TabBar
                     TabBar(
-                      indicatorColor: AppTheme.redBlackColer,
+                      indicatorColor:isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
                       labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
                       unselectedLabelColor: const Color(0xff977c55),
                       labelStyle: GoogleFonts.notoKufiArabic(
@@ -254,7 +257,7 @@ class TabContent extends ConsumerWidget {
     }
 
     final baseStyle = TextStyle(
-      color: isDark ? const Color(0xffd6c9b3) : const Color(0xffa37635),
+      color: isDark ? const Color(0xffd6c9b3) : const Color(0xff513c2e),
       fontSize: fontSize,
       height: 1.8,
     );
@@ -270,11 +273,14 @@ class TabContent extends ConsumerWidget {
 
       String matchText = match.group(0)!;
       if (matchText.startsWith('X') && matchText.endsWith('X')) {
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: Colors.green));
+        final mcolor = isDark ?  Color(0xff10834b) :  Color(0xff10834b);
+        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: Colors.red));
+           final mcolor = isDark ?  Color(0xff912929) :  Color(0xff912929);
+        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: Colors.blue));
+       final mcolor = isDark ?  Color(0xffa37635) :  Color(0xffa37635);
+        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText == '*') {
         addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold), addSpace: false);
       }

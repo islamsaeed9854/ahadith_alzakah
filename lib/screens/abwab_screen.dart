@@ -145,7 +145,7 @@ class BooksScreen extends ConsumerWidget {
                               maxCrossAxisExtent: gridMaxWidth,
                               crossAxisSpacing: isLandscape ? 80 : 65, // تقليل المسافة في Landscape
                               mainAxisSpacing: isLandscape ? 50 : 55, // تقليل المسافة في Landscape
-                              childAspectRatio: isLandscape ? 1.4 : 1.3, // زيادة الطول النسبي
+                              childAspectRatio: isLandscape ? 1.2 : 1.3, // زيادة الطول النسبي
                             ),
                             itemBuilder: (context, index) {
                               final chapter = dynamicChapters[index];

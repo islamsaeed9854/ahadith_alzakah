@@ -97,7 +97,7 @@ class NotificationService {
           id: 100,
           channelKey: 'daily_hadith_channel',
           title: 'حديث اليوم',
-          body: _formatHadith(hadith),
+          body: _formatHadith(hadith), 
           notificationLayout: NotificationLayout.BigText,
           bigPicture: null,
           largeIcon: 'resource://drawable/ic_launcher',
@@ -210,14 +210,13 @@ class NotificationService {
   }
 
   String _formatHadith(Hadith hadith) {
-    String text = hadith.text;
-
+    String text = hadith.text.replaceAll(RegExp(r'[A-Z]'), '');
     if (text.length > 200) {
       text = '${text.substring(0, 197)}...';
     }
-
     return text;
   }
+
 
   Future<Hadith?> getDailyHadith() async {
     return await _getDailyHadith();
@@ -241,14 +240,12 @@ class NotificationService {
 
   Future<bool> hasNotificationPermission() async {
     final isAllowed = await AwesomeNotifications().isNotificationAllowed();
-
     return isAllowed;
   }
 
   Future<bool> requestNotificationPermission() async {
     final isAllowed =
         await AwesomeNotifications().requestPermissionToSendNotifications();
-
     return isAllowed;
   }
 
@@ -261,7 +258,7 @@ class NotificationService {
           id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
           channelKey: 'daily_hadith_channel',
           title: 'حديث اليوم',
-          body: _formatHadith(hadith),
+          body: _formatHadith(hadith), // <--- استخدام الدالة المعدلة
           notificationLayout: NotificationLayout.BigText,
           actionType: ActionType.Default,
         ),
@@ -272,7 +269,6 @@ class NotificationService {
   Future<int> getScheduledNotificationsCount() async {
     final notifications =
         await AwesomeNotifications().listScheduledNotifications();
-
     return notifications.length;
   }
 
@@ -304,7 +300,6 @@ class NotificationService {
   Future<String?> getLastHadithDate() async {
     try {
       final date = await _secureStorage.read(key: _lastHadithDateKey);
-
       return date;
     } catch (e) {
       print('Error getting last hadith date: $e');
@@ -315,7 +310,6 @@ class NotificationService {
   Future<bool> areNotificationsEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool('notifications_enabled') ?? false;
-
     return enabled;
   }
 }

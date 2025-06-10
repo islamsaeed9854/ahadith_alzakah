@@ -14,7 +14,7 @@ Widget buildBabCard(
   {required double baseFontSize} // Add baseFontSize as a required parameter
 ) {
   // Calculate subFontSize based on baseFontSize with clamping
-  final subFontSize = (baseFontSize * 0.7).clamp(2.0, 18.0); // Adjusted for readability
+  final subFontSize = (baseFontSize * 0.9).clamp(2.0, 18.0); // Adjusted for readability
 
   // Adjust padding based on screen width
   final screenWidth = MediaQuery.of(context).size.width;
@@ -72,7 +72,8 @@ Widget buildBabCard(
                       maxLines: 3, // Allow up to 3 lines for longer text
                       overflow: TextOverflow.ellipsis, // Handle overflow
                       style: ArabicTextStyle(
-                        arabicFont: ArabicFont.reemKufi,
+                        arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                         fontSize: subFontSize,
                         color: Colors.black87,
                       ),

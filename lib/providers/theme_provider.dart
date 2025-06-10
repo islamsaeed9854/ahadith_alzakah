@@ -16,7 +16,7 @@ final themeProvider = Provider<ThemeData>((ref) {
   return ThemeData(
     brightness: isDarkMode ? Brightness.dark : Brightness.light,
     primaryColor: const Color(0xff912929),
-    scaffoldBackgroundColor: isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xFFFDF5EC),
+    scaffoldBackgroundColor: isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xfffcf3e8),
     cardColor: isDarkMode ? const Color(0xFF1F1F1F) : Colors.white,
     appBarTheme: AppBarTheme(
       backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFDF5EC),

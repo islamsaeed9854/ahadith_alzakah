@@ -78,13 +78,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           bottomNavigationBar: Opacity(
-            opacity: (isDarkMode && currentIndex == 1) ? 1 : .8,
+            opacity: (isDarkMode && currentIndex == 1) ? 1 : 1,
             child: BottomNavigationBar(
               currentIndex: currentIndex,
               backgroundColor:
                   (isDarkMode && currentIndex == 1)
                       ? const Color(0xff1c1c1c)
-                      : const Color.fromRGBO(252, 243, 232, 0.9),
+                      : const Color(0xfffcf3e8),
+  
               onTap: (index) {
                 if (index != 0) {
                   ref.read(innerBooksScreenProvider.notifier).state = null;

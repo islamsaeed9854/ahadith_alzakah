@@ -17,7 +17,7 @@ class BooksScreen extends ConsumerWidget {
     final hadithState = ref.watch(DataProvider);
     final size = MediaQuery.of(context).size;
     final isLandscape = size.width > size.height;
-    final double baseFontSize = size.width * 0.04;
+    final double baseFontSize = size.width * 0.035;
     
     return Scaffold(
       backgroundColor: Colors.transparent, // Inherit HomeScreen background
@@ -145,7 +145,7 @@ class BooksScreen extends ConsumerWidget {
                               maxCrossAxisExtent: gridMaxWidth,
                               crossAxisSpacing: isLandscape ? 80 : 65, // تقليل المسافة في Landscape
                               mainAxisSpacing: isLandscape ? 50 : 55, // تقليل المسافة في Landscape
-                              childAspectRatio: isLandscape ? 1.2 : 1.3, // زيادة الطول النسبي
+                              childAspectRatio: isLandscape ? 1.2 : 1.1, // زيادة الطول النسبي
                             ),
                             itemBuilder: (context, index) {
                               final chapter = dynamicChapters[index];

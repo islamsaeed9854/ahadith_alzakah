@@ -115,7 +115,7 @@ class HadithDetails extends ConsumerWidget {
                     // Header section
                     Padding(
                       padding: EdgeInsets.only(
-                        top: 16,
+                        top: 0,
                         left: screenWidth > screenHeight ? 0 : MediaQuery.of(context).padding.left + 16,
                         right: screenWidth > screenHeight ? 0 :  MediaQuery.of(context).padding.right + 16,
                       ),
@@ -163,7 +163,7 @@ class HadithDetails extends ConsumerWidget {
                     
                     // Main hadith text section
                     Expanded(
-                      flex: 2, // نسبة أكبر لنص الحديث
+                      flex: 9, // نسبة أكبر لنص الحديث
                       child: Container(
                         margin: EdgeInsets.symmetric(
                           horizontal: screenWidth > screenHeight ?0  :  MediaQuery.of(context).padding.left + screenWidth * 0.06,
@@ -188,27 +188,30 @@ class HadithDetails extends ConsumerWidget {
                     ),
                     
                     // TabBar
-                    TabBar(
-                      indicatorColor:isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                      labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                      unselectedLabelColor: const Color(0xff977c55),
-                      labelStyle: GoogleFonts.notoKufiArabic(
-                        fontSize: fontSize.toDouble() * 0.8,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      flex: screenWidth > screenHeight ?  4 : 2,
+                      child: TabBar(
+                        indicatorColor:isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                        labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                        unselectedLabelColor: const Color(0xff977c55),
+                        labelStyle: GoogleFonts.notoKufiArabic(
+                          fontSize: fontSize.toDouble() * 0.8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        unselectedLabelStyle: GoogleFonts.notoKufiArabic(
+                          fontSize: fontSize.toDouble() * 0.8,
+                        ),
+                        tabs: const [
+                          Tab(text: 'الخلاصة'),
+                          Tab(text: 'التخريج'),
+                          Tab(text: 'الدراسة'),
+                        ],
                       ),
-                      unselectedLabelStyle: GoogleFonts.notoKufiArabic(
-                        fontSize: fontSize.toDouble() * 0.8,
-                      ),
-                      tabs: const [
-                        Tab(text: 'الخلاصة'),
-                        Tab(text: 'التخريج'),
-                        Tab(text: 'الدراسة'),
-                      ],
                     ),
                     
                     // Tab content section
                     Expanded(
-                      flex: 2, // نسبة أكبر لمحتوى التبويب
+                      flex: 9, // نسبة أكبر لمحتوى التبويب
                       child: TabBarView(
                         children: [
                           TabContent(

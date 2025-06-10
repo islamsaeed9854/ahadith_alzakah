@@ -9,6 +9,8 @@ import '../notification_service.dart';
 import '../providers/search_providers.dart';
 import '../core/methods.dart';
 import 'settings_screen.dart';
+import '../providers/data_manager_provider/data_manager/data_manager.dart';
+
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
@@ -75,6 +77,7 @@ class HadithDetails extends ConsumerWidget {
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
     final backgroundColor = theme.scaffoldBackgroundColor;
     final hadithToDisplay = selectedHadith ?? dailyHadith;
+    final allHadiths = ref.watch(DataProvider).value ?? [];
 
     if (hadithToDisplay == null) {
       return Scaffold(
@@ -93,6 +96,9 @@ class HadithDetails extends ConsumerWidget {
       );
     }
 
+    final currentIndex = allHadiths.indexWhere((h) => h.bab == hadithToDisplay.bab && h.fasl == hadithToDisplay.fasl && h.number == hadithToDisplay.number);
+    final pageController = PageController(initialPage: currentIndex);
+
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
@@ -110,132 +116,146 @@ class HadithDetails extends ConsumerWidget {
             child: Scaffold(
               backgroundColor: backgroundColor,
               body: SafeArea(
-                child: Column(
-                  children: [
-                    // Header section
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: 0,
-                        left: screenWidth > screenHeight ? 0 : MediaQuery.of(context).padding.left + 16,
-                        right: screenWidth > screenHeight ? 0 :  MediaQuery.of(context).padding.right + 16,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                child: PageView.builder(
+                  controller: pageController,
+                  itemCount: allHadiths.length,
+                  onPageChanged: (index) {
+                    ref.read(selectedHadithProvider.notifier).state = allHadiths[index];
+                  },
+                  itemBuilder: (context, index) {
+                    final hadith = allHadiths[index];
+                    return Column(
+                      children: [
+                        // Header section with fixed height
+                        SizedBox(
+                          height: 70.0, // Fixed height for header
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              top: 0,
+                              left: screenWidth > screenHeight ? 0 : MediaQuery.of(context).padding.left + 16,
+                              right: screenWidth > screenHeight ? 0 : MediaQuery.of(context).padding.right + 16,
+                            ),
+                            child: Row(
                               children: [
-                                Text(
-                                  'الباب ${Methods.numberToArabicText(hadithToDisplay.bab)}: ${hadithToDisplay.chapter_title}',
-                                  style: GoogleFonts.cairo(
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                                    fontSize: 15,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'الباب ${Methods.numberToArabicText(hadith.bab)}: ${hadith.chapter_title}',
+                                        style: GoogleFonts.cairo(
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                          fontSize: 15,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        'الفصل ${Methods.numberToArabicText(hadith.fasl)}: ${hadith.section_title} | حديث رقم: ${hadith.number}',
+                                        style: GoogleFonts.cairo(
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                                          fontSize: 13,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Text(
-                                  'الفصل ${Methods.numberToArabicText(hadithToDisplay.fasl)}: ${hadithToDisplay.section_title} | حديث رقم: ${hadithToDisplay.number}',
-                                  style: GoogleFonts.cairo(
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                                    fontSize: 13,
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.arrow_forward,
+                                    color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
+                                    size: 30,
                                   ),
+                                  onPressed: () {
+                                    controller.state = '';
+                                    navNotifier.changeTab(0);
+                                  },
                                 ),
                               ],
                             ),
                           ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_forward,
-                              color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
-                              size: 30,
-                            ),
-                            onPressed: () {
-                              controller.state = '';
-                              navNotifier.changeTab(0);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    SizedBox(height: screenHeight * 0.02),
-                    
-                    // Main hadith text section
-                    Expanded(
-                      flex: 9, // نسبة أكبر لنص الحديث
-                      child: Container(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: screenWidth > screenHeight ?0  :  MediaQuery.of(context).padding.left + screenWidth * 0.06,
                         ),
-                        child: ScrollConfiguration(
-                          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                          child: SingleChildScrollView(
-                            physics: const ClampingScrollPhysics(),
-                            child: RichText(
-                              textAlign: TextAlign.justify,
-                              text: TextSpan(
-                                children: _buildFormattedText(
-                                  hadithToDisplay.text.trim().replaceAll(RegExp(r'\s+'), ' '),
-                                  isDark,
-                                  fontSize.toDouble(),
+                        SizedBox(height: screenHeight * 0.00),
+                        // Main hadith text section
+                        Expanded(
+                          flex: 9,
+                          child: Container(
+                            padding: const EdgeInsets.only(top: 16.0), // Fixed top padding for text alignment
+                            margin: EdgeInsets.symmetric(
+                              horizontal: screenWidth > screenHeight ? 0 : MediaQuery.of(context).padding.left + screenWidth * 0.06,
+                            ),
+                            child: ScrollConfiguration(
+                              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                              child: SingleChildScrollView(
+                                physics: const ClampingScrollPhysics(),
+                                child: RichText(
+                                  textAlign: TextAlign.justify,
+                                  text: TextSpan(
+                                    children: _buildFormattedText(
+                                      hadith.text.trim().replaceAll(RegExp(r'\s+'), ' '),
+                                      isDark,
+                                      fontSize.toDouble(),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    
-                    // TabBar
-                    Expanded(
-                      flex: screenWidth > screenHeight ?  4 : 2,
-                      child: TabBar(
-                        indicatorColor:isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                        labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-                        unselectedLabelColor: const Color(0xff977c55),
-                        labelStyle: GoogleFonts.notoKufiArabic(
-                          fontSize: fontSize.toDouble() * 0.8,
-                          fontWeight: FontWeight.bold,
+                        // TabBar
+                        Expanded(
+                          flex: screenWidth > screenHeight ? 4 : 2,
+                          child: TabBar(
+                            indicatorColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                            labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+                            unselectedLabelColor: const Color(0xff977c55),
+                            labelStyle: GoogleFonts.notoKufiArabic(
+                              fontSize: fontSize.toDouble() * 0.8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            unselectedLabelStyle: GoogleFonts.notoKufiArabic(
+                              fontSize: fontSize.toDouble() * 0.8,
+                            ),
+                            tabs: const [
+                              Tab(text: 'الخلاصة'),
+                              Tab(text: 'التخريج'),
+                              Tab(text: 'الدراسة'),
+                            ],
+                          ),
                         ),
-                        unselectedLabelStyle: GoogleFonts.notoKufiArabic(
-                          fontSize: fontSize.toDouble() * 0.8,
+                        // Tab content section
+                        Expanded(
+                          flex: 9,
+                          child: TabBarView(
+                            children: [
+                              TabContent(
+                                text: hadith.summary,
+                                isDark: isDark,
+                                screenHeight: screenHeight,
+                                screenWidth: screenWidth,
+                              ),
+                              TabContent(
+                                text: hadith.reference,
+                                isDark: isDark,
+                                screenHeight: screenHeight,
+                                screenWidth: screenWidth,
+                              ),
+                              TabContent(
+                                text: hadith.analysis,
+                                isDark: isDark,
+                                screenHeight: screenHeight,
+                                screenWidth: screenWidth,
+                              ),
+                            ],
+                          ),
                         ),
-                        tabs: const [
-                          Tab(text: 'الخلاصة'),
-                          Tab(text: 'التخريج'),
-                          Tab(text: 'الدراسة'),
-                        ],
-                      ),
-                    ),
-                    
-                    // Tab content section
-                    Expanded(
-                      flex: 9, // نسبة أكبر لمحتوى التبويب
-                      child: TabBarView(
-                        children: [
-                          TabContent(
-                            text: hadithToDisplay.summary,
-                            isDark: isDark,
-                            screenWidth: screenWidth,
-                            screenHight:screenHeight,
-                          ),
-                          TabContent(
-                            text: hadithToDisplay.reference,
-                            isDark: isDark,
-                            screenHight: screenHeight,
-                            screenWidth: screenWidth,
-                          ),
-                          TabContent(
-                            text: hadithToDisplay.analysis,
-                            isDark: isDark,
-                            screenWidth: screenWidth,
-                            screenHight: screenHeight,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -249,13 +269,13 @@ class HadithDetails extends ConsumerWidget {
 class TabContent extends ConsumerWidget {
   final String text;
   final bool isDark;
-  final screenHight;
-  final screenWidth;
+  final double screenHeight;
+  final double screenWidth;
   const TabContent({
     Key? key,
     required this.text,
     required this.isDark,
-    required this.screenHight,
+    required this.screenHeight,
     required this.screenWidth,
   }) : super(key: key);
 
@@ -286,13 +306,13 @@ class TabContent extends ConsumerWidget {
 
       String matchText = match.group(0)!;
       if (matchText.startsWith('X') && matchText.endsWith('X')) {
-        final mcolor = isDark ?  Color(0xff10834b) :  Color(0xff10834b);
+        final mcolor = isDark ? const Color(0xff10834b) : const Color(0xff10834b);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-           final mcolor = isDark ?  Color(0xff912929) :  Color(0xff912929);
+        final mcolor = isDark ? const Color(0xff912929) : const Color(0xff912929);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-       final mcolor = isDark ?  Color(0xffa37635) :  Color(0xffa37635);
+        final mcolor = isDark ? const Color(0xffa37635) : const Color(0xffa37635);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText == '*') {
         addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold), addSpace: false);
@@ -313,7 +333,7 @@ class TabContent extends ConsumerWidget {
     final fontSize = ref.watch(fontSizeProvider);
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal:   MediaQuery.of(context).padding.left + screenHight < screenWidth ? 8.0 : 22.0,
+        horizontal: MediaQuery.of(context).padding.left + (screenHeight < screenWidth ? 8.0 : 22.0),
         vertical: MediaQuery.of(context).padding.right + 8.0,
       ),
       child: ScrollConfiguration(

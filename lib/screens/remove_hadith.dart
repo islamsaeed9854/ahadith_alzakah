@@ -8,7 +8,7 @@ import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'add_hadith.dart';
 import '../data/models/hadith.dart';
 import '../core/utils.dart';
-
+import 'package:arabic_font/arabic_font.dart';
 final isDeletingProvider = StateProvider<bool>((ref) => false);
 
 class RemoveHadithScreen extends ConsumerWidget {
@@ -211,7 +211,8 @@ class RemoveHadithScreen extends ConsumerWidget {
                                               )
                                             : Text(
                                                 'حذف الحديث',
-                                                style: GoogleFonts.reemKufi(
+                                                style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
                                                   color: AppTheme.secodaryColor,
@@ -249,7 +250,8 @@ class RemoveHadithScreen extends ConsumerWidget {
           flex: 3,
           child: Text(
             label,
-            style: GoogleFonts.reemKufi(
+            style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
               color: AppTheme.secodaryColor,
               fontSize: 25,
               fontWeight: FontWeight.w500,
@@ -313,14 +315,18 @@ class RemoveHadithScreen extends ConsumerWidget {
           ),
           title: const Text(
             'تأكيد الحذف',
-            style: TextStyle(
+            style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+
               color: Color(0xff912929),
               fontWeight: FontWeight.bold,
             ),
           ),
           content: const Text(
             'هل أنت متأكد من حذف هذا الحديث؟',
-            style: TextStyle(
+            style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+
               color: Color.fromARGB(255, 10, 6, 6),
               fontWeight: FontWeight.bold,
             ),
@@ -330,7 +336,9 @@ class RemoveHadithScreen extends ConsumerWidget {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text(
                 'إلغاء',
-                style: TextStyle(color: Colors.brown),
+                style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,color: Colors.brown),
               ),
             ),
             Consumer(
@@ -345,7 +353,9 @@ class RemoveHadithScreen extends ConsumerWidget {
                         },
                   child: isDeleting
                       ? const CircularProgressIndicator()
-                      : const Text('حذف', style: TextStyle(color: Colors.red)),
+                      : const Text('حذف', style:ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,color: Colors.red)),
                 );
               },
             ),

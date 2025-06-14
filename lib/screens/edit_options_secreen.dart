@@ -5,7 +5,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/utils.dart'; // Import utils.dart for using showSingleSnackBar
-
+import 'package:arabic_font/arabic_font.dart';
 final selectedEditFieldProvider = StateProvider<String>((ref) => '');
 
 class EditOptionsScreen extends ConsumerWidget {
@@ -91,7 +91,9 @@ class EditOptionsScreen extends ConsumerWidget {
                                           title: Text(
                                             option,
                                             textAlign: TextAlign.right,
-                                            style: GoogleFonts.reemKufi(
+                                            style:ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+
                                               color: Colors.white,
                                               fontSize: 22,
                                               fontWeight: FontWeight.bold,

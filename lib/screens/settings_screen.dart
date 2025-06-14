@@ -15,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/setting_card.dart';
 import '../widgets/clickable_setting_card.dart';
 import '../core/theme.dart';
-
+import 'package:arabic_font/arabic_font.dart';
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -114,7 +114,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
             content: Text(
               'هل أنت متأكد أنك تريد تسجيل الخروج؟',
-              style: GoogleFonts.reemKufi(
+              style:ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                 color: Colors.brown.shade600,
                 fontSize: 16,
               ),
@@ -124,7 +126,9 @@ class SettingsScreen extends ConsumerWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   'إلغاء',
-                  style: GoogleFonts.cairo(
+                  style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                     color: Colors.brown.shade400,
                     fontSize: 16,
                   ),
@@ -137,7 +141,8 @@ class SettingsScreen extends ConsumerWidget {
                 },
                 child: Text(
                   'تسجيل الخروج',
-                  style: GoogleFonts.cairo(
+                  style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
                     color: Colors.redAccent,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -305,7 +310,9 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     Text(
                       fontSize.toStringAsFixed(0),
-                      style: GoogleFonts.cairo(
+                      style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                         color: Colors.brown.shade800,
                         fontSize: screenWidth * 0.045,
                       ),

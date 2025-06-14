@@ -10,7 +10,7 @@ import '../providers/search_providers.dart';
 import '../core/methods.dart';
 import 'settings_screen.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
-
+import 'package:arabic_font/arabic_font.dart';
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
@@ -41,14 +41,14 @@ class HadithDetails extends ConsumerWidget {
 
       String matchText = match.group(0)!;
        if (matchText.startsWith('X') && matchText.endsWith('X')) {
-         final mcolor = isDark ?  Color(0xff10834b) :  Color(0xff10834b);
+         final mcolor = isDark ?  Color(0xffe09d3c) :  Color(0xff10834b);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-         final mcolor = isDark ?  Color(0xff912929) :  Color(0xff912929);
+         final mcolor = isDark ?  Color(0xffb5a7a7) :  Color(0xff912929);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color:mcolor));
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-         final mcolor = isDark ?  Color(0xffa37635) :  Color(0xffa37635);
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color:mcolor));
+         final mcolor = isDark ?  Color(0xffa5947b) :  Color(0xffa37635);
+        addTextSpan(matchText.substring(0, matchText.length), baseStyle.copyWith(color:mcolor));
       } else if (matchText == '*') {
         addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold), addSpace: false);
       }
@@ -71,12 +71,14 @@ class HadithDetails extends ConsumerWidget {
     final theme = ref.watch(themeProvider);
     final isDark = theme.brightness == Brightness.dark;
     final fontSize = ref.watch(fontSizeProvider);
-    final navNotifier = ref.read(navigationProvider.notifier);
-    final selectedHadith = ref.watch(selectedHadithProvider);
+    final navNotifier = ref.read(navigationProvider.notifier);    final selectedHadith = ref.watch(selectedHadithProvider);
     final dailyHadith = ref.watch(dailyHadithProvider);
+    final showDaily = ref.watch(showDailyHadithProvider);
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
     final backgroundColor = theme.scaffoldBackgroundColor;
-    final hadithToDisplay = selectedHadith ?? dailyHadith;
+    
+    // If showDailyHadith is true or there's no selected hadith, show daily hadith
+    final hadithToDisplay = showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
     final allHadiths = ref.watch(DataProvider).value ?? [];
 
     if (hadithToDisplay == null) {
@@ -217,7 +219,9 @@ class HadithDetails extends ConsumerWidget {
                               fontSize: fontSize.toDouble() * 0.8,
                               fontWeight: FontWeight.bold,
                             ),
-                            unselectedLabelStyle: GoogleFonts.notoKufiArabic(
+                            unselectedLabelStyle: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+
                               fontSize: fontSize.toDouble() * 0.8,
                             ),
                             tabs: const [
@@ -306,14 +310,14 @@ class TabContent extends ConsumerWidget {
 
       String matchText = match.group(0)!;
       if (matchText.startsWith('X') && matchText.endsWith('X')) {
-        final mcolor = isDark ? const Color(0xff10834b) : const Color(0xff10834b);
+        final mcolor = isDark ? Color(0xffe09d3c)  : const Color(0xff10834b);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-        final mcolor = isDark ? const Color(0xff912929) : const Color(0xff912929);
+        final mcolor = isDark ?  Color(0xffb5a7a7)  : const Color(0xff912929);
         addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-        final mcolor = isDark ? const Color(0xffa37635) : const Color(0xffa37635);
-        addTextSpan(matchText.substring(1, matchText.length - 1), baseStyle.copyWith(color: mcolor));
+        final mcolor = isDark ?  Color(0xffa5947b)  : const Color(0xffa37635);
+        addTextSpan(matchText.substring(0, matchText.length), baseStyle.copyWith(color: mcolor));
       } else if (matchText == '*') {
         addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold), addSpace: false);
       }

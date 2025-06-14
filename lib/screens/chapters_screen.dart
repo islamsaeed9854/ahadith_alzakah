@@ -14,18 +14,32 @@ final expandedSectionProvider = StateProvider<int?>((ref) => null);
 
 final selectedHadithProvider = StateProvider<Hadith?>((ref) => null);
 
-class ChaptersScreen extends ConsumerWidget {
+// Convert to ConsumerStatefulWidget to manage state
+class ChaptersScreen extends ConsumerStatefulWidget {
   final int? chapterNumber;
 
-  ChaptersScreen({super.key, this.chapterNumber});
+  const ChaptersScreen({super.key, this.chapterNumber});
+
+  @override
+  ConsumerState<ChaptersScreen> createState() => _ChaptersScreenState();
+}
+
+class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
+  final ScrollController _scrollController = ScrollController();
+  List<GlobalKey> _sectionKeys = [];
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   // Function to mask X and O while preserving numbers
   String maskEnglishLetters(String text) {
     // Keep numbers within brackets intact
-    text = text.replaceAllMapped(
-      RegExp(r'\[(\d+)\]'),
-      (match) => '⟨${match.group(1)}⟩' // Temporarily replace brackets with other characters
-    );
+    text = text.replaceAllMapped(RegExp(r'\[(\d+)\]'),
+        (match) => '⟨${match.group(1)}⟩' // Temporarily replace brackets
+        );
 
     // Mask X and O but preserve numbers
     text = text.replaceAll(RegExp(r'[XO]'), '');
@@ -36,8 +50,23 @@ class ChaptersScreen extends ConsumerWidget {
     return text;
   }
 
+  void _scrollToSelectedSection(int index) {
+    // We wait for the frame to be rendered to ensure the widget is built
+    // and its context is available.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_sectionKeys[index].currentContext != null) {
+        Scrollable.ensureVisible(
+          _sectionKeys[index].currentContext!,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.0, // Align the top of the item to the top of the viewport
+        );
+      }
+    });
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final hadithState = ref.watch(DataProvider);
     final expandedSection = ref.watch(expandedSectionProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
@@ -48,11 +77,13 @@ class ChaptersScreen extends ConsumerWidget {
           final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
 
           return hadithState.when(
-            data: (hadiths) {              // Group hadiths by chapter and section
+            data: (hadiths) {
+              // Group hadiths by chapter and section
               final chaptersMap = <int, Map<String, dynamic>>{};
               for (final hadith in hadiths) {
                 if (!hadith.deleted &&
-                    (chapterNumber == null || hadith.bab == chapterNumber)) {
+                    (widget.chapterNumber == null ||
+                        hadith.bab == widget.chapterNumber)) {
                   if (!chaptersMap.containsKey(hadith.bab)) {
                     chaptersMap[hadith.bab] = {
                       'chapter_number': hadith.bab,
@@ -76,28 +107,24 @@ class ChaptersScreen extends ConsumerWidget {
                 }
               }
 
-              final dynamicChapters =
-                  chaptersMap.entries.map((entry) {
-                      final chapter = entry.value;
-                      final sections =
-                          (chapter['sections']
-                                  as Map<int, Map<String, dynamic>>)
-                              .entries
-                              .map((sectionEntry) => sectionEntry.value)
-                              .toList()
-                            ..sort(
-                              (a, b) => (a['section_number'] as int).compareTo(
-                                b['section_number'] as int,
-                              ),
-                            );
-                      chapter['sections'] = sections;
-                      return chapter;
-                    }).toList()
-                    ..sort(
-                      (a, b) => (a['chapter_number'] as int).compareTo(
-                        b['chapter_number'] as int,
-                      ),
-                    );
+              final dynamicChapters = chaptersMap.entries.map((entry) {
+                final chapter = entry.value;
+                final sections =
+                    (chapter['sections'] as Map<int, Map<String, dynamic>>)
+                        .entries
+                        .map((sectionEntry) => sectionEntry.value)
+                        .toList()
+                      ..sort(
+                        (a, b) => (a['section_number'] as int)
+                            .compareTo(b['section_number'] as int),
+                      );
+                chapter['sections'] = sections;
+                return chapter;
+              }).toList()
+                ..sort(
+                  (a, b) => (a['chapter_number'] as int)
+                      .compareTo(b['chapter_number'] as int),
+                );
 
               String getChapterTitle(int bab) {
                 final chapter = dynamicChapters.firstWhere(
@@ -107,10 +134,15 @@ class ChaptersScreen extends ConsumerWidget {
                 return chapter['chapter_title'] as String;
               }
 
-              final allSections =
-                  dynamicChapters
-                      .expand((chapter) => chapter['sections'] as List)
-                      .toList();
+              final allSections = dynamicChapters
+                  .expand((chapter) => chapter['sections'] as List)
+                  .toList();
+
+              // Ensure the list of keys matches the number of sections
+              if (_sectionKeys.length != allSections.length) {
+                _sectionKeys =
+                    List.generate(allSections.length, (_) => GlobalKey());
+              }
 
               return Stack(
                 fit: StackFit.expand,
@@ -118,6 +150,8 @@ class ChaptersScreen extends ConsumerWidget {
                   TextApp.appBackgroundWidget,
                   SafeArea(
                     child: SingleChildScrollView(
+                      // Attach the scroll controller
+                      controller: _scrollController,
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: constraints.maxWidth < 600 ? 20 : 40,
@@ -128,7 +162,7 @@ class ChaptersScreen extends ConsumerWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                SizedBox(width: 48),
+                                const SizedBox(width: 48),
                                 Expanded(
                                   child: Text(
                                     dynamicChapters.isNotEmpty
@@ -140,15 +174,10 @@ class ChaptersScreen extends ConsumerWidget {
                                       fontSize: 25,
                                       color: const Color(0xfffcead0),
                                       shadows: [
-                                        Shadow(
+                                        const Shadow(
                                           blurRadius: 10,
-                                          color: const Color.fromRGBO(
-                                            0,
-                                            0,
-                                            0,
-                                            0.3,
-                                          ),
-                                          offset: const Offset(2, 2),
+                                          color: Color.fromRGBO(0, 0, 0, 0.3),
+                                          offset: Offset(2, 2),
                                         ),
                                       ],
                                     ),
@@ -159,14 +188,9 @@ class ChaptersScreen extends ConsumerWidget {
                                     Icons.arrow_forward,
                                     color: AppTheme.secodaryColor,
                                   ),
-                                  onPressed:
-                                      () =>
-                                          ref
-                                              .read(
-                                                innerBooksScreenProvider
-                                                    .notifier,
-                                              )
-                                              .state = null,
+                                  onPressed: () => ref
+                                      .read(innerBooksScreenProvider.notifier)
+                                      .state = null,
                                 ),
                               ],
                             ),
@@ -179,17 +203,17 @@ class ChaptersScreen extends ConsumerWidget {
                               style: GoogleFonts.cairo(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 25,
-                                color: Color(0xfffcead0),
+                                color: const Color(0xfffcead0),
                                 shadows: [
-                                  Shadow(
+                                  const Shadow(
                                     blurRadius: 10,
-                                    color: const Color.fromRGBO(0, 0, 0, 0.3),
-                                    offset: const Offset(2, 2),
+                                    color: Color.fromRGBO(0, 0, 0, 0.3),
+                                    offset: Offset(2, 2),
                                   ),
                                 ],
                               ),
                             ),
-                            SizedBox(height: 30),
+                            const SizedBox(height: 30),
                             ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -198,11 +222,12 @@ class ChaptersScreen extends ConsumerWidget {
                                 final section = allSections[index];
                                 final isExpanded = expandedSection == index;
                                 return Column(
+                                  // Assign the key to the parent of the ChapterCard
+                                  key: _sectionKeys[index],
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 8.0,
-                                      ),
+                                      padding:
+                                          const EdgeInsets.only(bottom: 8.0),
                                       child: ChapterCard(
                                         title:
                                             'الفصل ${Methods.numberToArabicText(section['section_number'] as int)}',
@@ -213,52 +238,42 @@ class ChaptersScreen extends ConsumerWidget {
                                         onTap: () {
                                           if (isExpanded) {
                                             ref
-                                                .read(
-                                                  expandedSectionProvider
-                                                      .notifier,
-                                                )
+                                                .read(expandedSectionProvider
+                                                    .notifier)
                                                 .state = null;
                                           } else {
                                             ref
-                                                .read(
-                                                  expandedSectionProvider
-                                                      .notifier,
-                                                )
+                                                .read(expandedSectionProvider
+                                                    .notifier)
                                                 .state = index;
+                                            // Scroll to the section after it's expanded
+                                            _scrollToSelectedSection(index);
                                           }
                                         },
                                       ),
                                     ),
                                     if (isExpanded)
                                       AnimatedContainer(
-                                        duration: Duration(milliseconds: 300),
-                                        margin: EdgeInsets.only(
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        margin: const EdgeInsets.only(
                                           bottom: 16,
                                           right: 40,
                                           left: 40,
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color.fromRGBO(
-                                            255,
-                                            255,
-                                            255,
-                                            0.9,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                              255, 255, 255, 0.9),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                           border: Border.all(
                                             color: AppTheme.primaryColor,
                                             width: 3.5,
                                           ),
-                                          boxShadow: [
+                                          boxShadow: const [
                                             BoxShadow(
-                                              color: const Color.fromRGBO(
-                                                0,
-                                                0,
-                                                0,
-                                                0.1,
-                                              ),
+                                              color: Color.fromRGBO(
+                                                  0, 0, 0, 0.1),
                                               blurRadius: 4,
                                               offset: Offset(0, 2),
                                             ),
@@ -269,43 +284,37 @@ class ChaptersScreen extends ConsumerWidget {
                                           child: ListView.separated(
                                             shrinkWrap: true,
                                             physics:
-                                                NeverScrollableScrollPhysics(),
-                                            itemCount:
-                                                (section['ahadith']
-                                                        as List<Hadith>)
-                                                    .length,
+                                                const NeverScrollableScrollPhysics(),
+                                            itemCount: (section['ahadith']
+                                                    as List<Hadith>)
+                                                .length,
                                             separatorBuilder:
-                                                (context, index) => Divider(
-                                                  height: 1,
-                                                  thickness: 0.5,
-                                                  color: const Color.fromRGBO(
-                                                    230,
-                                                    163,
-                                                    69,
-                                                    0.3,
-                                                  ),
-                                                  indent: 16,
-                                                  endIndent: 16,
-                                                ),
-                                            itemBuilder: (
-                                              context,
-                                              hadithIndex,
-                                            ) {
+                                                (context, index) =>
+                                                    const Divider(
+                                              height: 1,
+                                              thickness: 0.5,
+                                              color: Color.fromRGBO(
+                                                  230, 163, 69, 0.3),
+                                              indent: 16,
+                                              endIndent: 16,
+                                            ),
+                                            itemBuilder:
+                                                (context, hadithIndex) {
                                               final hadith =
                                                   (section['ahadith']
-                                                      as List<
-                                                        Hadith
-                                                      >)[hadithIndex];
+                                                          as List<Hadith>)[
+                                                      hadithIndex];
                                               return ListTile(
                                                 dense: true,
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 4,
-                                                    ),
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 4,
+                                                ),
                                                 title: Text(
                                                   'الحديث ${hadith.number}',
-                                                  style: ArabicTextStyle(
+                                                  style:
+                                                      const ArabicTextStyle(
                                                     arabicFont:
                                                         ArabicFont.reemKufi,
                                                     fontSize: 16,
@@ -316,36 +325,35 @@ class ChaptersScreen extends ConsumerWidget {
                                                 subtitle: Padding(
                                                   padding:
                                                       const EdgeInsets.only(
-                                                        top: 2.0,
-                                                      ),
+                                                          top: 2.0),
                                                   child: Text(
-                                                    hadith.text.length > 50
-                                                        ? '${maskEnglishLetters(hadith.text.trim()).substring(0, 50)}...'
-                                                        : maskEnglishLetters(hadith.text),
-                                                    style: ArabicTextStyle(
+                                                    hadith.text.length > 150
+                                                        ? '${maskEnglishLetters(hadith.text.trim()).substring(0, 150)}...'
+                                                        : maskEnglishLetters(
+                                                            hadith.text),
+                                                    style:
+                                                        const ArabicTextStyle(
                                                       arabicFont:
-                                                          ArabicFont.reemKufi,
+                                                          ArabicFont.avenirArabic,
                                                       fontSize: 14,
                                                       color: Colors.black54,
                                                     ),
                                                     maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                                    overflow: TextOverflow
+                                                        .ellipsis,
                                                   ),
                                                 ),
-                                                trailing: Icon(
+                                                trailing: const Icon(
                                                   Icons.arrow_forward_ios,
                                                   size: 16,
-                                                  color: const Color(
-                                                    0xffe6a345,
-                                                  ),
+                                                  color: Color(0xffe6a345),
                                                 ),
-                                                onTap: () {                                                  // Update selected hadith
+                                                onTap: () {
+                                                  // Update selected hadith
                                                   ref
                                                       .read(
-                                                        selectedHadithProvider
-                                                            .notifier,
-                                                      )
+                                                          selectedHadithProvider
+                                                              .notifier)
                                                       .state = hadith;
                                                   // Navigate to HadithDetails
                                                   navNotifier.changeTab(1);
@@ -367,7 +375,7 @@ class ChaptersScreen extends ConsumerWidget {
                 ],
               );
             },
-            loading: () => Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stackTrace) => Center(child: Text('خطأ: $error')),
           );
         },

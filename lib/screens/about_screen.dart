@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
-
+import 'package:arabic_font/arabic_font.dart';
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
@@ -97,7 +97,9 @@ class AboutScreen extends ConsumerWidget {
                               ),
                               child: Text(
                                  'تطبيق أحاديث الزكاة هو مرجع شامل يحتوي على مجموعة من الأحاديث النبوية الشريفة المتعلقة بالزكاة وأحكامها. يهدف التطبيق إلى تسهيل الوصول إلى هذه الأحاديث المباركة وتعلم أحكام الزكاة من السنة النبوية الشريفة.',
-                                style: GoogleFonts.cairo(
+                                style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                                   color: Colors.brown.shade800,
                                   fontSize: screenWidth * 0.045,
                                   height: 1.6,
@@ -155,8 +157,10 @@ class AboutScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'البريد الإلكتروني: support@appname.com',
-                                    style: GoogleFonts.cairo(
+                                    'البريد الإلكتروني:support@appname.com',
+                                    style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                                       color: Colors.brown.shade800,
                                       fontSize: screenWidth * 0.045,
                                       height: 1.6,
@@ -164,7 +168,9 @@ class AboutScreen extends ConsumerWidget {
                                   ),
                                   Text(
                                     "رقم الهاتف : 00966505137789",
-                                    style: GoogleFonts.cairo(
+                                    style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                                       color: Colors.brown.shade800,
                                       fontSize: screenWidth * 0.045,
                                       height: 1.6,

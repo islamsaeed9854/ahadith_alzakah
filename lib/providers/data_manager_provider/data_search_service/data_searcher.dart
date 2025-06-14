@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../../data/models/hadith.dart';
-import '../../../core/utils.dart'; // استيراد ملف utils.dart الذي يحتوي على showSingleSnackBar
+import '../../../core/utils.dart';
 import 'text_normalizer.dart';
 
 class DataSearcher {
@@ -44,6 +44,7 @@ class DataSearcher {
       final queryWords = normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
       final matches = <Map<String, dynamic>>[];
 
+      // Search for the full phrase
       for (final hadith in currentHadiths) {
         final combinedText = hadith.text;
         final normalizedText = normalizeArabicText(combinedText);
@@ -53,11 +54,34 @@ class DataSearcher {
             'hadith': hadith,
             'startIndex': index,
             'length': query.length,
+            'content': combinedText,
           });
+          if (matches.length >= 111) break;
         }
         if (matches.length >= 111) break;
       }
 
+      // Search for individual words
+      for (final hadith in currentHadiths) {
+        final combinedText = hadith.text;
+        final normalizedText = normalizeArabicText(combinedText);
+        for (final word in queryWords) {
+          int index = -1;
+          while ((index = normalizedText.indexOf(word, index + 1)) != -1) {
+            matches.add({
+              'hadith': hadith,
+              'startIndex': index,
+              'length': word.length,
+              'content': combinedText,
+            });
+            if (matches.length >= 111) break;
+          }
+          if (matches.length >= 111) break;
+        }
+        if (matches.length >= 111) break;
+      }
+
+      // Sort matches by relevance
       matches.sort((a, b) {
         final aText = normalizeArabicText(
             '${(a['hadith'] as Hadith).text} ${(a['hadith'] as Hadith).reference} ${(a['hadith'] as Hadith).summary} ${(a['hadith'] as Hadith).analysis}');
@@ -95,7 +119,6 @@ class DataSearcher {
     }
   }
 
-  // Placeholder for normalizeArabicText (assumed to be available in the scope)
   String normalizeArabicText(String text) {
     return _normalizer.normalizeArabicText(text);
   }

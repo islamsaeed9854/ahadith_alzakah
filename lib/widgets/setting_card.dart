@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:arabic_font/arabic_font.dart';
 
 Widget buildSettingCard(
   BuildContext context, {
@@ -34,7 +34,9 @@ Widget buildSettingCard(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.reemKufi(
+            style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
               color: Colors.brown.shade800,
               fontSize: screenWidth * 0.045,
             ),

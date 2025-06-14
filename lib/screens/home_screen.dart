@@ -1,3 +1,4 @@
+import 'package:ahadith_alzakah/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
@@ -8,7 +9,9 @@ import 'about_screen.dart';
 import '../providers/theme_provider.dart';
 import '../core/constants.dart';
 import 'hadith_details.dart';
-
+import '../screens/chapters_screen.dart';
+import '../notification_service.dart';
+import '../providers/notification_service_provider.dart';
 class HomeScreen extends ConsumerStatefulWidget {
   final bool showHadithDetails;
   const HomeScreen({super.key, this.showHadithDetails = false});
@@ -64,7 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         } else if (!didPop && currentIndex == 0 && innerBooksScreenPr != null) {
           ref.read(innerBooksScreenProvider.notifier).state = null;
           debugPrint('Pop invoked: Reset innerBooksScreenProvider');
-        } 
+        }
       },
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -72,7 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           resizeToAvoidBottomInset: false,
           body: Stack(
             children: [
-          TextApp.appBackgroundWidget,
+              TextApp.appBackgroundWidget,
               // Current page content
               pages[currentIndex],
             ],
@@ -84,11 +87,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               backgroundColor:
                   (isDarkMode && currentIndex == 1)
                       ? const Color(0xff1c1c1c)
-                      : const Color(0xfffcf3e8),
-  
-              onTap: (index) {
+                      : const Color(0xfffcf3e8),              onTap: (index) {
                 if (index != 0) {
                   ref.read(innerBooksScreenProvider.notifier).state = null;
+                }
+                if (index != 1) { // If not navigating to HadithDetails
+                  ref.read(showDailyHadithProvider.notifier).state = false;
                 }
                 navNotifier.changeTab(index);
                 debugPrint(
@@ -126,14 +130,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-          // Test button for immediate notification
-          // floatingActionButton: FloatingActionButton(
-          //   onPressed: () {
-          //     ref.read(notificationServiceProvider).sendImmediateNotification();
-          //     debugPrint('Triggered immediate notification');
-          //   },
-          //   child: const Icon(Icons.notification_add),
-          // ),
+         // Test button for immediate notification
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              ref.read(notificationServiceProvider).sendImmediateNotification();
+              debugPrint('Triggered immediate notification');
+            },
+            child: const Icon(Icons.notification_add),
+          ),
         ),
       ),
     );

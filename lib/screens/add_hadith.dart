@@ -9,6 +9,7 @@ import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'package:logger/logger.dart';
 import '../providers/data_manager_provider/data_manager/data_loader.dart';
 import '../core/utils.dart';
+import 'package:arabic_font/arabic_font.dart';
 
 // Provider للتحكم في حالة الزر (معطل أو لا)
 final addButtonEnabledProvider = StateProvider<bool>((ref) => true);
@@ -545,7 +546,8 @@ class AddHadithScreen extends ConsumerWidget {
                                   onPressed: isButtonEnabled ? () => addHadith() : null,
                                   child: Text(
                                     "إضافة حديث",
-                                    style: GoogleFonts.amiri(
+                                    style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
                                       color: Colors.white,
                                       fontSize: isSmallScreen ? 16 : 18,
                                       fontWeight: FontWeight.bold,
@@ -581,7 +583,8 @@ class AddHadithScreen extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.reemKufi(
+          style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w500,
             color: AppTheme.secodaryColor,
             fontSize: isSmallScreen ? 20 : 22,
@@ -657,7 +660,8 @@ class AddHadithScreen extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.amiri(
+          style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w500,
             color: AppTheme.secodaryColor,
             fontSize: isSmallScreen ? 20 : 22,

@@ -8,6 +8,7 @@ import '../../../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'add_hadith.dart';
 import '../core/utils.dart';
+import 'package:arabic_font/arabic_font.dart';
 
 // Provider للتحكم في حالة زر التعديل (معطل أو لا)
 final editButtonEnabledProvider = StateProvider<bool>((ref) => true);
@@ -383,7 +384,8 @@ class EditHadithScreen extends ConsumerWidget {
                                       child: isButtonEnabled
                                           ? Text(
                                               "حفظ التعديلات",
-                                              style: GoogleFonts.amiri(
+                                              style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
                                                 color: Colors.white,
                                                 fontSize: buttonFontSize,
                                                 fontWeight: FontWeight.bold,
@@ -430,7 +432,8 @@ class EditHadithScreen extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.reemKufi(
+          style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w500,
             color: AppTheme.secodaryColor,
             fontSize: labelFontSize,
@@ -506,7 +509,8 @@ class EditHadithScreen extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.amiri(
+          style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w500,
             color: AppTheme.secodaryColor,
             fontSize: labelFontSize,

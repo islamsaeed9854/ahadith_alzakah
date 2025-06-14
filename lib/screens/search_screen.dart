@@ -11,7 +11,7 @@ import 'chapters_screen.dart';
 import '../widgets/search_card.dart';
 import '../providers/search_providers.dart';
 import '../core/methods.dart';
-
+import 'package:arabic_font/arabic_font.dart';
 class SearchScreen extends ConsumerWidget {
   const SearchScreen({super.key});
 
@@ -334,11 +334,8 @@ class SearchScreen extends ConsumerWidget {
               : Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top + 16,
-                        left: horizontalPadding,
-                        right: horizontalPadding,
-                        bottom: 16,
+                      padding: EdgeInsets.all(                   
+                        screenWidth * 0.04,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +427,8 @@ class SearchScreen extends ConsumerWidget {
                               ),
                               child: Text(
                                 'بحث',
-                                style: GoogleFonts.cairo(
+                                style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
                                   fontSize: buttonFontSize,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -467,7 +465,9 @@ class SearchScreen extends ConsumerWidget {
                                   padding: EdgeInsets.all(screenSize.width * 0.05),
                                   child: Text(
                                     'لا توجد نتائج مطابقة',
-                                    style: GoogleFonts.cairo(
+                                    style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+                        fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       fontSize: emptyResultsFontSize,
                                     ),

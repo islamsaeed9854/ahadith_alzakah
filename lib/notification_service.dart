@@ -13,6 +13,9 @@ final dailyHadithProvider = StateNotifierProvider<DailyHadithNotifier, Hadith?>(
   (ref) => DailyHadithNotifier(),
 );
 
+// Provider to track whether we should show daily hadith
+final showDailyHadithProvider = StateProvider<bool>((ref) => false);
+
 class DailyHadithNotifier extends StateNotifier<Hadith?> {
   DailyHadithNotifier() : super(null);
 
@@ -44,7 +47,7 @@ class NotificationService {
         importance: NotificationImportance.High,
         playSound: true,
         enableVibration: true,
-        channelShowBadge: true,
+        channelShowBadge: false,
       ),
     ], debug: true);
 
@@ -91,21 +94,24 @@ class NotificationService {
 
     final hadith = await _getDailyHadith();
 
-    if (hadith != null) {
+    if (hadith != null) {      // Convert hadith to JSON for payload
+      final hadithJson = json.encode(hadith.toJson());
+      
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 100,
           channelKey: 'daily_hadith_channel',
           title: 'حديث اليوم',
-          body: _formatHadith(hadith), 
+          body: _formatHadith(hadith),
           notificationLayout: NotificationLayout.BigText,
           bigPicture: null,
           largeIcon: 'resource://drawable/ic_launcher',
-          actionType: ActionType.Default, // Ensure action triggers
+          actionType: ActionType.Default,
+          payload: {'hadith': hadithJson}, // Add hadith data to payload
         ),
         schedule: NotificationCalendar(
-          hour: 12,
-          minute: 0,
+          hour: 15,
+          minute: 47,
           second: 0,
           repeats: true,
           preciseAlarm: true,
@@ -252,15 +258,17 @@ class NotificationService {
   Future<void> sendImmediateNotification() async {
     final hadith = await _getDailyHadith();
 
-    if (hadith != null) {
+    if (hadith != null) {      final hadithJson = json.encode(hadith.toJson());
+      
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
           channelKey: 'daily_hadith_channel',
           title: 'حديث اليوم',
-          body: _formatHadith(hadith), // <--- استخدام الدالة المعدلة
+          body: _formatHadith(hadith),
           notificationLayout: NotificationLayout.BigText,
           actionType: ActionType.Default,
+          payload: {'hadith': hadithJson}, // Add hadith data to payload
         ),
       );
     } else {}

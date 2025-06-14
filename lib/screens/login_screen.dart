@@ -8,7 +8,7 @@ import '../providers/navigation_provider.dart';
 import '../providers/login_providers.dart';
 import '../core/utils.dart';
 import '../widgets/login_text_field.dart';
-
+import 'package:arabic_font/arabic_font.dart';
 final supabaseProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
@@ -263,7 +263,9 @@ class LoginScreen extends ConsumerWidget {
                     )
                   : Text(
                       "تسجيل دخول",
-                      style: GoogleFonts.cairo(
+                      style: ArabicTextStyle(
+                            arabicFont: ArabicFont.avenirArabic,
+
                         fontWeight: FontWeight.bold,
                         fontSize: isLandscape ? screenWidth * 0.02 : screenWidth * 0.03,
                         color: const Color(0xfffcead0),

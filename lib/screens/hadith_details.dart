@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
 import '../providers/navigation_provider.dart';
-import '../screens/chapters_screen.dart'; 
-import '../notification_service.dart'; 
+import '../screens/chapters_screen.dart';
+import '../notification_service.dart';
 import '../providers/search_providers.dart';
 import '../core/methods.dart';
 import 'settings_screen.dart';
@@ -16,7 +16,10 @@ class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
   List<TextSpan> _buildFormattedText(
-      String text, bool isDark, double fontSize) {
+    String text,
+    bool isDark,
+    double fontSize,
+  ) {
     List<TextSpan> spans = [];
 
     void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
@@ -44,19 +47,28 @@ class HadithDetails extends ConsumerWidget {
       String matchText = match.group(0)!;
       if (matchText.startsWith('X') && matchText.endsWith('X')) {
         final mcolor = isDark ? Color(0xffe09d3c) : Color(0xff10834b);
-        addTextSpan(matchText.substring(1, matchText.length - 1),
-            baseStyle.copyWith(color: mcolor));
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: mcolor),
+        );
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
         final mcolor = isDark ? Color(0xffb5a7a7) : Color(0xff912929);
-        addTextSpan(matchText.substring(1, matchText.length - 1),
-            baseStyle.copyWith(color: mcolor));
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: mcolor),
+        );
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
         final mcolor = isDark ? Color(0xffa5947b) : Color(0xffa37635);
-        addTextSpan(matchText.substring(0, matchText.length),
-            baseStyle.copyWith(color: mcolor));
+        addTextSpan(
+          matchText.substring(0, matchText.length),
+          baseStyle.copyWith(color: mcolor),
+        );
       } else if (matchText == '*') {
-        addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold),
-            addSpace: false);
+        addTextSpan(
+          matchText,
+          baseStyle.copyWith(fontWeight: FontWeight.bold),
+          addSpace: false,
+        );
       }
       lastIndex = match.end;
     }
@@ -85,31 +97,39 @@ class HadithDetails extends ConsumerWidget {
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
     final backgroundColor = theme.scaffoldBackgroundColor;
 
-    final hadithToDisplay = showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
+    final hadithToDisplay =
+        showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
     final allHadithsAsyncValue = ref.watch(DataProvider);
 
     return allHadithsAsyncValue.when(
-      loading: () => Scaffold(
-        backgroundColor: backgroundColor,
-        body: Center(
-          child: SizedBox(
-            width: 80,
-            height: 80,
-            child: CircularProgressIndicator(
-              strokeWidth: 7,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                  isDark ? Colors.white : AppTheme.primaryColor),
-              backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
+      loading:
+          () => Scaffold(
+            backgroundColor: backgroundColor,
+            body: Center(
+              child: SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  strokeWidth: 7,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? Colors.white : AppTheme.primaryColor,
+                  ),
+                  backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      error: (error, stack) => Scaffold(
-        backgroundColor: backgroundColor,
-        body: Center(
-            child: _buildErrorWidget(
-                theme, 'لا توجد أحاديث لعرضها حاليًا', Icons.error_outline)),
-      ),
+      error:
+          (error, stack) => Scaffold(
+            backgroundColor: backgroundColor,
+            body: Center(
+              child: _buildErrorWidget(
+                theme,
+                'لا توجد أحاديث لعرضها حاليًا',
+                Icons.error_outline,
+              ),
+            ),
+          ),
       data: (allHadiths) {
         if (allHadiths.isEmpty || hadithToDisplay == null) {
           return Scaffold(
@@ -121,7 +141,10 @@ class HadithDetails extends ConsumerWidget {
                 IconButton(
                   icon: Icon(
                     Icons.arrow_forward,
-                    color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
+                    color:
+                        isDark
+                            ? AppTheme.arrowBackdark
+                            : AppTheme.arrowBackLight,
                     size: 30,
                   ),
                   onPressed: () {
@@ -132,19 +155,24 @@ class HadithDetails extends ConsumerWidget {
               ],
             ),
             body: Center(
-                child: _buildErrorWidget(theme, 'لا توجد أحاديث لعرضها حاليًا',
-                    Icons.info_outline)),
+              child: _buildErrorWidget(
+                theme,
+                'لا توجد أحاديث لعرضها حاليًا',
+                Icons.info_outline,
+              ),
+            ),
           );
         }
 
-        final currentIndex = allHadiths.indexWhere((h) =>
-            h.bab == hadithToDisplay.bab &&
-            h.fasl == hadithToDisplay.fasl &&
-            h.number == hadithToDisplay.number);
-        
+        final currentIndex = allHadiths.indexWhere(
+          (h) =>
+              h.bab == hadithToDisplay.bab &&
+              h.fasl == hadithToDisplay.fasl &&
+              h.number == hadithToDisplay.number,
+        );
+
         final initialPage = currentIndex != -1 ? currentIndex : 0;
         final pageController = PageController(initialPage: initialPage);
-        
 
         return PopScope(
           canPop: false,
@@ -179,20 +207,27 @@ class HadithDetails extends ConsumerWidget {
                               child: Padding(
                                 padding: EdgeInsets.only(
                                   top: 0,
-                                  left: screenWidth > screenHeight
-                                      ? 15
-                                      : MediaQuery.of(context).padding.left +
-                                          16,
-                                  right: screenWidth > screenHeight
-                                      ? 15
-                                      : MediaQuery.of(context).padding.right +
-                                          16,
+                                  left:
+                                      screenWidth > screenHeight
+                                          ? 15
+                                          : MediaQuery.of(
+                                                context,
+                                              ).padding.left +
+                                              16,
+                                  right:
+                                      screenWidth > screenHeight
+                                          ? 15
+                                          : MediaQuery.of(
+                                                context,
+                                              ).padding.right +
+                                              16,
                                 ),
                                 child: Row(
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
@@ -200,9 +235,10 @@ class HadithDetails extends ConsumerWidget {
                                             'الباب ${Methods.numberToArabicText(hadith.bab)}: ${hadith.chapter_title}',
                                             style: GoogleFonts.cairo(
                                               fontWeight: FontWeight.bold,
-                                              color: isDark
-                                                  ? AppTheme.primaryColor
-                                                  : AppTheme.redBlackColer,
+                                              color:
+                                                  isDark
+                                                      ? AppTheme.primaryColor
+                                                      : AppTheme.redBlackColer,
                                               fontSize: 15,
                                             ),
                                             maxLines: 1,
@@ -212,9 +248,10 @@ class HadithDetails extends ConsumerWidget {
                                             'الفصل ${Methods.numberToArabicText(hadith.fasl)}: ${hadith.section_title} | حديث رقم: ${hadith.number}',
                                             style: GoogleFonts.cairo(
                                               fontWeight: FontWeight.bold,
-                                              color: isDark
-                                                  ? AppTheme.primaryColor
-                                                  : AppTheme.redBlackColer,
+                                              color:
+                                                  isDark
+                                                      ? AppTheme.primaryColor
+                                                      : AppTheme.redBlackColer,
                                               fontSize: 13,
                                             ),
                                             maxLines: 2,
@@ -226,9 +263,10 @@ class HadithDetails extends ConsumerWidget {
                                     IconButton(
                                       icon: Icon(
                                         Icons.arrow_forward,
-                                        color: isDark
-                                            ? AppTheme.arrowBackdark
-                                            : AppTheme.arrowBackLight,
+                                        color:
+                                            isDark
+                                                ? AppTheme.arrowBackdark
+                                                : AppTheme.arrowBackLight,
                                         size: 30,
                                       ),
                                       onPressed: () {
@@ -244,26 +282,30 @@ class HadithDetails extends ConsumerWidget {
                             Expanded(
                               flex: 9,
                               child: Container(
-                                padding:
-                                    const EdgeInsets.only(top: 0.0),
+                                padding: const EdgeInsets.only(top: 0.0),
                                 margin: EdgeInsets.symmetric(
-                                  horizontal: screenWidth > screenHeight
-                                      ?15
-                                      : MediaQuery.of(context).padding.left +
-                                          screenWidth * 0.06,
+                                  horizontal:
+                                      screenWidth > screenHeight
+                                          ? 15
+                                          : MediaQuery.of(
+                                                context,
+                                              ).padding.left +
+                                              screenWidth * 0.06,
                                 ),
                                 child: ScrollConfiguration(
-                                  behavior: ScrollConfiguration.of(context)
-                                      .copyWith(scrollbars: false),
+                                  behavior: ScrollConfiguration.of(
+                                    context,
+                                  ).copyWith(scrollbars: false),
                                   child: SingleChildScrollView(
                                     physics: const ClampingScrollPhysics(),
                                     child: RichText(
                                       textAlign: TextAlign.justify,
                                       text: TextSpan(
                                         children: _buildFormattedText(
-                                          hadith.text
-                                              .trim()
-                                              .replaceAll(RegExp(r'\s+'), ' '),
+                                          hadith.text.trim().replaceAll(
+                                            RegExp(r'\s+'),
+                                            ' ',
+                                          ),
                                           isDark,
                                           fontSize.toDouble(),
                                         ),
@@ -276,14 +318,15 @@ class HadithDetails extends ConsumerWidget {
                             Expanded(
                               flex: screenWidth > screenHeight ? 4 : 2,
                               child: TabBar(
-                                indicatorColor: isDark
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.redBlackColer,
-                                labelColor: isDark
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.redBlackColer,
-                                unselectedLabelColor:
-                                    const Color(0xff977c55),
+                                indicatorColor:
+                                    isDark
+                                        ? AppTheme.primaryColor
+                                        : AppTheme.redBlackColer,
+                                labelColor:
+                                    isDark
+                                        ? AppTheme.primaryColor
+                                        : AppTheme.redBlackColer,
+                                unselectedLabelColor: const Color(0xff977c55),
                                 labelStyle: GoogleFonts.notoKufiArabic(
                                   fontSize: fontSize.toDouble() * 0.8,
                                   fontWeight: FontWeight.bold,
@@ -342,16 +385,13 @@ class HadithDetails extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 80,
-          color:AppTheme.primaryColor,
-        ),
+        Icon(icon, size: 80, color: AppTheme.primaryColor),
         const SizedBox(height: 20),
         Text(
           message,
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: theme.colorScheme.secondary,
+          style: ArabicTextStyle(
+            arabicFont: ArabicFont.avenirArabic,
+            color: AppTheme.redBlackColer,
           ),
           textAlign: TextAlign.center,
         ),
@@ -374,7 +414,10 @@ class TabContent extends ConsumerWidget {
   }) : super(key: key);
 
   List<TextSpan> _buildFormattedText(
-      String text, bool isDark, double fontSize) {
+    String text,
+    bool isDark,
+    double fontSize,
+  ) {
     List<TextSpan> spans = [];
 
     void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
@@ -402,19 +445,28 @@ class TabContent extends ConsumerWidget {
       String matchText = match.group(0)!;
       if (matchText.startsWith('X') && matchText.endsWith('X')) {
         final mcolor = isDark ? Color(0xffe09d3c) : const Color(0xff10834b);
-        addTextSpan(matchText.substring(1, matchText.length - 1),
-            baseStyle.copyWith(color: mcolor));
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: mcolor),
+        );
       } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
         final mcolor = isDark ? Color(0xffb5a7a7) : const Color(0xff912929);
-        addTextSpan(matchText.substring(1, matchText.length - 1),
-            baseStyle.copyWith(color: mcolor));
+        addTextSpan(
+          matchText.substring(1, matchText.length - 1),
+          baseStyle.copyWith(color: mcolor),
+        );
       } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
         final mcolor = isDark ? Color(0xffa5947b) : const Color(0xffa37635);
-        addTextSpan(matchText.substring(0, matchText.length),
-            baseStyle.copyWith(color: mcolor));
+        addTextSpan(
+          matchText.substring(0, matchText.length),
+          baseStyle.copyWith(color: mcolor),
+        );
       } else if (matchText == '*') {
-        addTextSpan(matchText, baseStyle.copyWith(fontWeight: FontWeight.bold),
-            addSpace: false);
+        addTextSpan(
+          matchText,
+          baseStyle.copyWith(fontWeight: FontWeight.bold),
+          addSpace: false,
+        );
       }
       lastIndex = match.end;
     }
@@ -433,25 +485,21 @@ class TabContent extends ConsumerWidget {
     final fontSize = ref.watch(fontSizeProvider);
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: MediaQuery.of(context).padding.left +
+        horizontal:
+            MediaQuery.of(context).padding.left +
             (screenHeight < screenWidth ? 8.0 : 22.0),
         vertical: MediaQuery.of(context).padding.right + 8.0,
       ),
       child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(
-          scrollbars: false,
-          overscroll: false,
-        ),
+        behavior: ScrollConfiguration.of(
+          context,
+        ).copyWith(scrollbars: false, overscroll: false),
         child: SingleChildScrollView(
           physics: const ClampingScrollPhysics(),
           child: RichText(
             textAlign: TextAlign.justify,
             text: TextSpan(
-              children: _buildFormattedText(
-                text,
-                isDark,
-                fontSize.toDouble(),
-              ),
+              children: _buildFormattedText(text, isDark, fontSize.toDouble()),
             ),
           ),
         ),

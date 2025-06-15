@@ -25,7 +25,7 @@ class BooksScreen extends ConsumerWidget {
         builder: (context, constraints) {
           final double paddingHorizontal = constraints.maxWidth < 600 ? 35 : 60;
           final double gridMaxWidth =
-              isLandscape ? constraints.maxWidth / 3.2 : constraints.maxWidth / 2.1; // تعديل لضمان 3 كروت
+              isLandscape ? constraints.maxWidth / 3.2 : constraints.maxWidth / 2.1;
 
           return hadithState.when(
             data: (hadiths) {
@@ -143,9 +143,9 @@ class BooksScreen extends ConsumerWidget {
                             itemCount: dynamicChapters.length,
                             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: gridMaxWidth,
-                              crossAxisSpacing: isLandscape ? 80 : 65, // تقليل المسافة في Landscape
-                              mainAxisSpacing: isLandscape ? 50 : 55, // تقليل المسافة في Landscape
-                              childAspectRatio: isLandscape ? 1.2 : 1.1, // زيادة الطول النسبي
+                              crossAxisSpacing: isLandscape ? 80 : 65, 
+                              mainAxisSpacing: isLandscape ? 50 : 55,
+                              childAspectRatio: isLandscape ? 1.2 : 1.1, 
                             ),
                             itemBuilder: (context, index) {
                               final chapter = dynamicChapters[index];
@@ -156,7 +156,7 @@ class BooksScreen extends ConsumerWidget {
                                 chapter['chapter_title'] as String,
                                 isLandscape,
                                 chapter['chapter_number'] as int,
-                                baseFontSize: baseFontSize, // تمرير حجم الخط لضبط النص
+                                baseFontSize: baseFontSize, 
                               );
                             },
                           ),
@@ -186,7 +186,7 @@ class BooksScreen extends ConsumerWidget {
                       'حدث خطأ أثناء التحميل\nمن فضلك تأكد من الاتصال بالإنترنت',
                       textAlign: TextAlign.center,
                       style: ArabicTextStyle(
-                        arabicFont: ArabicFont.amiri,
+                        arabicFont: ArabicFont.avenirArabic,
                         fontSize: baseFontSize * 1.2,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xfffcead0),
@@ -221,7 +221,7 @@ class BooksScreen extends ConsumerWidget {
                       child: Text(
                         'إعادة التحميل',
                         style: ArabicTextStyle(
-                          arabicFont: ArabicFont.amiri,
+                          arabicFont: ArabicFont.avenirArabic,
                           fontSize: baseFontSize * 0.9,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xfffcead0),

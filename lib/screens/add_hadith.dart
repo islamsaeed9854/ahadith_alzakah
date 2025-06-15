@@ -7,11 +7,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../data/models/hadith.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'package:logger/logger.dart';
-import '../providers/data_manager_provider/data_manager/data_loader.dart';
 import '../core/utils.dart';
 import 'package:arabic_font/arabic_font.dart';
+import 'package:ahadith_alzakah/providers/data_manager_provider/local_storage_service/local_version_handler.dart';
+import 'package:ahadith_alzakah/providers/data_manager_provider/network_service/remote_version_fetcher.dart';
 
-// Provider للتحكم في حالة الزر (معطل أو لا)
 final addButtonEnabledProvider = StateProvider<bool>((ref) => true);
 
 // Providers for text controllers
@@ -65,7 +65,7 @@ class AddHadithScreen extends ConsumerWidget {
     // Get DataManager from provider
     final dataManager = ref.read(DataProvider.notifier);
 
-    // حالة الزر (معطل/شغال)
+
     final isButtonEnabled = ref.watch(addButtonEnabledProvider);
 
     // Show message function using showSingleSnackBar
@@ -247,6 +247,7 @@ class AddHadithScreen extends ConsumerWidget {
                   backgroundColor: const Color(0xff977c55),
                 ),
                 onPressed: () {
+                   _hideKeyboard();
                   final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : existingChapterTitle;
                   final sectionTitle = isSectionMissing ? sectionTitleController.text.trim() : null;
 
@@ -305,7 +306,20 @@ class AddHadithScreen extends ConsumerWidget {
         ref.read(addButtonEnabledProvider.notifier).state = true;
         return;
       }
+     try {
+        final remoteVersion = await RemoteVersionFetcher().fetchRemoteVersion();
+        final localVersion = await LocalVersionHandler().getLocalVersion();
 
+        if (localVersion < remoteVersion) {
+            showMessage(context, 'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.');
+            ref.read(addButtonEnabledProvider.notifier).state = true;
+            return; // إيقاف العملية
+        }
+      } catch(e) {
+          showMessage(context, 'فشل التحقق من تحديث البيانات. حاول مرة أخرى.');
+          ref.read(addButtonEnabledProvider.notifier).state = true;
+          return; // إيقاف العملية
+      }
       try {
         final existenceCheck = await _checkChapterAndSectionExistence(bab, fasl);
         final isChapterMissing = existenceCheck['isChapterMissing'] as bool;

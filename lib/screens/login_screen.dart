@@ -92,6 +92,8 @@ class LoginScreen extends ConsumerWidget {
         errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
       } else if (e.toString().contains('network')) {
         errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة';
+      } else if (e.toString().contains('Failed host lookup')) {
+        errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة';
       } else {
         errorMessage = 'حدث خطأ غير متوقع: $e';
       }

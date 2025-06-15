@@ -143,9 +143,9 @@ class BooksScreen extends ConsumerWidget {
                             itemCount: dynamicChapters.length,
                             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: gridMaxWidth,
-                              crossAxisSpacing: isLandscape ? 80 : 65, 
-                              mainAxisSpacing: isLandscape ? 50 : 55,
-                              childAspectRatio: isLandscape ? 1.2 : 1.1, 
+                              crossAxisSpacing: isLandscape ? 150 : 65, 
+                              mainAxisSpacing: isLandscape ? 70 : 55,
+                              childAspectRatio: isLandscape ? 1.5 : 1.1, 
                             ),
                             itemBuilder: (context, index) {
                               final chapter = dynamicChapters[index];

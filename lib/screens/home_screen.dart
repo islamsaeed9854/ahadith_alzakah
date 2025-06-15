@@ -131,13 +131,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
          // Test button for immediate notification
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              ref.read(notificationServiceProvider).sendImmediateNotification();
-              debugPrint('Triggered immediate notification');
-            },
-            child: const Icon(Icons.notification_add),
-          ),
+          // floatingActionButton: FloatingActionButton(
+          //   onPressed: () {
+          //     ref.read(notificationServiceProvider).sendImmediateNotification();
+          //     debugPrint('Triggered immediate notification');
+          //   },
+          //   child: const Icon(Icons.notification_add),
+          // ),
         ),
       ),
     );

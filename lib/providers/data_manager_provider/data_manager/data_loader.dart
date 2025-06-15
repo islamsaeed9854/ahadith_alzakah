@@ -8,7 +8,7 @@ import '../network_service/remote_json_fetcher.dart';
 import '../local_storage_service/local_version_handler.dart';
 import '../local_storage_service/local_json_handler.dart';
 import '../data_parser/data_list_parser.dart';
-import 'data_grouper.dart'; // Import HadithGrouper
+import 'data_grouper.dart'; 
 
 class DataLoader {
   final NetworkChecker _networkChecker;
@@ -21,24 +21,28 @@ class DataLoader {
   final Logger _logger;
 
   DataLoader()
-      : _networkChecker = NetworkChecker(),
-        _versionFetcher = RemoteVersionFetcher(),
-        _jsonFetcher = RemoteJsonFetcher(),
-        _versionHandler = LocalVersionHandler(),
-        _jsonHandler = LocalJsonHandler(),
-        _parser = HadithListParser(),
-        _logger = Logger(
-            printer: PrettyPrinter(
-              methodCount: 0,
-              errorMethodCount: 5,
-              lineLength: 50,
-              colors: true,
-              printEmojis: true,
-              printTime: true,
-            ));
+    : _networkChecker = NetworkChecker(),
+      _versionFetcher = RemoteVersionFetcher(),
+      _jsonFetcher = RemoteJsonFetcher(),
+      _versionHandler = LocalVersionHandler(),
+      _jsonHandler = LocalJsonHandler(),
+      _parser = HadithListParser(),
+      _logger = Logger(
+        printer: PrettyPrinter(
+          methodCount: 0,
+          errorMethodCount: 5,
+          lineLength: 50,
+          colors: true,
+          printEmojis: true,
+          printTime: true,
+        ),
+      );
+
+  
 
   Future<List<Hadith>> loadHadiths(
-      AsyncValue<List<Hadith>> Function(List<Hadith>?) updateState) async {
+    AsyncValue<List<Hadith>> Function(List<Hadith>?) updateState,
+  ) async {
     _logger.i('Starting to load hadiths...');
     try {
       final connected = await _networkChecker.isConnectedToInternet();
@@ -46,27 +50,39 @@ class DataLoader {
 
       if (connected) {
         _logger.d('Internet connection available. Checking versions...');
-        final remoteVersion = await _versionFetcher.fetchRemoteVersion();
-        final localVersion = await _versionHandler.getLocalVersion();
-        _logger.d('remoteVersion=$remoteVersion, localVersion=$localVersion');
+        try {
+        
+          final remoteVersion = await _versionFetcher.fetchRemoteVersion();
+          final localVersion = await _versionHandler.getLocalVersion();
+          _logger.d('remoteVersion=$remoteVersion, localVersion=$localVersion');
 
-        if (remoteVersion > localVersion) {
-          _logger.i('Remote version is newer. Fetching remote JSON...');
-          final remoteJson = await _jsonFetcher.fetchRemoteJson();
-          if (remoteJson != null) {
-            _jsonData = remoteJson;
-            hadiths = _parser.parseHadithList(remoteJson);
-            if (hadiths.isNotEmpty) {
-              _logger.i('Successfully parsed ${hadiths.length} hadiths from remote JSON.');
-              await _jsonHandler.saveHadithJson(remoteJson);
-              await _versionHandler.setLocalVersion(remoteVersion);
-              updateState(hadiths);
-              return hadiths;
+          if (remoteVersion > localVersion) {
+            _logger.i('Remote version is newer. Fetching remote JSON...');
+            final remoteJson = await _jsonFetcher.fetchRemoteJson();
+            if (remoteJson != null) {
+              _jsonData = remoteJson;
+              hadiths = _parser.parseHadithList(remoteJson);
+              if (hadiths.isNotEmpty) {
+                _logger.i(
+                  'Successfully parsed ${hadiths.length} hadiths from remote JSON.',
+                );
+                await _jsonHandler.saveHadithJson(remoteJson);
+                await _versionHandler.setLocalVersion(remoteVersion);
+                updateState(hadiths);
+                return hadiths;
+              }
             }
           }
+        } catch (e) {
+         
+          _logger.w(
+            'Failed to fetch remote data due to weak internet. Falling back to local data. Error: $e',
+          );
+          
         }
       }
 
+      
       final localJson = await _jsonHandler.getLocalHadithJson();
       if (localJson != null) {
         _logger.i('Loading hadiths from local JSON.');
@@ -74,11 +90,16 @@ class DataLoader {
         hadiths = _parser.parseHadithList(_jsonData);
       }
 
-      updateState(hadiths.isEmpty ? null : hadiths);
+     
+      if (hadiths.isNotEmpty) {
+        updateState(hadiths);
+      } else {
+        updateState(null); 
+      }
       return hadiths;
     } catch (e, st) {
       _logger.e('Error loading hadiths', error: e, stackTrace: st);
-      updateState(null);
+      updateState(null); 
       rethrow;
     }
   }
@@ -92,7 +113,7 @@ class DataLoader {
     return _jsonData;
   }
 
-  Future<void> updateJsonData(List<Hadith> hadiths,dataVersion) async {
+  Future<void> updateJsonData(List<Hadith> hadiths, dataVersion) async {
     _logger.i('Updating JSON data with new hadiths...');
     try {
       final grouped = HadithGrouper().groupHadithsByStructure(hadiths);

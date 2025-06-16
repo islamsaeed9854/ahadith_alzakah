@@ -24,7 +24,7 @@ class HadithDetails extends ConsumerWidget {
 
     void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
       if (text.isEmpty) return;
-      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  
       bool needsSpace = addSpace && !text.endsWith(' ') && text != '*';
       spans.add(TextSpan(text: text + (needsSpace ? ' ' : ''), style: style));
     }
@@ -35,13 +35,13 @@ class HadithDetails extends ConsumerWidget {
       height: 1.8,
     );
 
-    text = text.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+   
 
     RegExp pattern = RegExp(r'(X[^X]+X|O[^O]+O|\[[^\]]+\]|\*)');
     int lastIndex = 0;
 
     for (final match in pattern.allMatches(text)) {
-      String before = text.substring(lastIndex, match.start).trim();
+      String before = text.substring(lastIndex, match.start); 
       if (before.isNotEmpty) addTextSpan(before, baseStyle);
 
       String matchText = match.group(0)!;
@@ -74,7 +74,7 @@ class HadithDetails extends ConsumerWidget {
     }
 
     if (lastIndex < text.length) {
-      String remaining = text.substring(lastIndex).trim();
+      String remaining = text.substring(lastIndex); 
       if (remaining.isNotEmpty)
         addTextSpan(remaining, baseStyle, addSpace: false);
     }
@@ -104,32 +104,32 @@ class HadithDetails extends ConsumerWidget {
     return allHadithsAsyncValue.when(
       loading:
           () => Scaffold(
-            backgroundColor: backgroundColor,
-            body: Center(
-              child: SizedBox(
-                width: 80,
-                height: 80,
-                child: CircularProgressIndicator(
-                  strokeWidth: 7,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isDark ? Colors.white : AppTheme.primaryColor,
-                  ),
-                  backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
-                ),
+        backgroundColor: backgroundColor,
+        body: Center(
+          child: SizedBox(
+            width: 80,
+            height: 80,
+            child: CircularProgressIndicator(
+              strokeWidth: 7,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isDark ? Colors.white : AppTheme.primaryColor,
               ),
+              backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
             ),
           ),
+        ),
+      ),
       error:
           (error, stack) => Scaffold(
-            backgroundColor: backgroundColor,
-            body: Center(
-              child: _buildErrorWidget(
-                theme,
-                'لا توجد أحاديث لعرضها حاليًا',
-                Icons.error_outline,
-              ),
-            ),
+        backgroundColor: backgroundColor,
+        body: Center(
+          child: _buildErrorWidget(
+            theme,
+            'لا توجد أحاديث لعرضها حاليًا',
+            Icons.error_outline,
           ),
+        ),
+      ),
       data: (allHadiths) {
         if (allHadiths.isEmpty || hadithToDisplay == null) {
           return Scaffold(
@@ -203,7 +203,7 @@ class HadithDetails extends ConsumerWidget {
                         return Column(
                           children: [
                             SizedBox(
-                              height: 70.0,
+                              height:  screenWidth > screenHeight ? 50 : 100,
                               child: Padding(
                                 padding: EdgeInsets.only(
                                   top: 0,
@@ -211,15 +211,15 @@ class HadithDetails extends ConsumerWidget {
                                       screenWidth > screenHeight
                                           ? 15
                                           : MediaQuery.of(
-                                                context,
-                                              ).padding.left +
+                                                  context,
+                                                ).padding.left +
                                               16,
                                   right:
                                       screenWidth > screenHeight
                                           ? 15
                                           : MediaQuery.of(
-                                                context,
-                                              ).padding.right +
+                                                  context,
+                                                ).padding.right +
                                               16,
                                 ),
                                 child: Row(
@@ -254,7 +254,7 @@ class HadithDetails extends ConsumerWidget {
                                                       : AppTheme.redBlackColer,
                                               fontSize: 13,
                                             ),
-                                            maxLines: 2,
+                                            maxLines: 3,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
@@ -288,8 +288,8 @@ class HadithDetails extends ConsumerWidget {
                                       screenWidth > screenHeight
                                           ? 15
                                           : MediaQuery.of(
-                                                context,
-                                              ).padding.left +
+                                                  context,
+                                                ).padding.left +
                                               screenWidth * 0.06,
                                 ),
                                 child: ScrollConfiguration(
@@ -301,14 +301,13 @@ class HadithDetails extends ConsumerWidget {
                                     child: RichText(
                                       textAlign: TextAlign.justify,
                                       text: TextSpan(
+                             
                                         children: _buildFormattedText(
-                                          hadith.text.trim().replaceAll(
-                                            RegExp(r'\s+'),
-                                            ' ',
-                                          ),
+                                          hadith.text.trim(),
                                           isDark,
                                           fontSize.toDouble(),
                                         ),
+                         
                                       ),
                                     ),
                                   ),
@@ -422,7 +421,7 @@ class TabContent extends ConsumerWidget {
 
     void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
       if (text.isEmpty) return;
-      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+     
       bool needsSpace = addSpace && !text.endsWith(' ') && text != '*';
       spans.add(TextSpan(text: text + (needsSpace ? ' ' : ''), style: style));
     }
@@ -433,13 +432,13 @@ class TabContent extends ConsumerWidget {
       height: 1.8,
     );
 
-    text = text.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+  
 
     RegExp pattern = RegExp(r'(X[^X]+X|O[^O]+O|\[[^\]]+\]|\*)');
     int lastIndex = 0;
 
     for (final match in pattern.allMatches(text)) {
-      String before = text.substring(lastIndex, match.start).trim();
+      String before = text.substring(lastIndex, match.start); // .trim() is removed
       if (before.isNotEmpty) addTextSpan(before, baseStyle);
 
       String matchText = match.group(0)!;
@@ -472,7 +471,7 @@ class TabContent extends ConsumerWidget {
     }
 
     if (lastIndex < text.length) {
-      String remaining = text.substring(lastIndex).trim();
+      String remaining = text.substring(lastIndex); 
       if (remaining.isNotEmpty)
         addTextSpan(remaining, baseStyle, addSpace: false);
     }
@@ -499,7 +498,7 @@ class TabContent extends ConsumerWidget {
           child: RichText(
             textAlign: TextAlign.justify,
             text: TextSpan(
-              children: _buildFormattedText(text, isDark, fontSize.toDouble()),
+              children: _buildFormattedText(text.trim(), isDark, fontSize.toDouble()),
             ),
           ),
         ),

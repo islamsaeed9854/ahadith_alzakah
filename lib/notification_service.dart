@@ -110,8 +110,8 @@ class NotificationService {
           payload: {'hadith': hadithJson}, // Add hadith data to payload
         ),
         schedule: NotificationCalendar(
-          hour: 15,
-          minute: 47,
+          hour: 12,
+          minute: 0,
           second: 0,
           repeats: true,
           preciseAlarm: true,

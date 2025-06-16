@@ -150,6 +150,7 @@ class HadithDetails extends ConsumerWidget {
                   onPressed: () {
                     controller.state = '';
                     navNotifier.changeTab(0);
+                    ref.read(showDailyHadithProvider.notifier).state = false;
                   },
                 ),
               ],
@@ -180,6 +181,7 @@ class HadithDetails extends ConsumerWidget {
             if (!didPop) {
               controller.state = '';
               navNotifier.changeTab(0);
+               ref.read(showDailyHadithProvider.notifier).state = false;
             }
           },
           child: Directionality(
@@ -272,6 +274,7 @@ class HadithDetails extends ConsumerWidget {
                                       onPressed: () {
                                         controller.state = '';
                                         navNotifier.changeTab(0);
+                                         ref.read(showDailyHadithProvider.notifier).state = false;
                                       },
                                     ),
                                   ],

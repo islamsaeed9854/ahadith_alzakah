@@ -126,13 +126,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                       .compareTo(b['chapter_number'] as int),
                 );
 
-              String getChapterTitle(int bab) {
-                final chapter = dynamicChapters.firstWhere(
-                  (c) => c['chapter_number'] == bab,
-                  orElse: () => {'chapter_title': 'الباب $bab'},
-                );
-                return chapter['chapter_title'] as String;
-              }
+            
 
               final allSections = dynamicChapters
                   .expand((chapter) => chapter['sections'] as List)

@@ -16,10 +16,6 @@ Widget buildBabCard(
   // Calculate subFontSize based on baseFontSize with clamping
   final subFontSize = (baseFontSize * 0.9).clamp(2.0, 18.0); // Adjusted for readability
 
-  // Adjust padding based on screen width
-  final screenWidth = MediaQuery.of(context).size.width;
-  final padding = screenWidth * 0.0; // Reduced to 1.5% for better fit
-
   return Directionality(
     textDirection: TextDirection.rtl,
     child: GestureDetector(

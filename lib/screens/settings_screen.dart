@@ -14,7 +14,6 @@ import '../providers/notification_service_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/setting_card.dart';
 import '../widgets/clickable_setting_card.dart';
-import '../core/theme.dart';
 import 'package:arabic_font/arabic_font.dart';
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);

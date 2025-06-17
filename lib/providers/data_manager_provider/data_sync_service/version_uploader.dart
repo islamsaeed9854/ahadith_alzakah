@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:retry/retry.dart';
-import '../../../core/utils.dart'; // Import utils.dart which contains showSingleSnackBar
 
 class VersionUploader {
   final SupabaseClient _supabase = Supabase.instance.client;

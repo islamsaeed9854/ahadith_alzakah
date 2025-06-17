@@ -1,6 +1,7 @@
 import 'package:ahadith_alzakah/core/constants.dart';
 import 'package:ahadith_alzakah/core/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // <-- إضافة مهمة لإغلاق الكيبورد
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -14,33 +15,46 @@ import 'package:ahadith_alzakah/providers/data_manager_provider/network_service/
 
 final addButtonEnabledProvider = StateProvider<bool>((ref) => true);
 
-// Providers for text controllers
-final babControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final babControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
-final faslControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final faslControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
-final numberControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final numberControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
-final textControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final textControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
-final summaryControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final summaryControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
-final referenceControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final referenceControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
-final analysisControllerProvider = Provider<TextEditingController>((ref) {
-  return TextEditingController();
+final analysisControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(() => controller.dispose());
+  return controller;
 });
 
 class AddHadithScreen extends ConsumerWidget {
@@ -53,7 +67,6 @@ class AddHadithScreen extends ConsumerWidget {
     final isSmallScreen = screenWidth < 400;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    // Get controllers from providers
     final babController = ref.watch(babControllerProvider);
     final faslController = ref.watch(faslControllerProvider);
     final numberController = ref.watch(numberControllerProvider);
@@ -62,13 +75,9 @@ class AddHadithScreen extends ConsumerWidget {
     final referenceController = ref.watch(referenceControllerProvider);
     final analysisController = ref.watch(analysisControllerProvider);
 
-    // Get DataManager from provider
     final dataManager = ref.read(DataProvider.notifier);
-
-
     final isButtonEnabled = ref.watch(addButtonEnabledProvider);
 
-    // Show message function using showSingleSnackBar
     void showMessage(BuildContext context, String message, {bool isSuccess = false}) {
       if (context.mounted) {
         showSingleSnackBar(
@@ -80,55 +89,33 @@ class AddHadithScreen extends ConsumerWidget {
       }
     }
 
-    // Hide keyboard function
     void _hideKeyboard() {
       FocusScope.of(context).unfocus();
     }
 
-    // Check chapter and section existence
     Future<Map<String, dynamic>> _checkChapterAndSectionExistence(int bab, int fasl) async {
       final jsonData = await dataManager.getJsonData();
       final logger = Logger();
 
       try {
         if (jsonData == null || jsonData is! Map<String, dynamic> || jsonData['chapters'] is! List) {
-          logger.e('Invalid JSON data for chapter/section check');
-          return {
-            'isChapterMissing': true,
-            'isSectionMissing': true,
-            'chapterTitle': null,
-          };
+          return {'isChapterMissing': true, 'isSectionMissing': true, 'chapterTitle': null};
         }
-
         final chapters = jsonData['chapters'] as List<dynamic>;
-        final isChapterMissing = !chapters.any((ch) => ch['chapter_number'] == bab);
-
-        bool isSectionMissing = true;
-        String? existingChapterTitle;
-
-        if (!isChapterMissing) {
-          final chapter = chapters.firstWhere((ch) => ch['chapter_number'] == bab);
-          existingChapterTitle = chapter['chapter_title'] as String?;
-          final sections = chapter['sections'] as List<dynamic>? ?? [];
-          isSectionMissing = !sections.any((sec) => sec['section_number'] == fasl);
+        final chapterData = chapters.firstWhere((ch) => ch['chapter_number'] == bab, orElse: () => null);
+        if (chapterData == null) {
+          return {'isChapterMissing': true, 'isSectionMissing': true, 'chapterTitle': null};
         }
-
-        return {
-          'isChapterMissing': isChapterMissing,
-          'isSectionMissing': isSectionMissing,
-          'chapterTitle': existingChapterTitle,
-        };
+        final existingChapterTitle = chapterData['chapter_title'] as String?;
+        final sections = chapterData['sections'] as List<dynamic>? ?? [];
+        final isSectionMissing = !sections.any((sec) => sec['section_number'] == fasl);
+        return {'isChapterMissing': false, 'isSectionMissing': isSectionMissing, 'chapterTitle': existingChapterTitle};
       } catch (e) {
         logger.e('Error checking chapter/section existence: $e');
-        return {
-          'isChapterMissing': true,
-          'isSectionMissing': true,
-          'chapterTitle': null,
-        };
+        return {'isChapterMissing': true, 'isSectionMissing': true, 'chapterTitle': null};
       }
     }
 
-    // Show title input dialog
     Future<Map<String, String?>?> _showTitleInputDialog(
       BuildContext context, {
       required bool isChapterMissing,
@@ -138,97 +125,58 @@ class AddHadithScreen extends ConsumerWidget {
       final chapterTitleController = TextEditingController();
       final sectionTitleController = TextEditingController();
 
+      // NEW KEYBOARD FIX: Use a more direct method
+      void forceHideKeyboard() {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+
       return await showDialog<Map<String, String?>?>(
         context: context,
         barrierDismissible: false,
-        builder: (context) {
+        builder: (dialogContext) {
           return AlertDialog(
-            title: Text(
-              'إدخال العناوين المفقودة',
-              style: GoogleFonts.cairo(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xff977c55),
-              ),
-            ),
+            title: Text('إدخال العناوين المفقودة', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: const Color(0xff977c55))),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isChapterMissing && existingChapterTitle != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'اسم الباب الموجود:',
-                          style: GoogleFonts.cairo(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[700],
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('اسم الباب الموجود:', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.green[700])),
+                          SizedBox(height: 4),
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green[200]!)),
+                            child: Text(existingChapterTitle, style: GoogleFonts.cairo(color: Colors.green[800], fontWeight: FontWeight.w500)),
                           ),
-                        ),
-                        SizedBox(height: 4),
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[200]!),
-                          ),
-                          child: Text(
-                            existingChapterTitle,
-                            style: GoogleFonts.cairo(
-                              color: Colors.green[800],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                      ],
+                        ],
+                      ),
                     ),
                   if (isChapterMissing)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'اسم الباب (مطلوب)',
-                          style: GoogleFonts.cairo(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        _buildTextInputField(
-                          'أدخل اسم الباب',
-                          MediaQuery.of(context).size.width,
-                          MediaQuery.of(context).size.height,
-                          controller: chapterTitleController,
-                          isSmallScreen: true,
-                          maxLines: 1,
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('اسم الباب (مطلوب)', style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w500)),
+                          SizedBox(height: 8),
+                          _buildTextInputField('أدخل اسم الباب', MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, controller: chapterTitleController, isSmallScreen: true, maxLines: 1),
+                        ],
+                      ),
                     ),
                   if (isSectionMissing)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isChapterMissing) SizedBox(height: 16),
-                        Text(
-                          'اسم الفصل (مطلوب)',
-                          style: GoogleFonts.cairo(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        Text('اسم الفصل (مطلوب)', style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w500)),
                         SizedBox(height: 8),
-                        _buildTextInputField(
-                          'أدخل اسم الفصل',
-                          MediaQuery.of(context).size.width,
-                          MediaQuery.of(context).size.height,
-                          controller: sectionTitleController,
-                          isSmallScreen: true,
-                          maxLines: 1,
-                        ),
+                        _buildTextInputField('أدخل اسم الفصل', MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, controller: sectionTitleController, isSmallScreen: true, maxLines: 1),
                       ],
                     ),
                 ],
@@ -236,36 +184,26 @@ class AddHadithScreen extends ConsumerWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, null),
-                child: Text(
-                  'إلغاء',
-                  style: GoogleFonts.cairo(color: Colors.red),
-                ),
+                onPressed: () {
+                  forceHideKeyboard();
+                  Navigator.pop(dialogContext, null);
+                },
+                child: Text('إلغاء', style: GoogleFonts.cairo(color: Colors.red)),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff977c55),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff977c55)),
                 onPressed: () {
-                   _hideKeyboard();
+                  forceHideKeyboard();
                   final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : existingChapterTitle;
                   final sectionTitle = isSectionMissing ? sectionTitleController.text.trim() : null;
-
                   if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
                       (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
-                    showMessage(context, 'يرجى إدخال جميع البيانات المطلوبة');
+                    showMessage(dialogContext, 'يرجى إدخال جميع البيانات المطلوبة');
                     return;
                   }
-
-                  Navigator.pop(context, {
-                    'chapterTitle': chapterTitle,
-                    'sectionTitle': sectionTitle,
-                  });
+                  Navigator.pop(dialogContext, {'chapterTitle': chapterTitle, 'sectionTitle': sectionTitle});
                 },
-                child: Text(
-                  'حفظ',
-                  style: GoogleFonts.cairo(color: Colors.white),
-                ),
+                child: Text('حفظ', style: GoogleFonts.cairo(color: Colors.white)),
               ),
             ],
           );
@@ -273,126 +211,98 @@ class AddHadithScreen extends ConsumerWidget {
       );
     }
 
-    // Add hadith function
     Future<void> addHadith() async {
       _hideKeyboard();
-
-      if (!isButtonEnabled) return;
-
+      if (!ref.read(addButtonEnabledProvider)) return;
       ref.read(addButtonEnabledProvider.notifier).state = false;
 
-      final bab = int.tryParse(babController.text.trim()) ?? -1;
-      final fasl = int.tryParse(faslController.text.trim()) ?? -1;
-      final number = int.tryParse(numberController.text.trim()) ?? -1;
-      final text = textController.text.trim();
-      final summary = summaryController.text.trim();
-      final reference = referenceController.text.trim();
-      final analysis = analysisController.text.trim();
-
-      if (bab <= 0 || fasl <= 0 || number <= 0) {
-        showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
-        ref.read(addButtonEnabledProvider.notifier).state = true;
-        return;
-      }
-      if (text.isEmpty) {
-        showMessage(context, 'نص الحديث مطلوب');
-        ref.read(addButtonEnabledProvider.notifier).state = true;
-        return;
-      }
-
-      final connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult == ConnectivityResult.none) {
-        showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
-        ref.read(addButtonEnabledProvider.notifier).state = true;
-        return;
-      }
-     try {
-        final remoteVersion = await RemoteVersionFetcher().fetchRemoteVersion();
-        final localVersion = await LocalVersionHandler().getLocalVersion();
-
-        if (localVersion < remoteVersion) {
-            showMessage(context, 'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.');
-            ref.read(addButtonEnabledProvider.notifier).state = true;
-            return; // إيقاف العملية
-        }
-      } catch(e) {
-          showMessage(context, 'فشل التحقق من تحديث البيانات. حاول مرة أخرى.');
-          ref.read(addButtonEnabledProvider.notifier).state = true;
-          return; // إيقاف العملية
-      }
+      // ROBUST FIX: The try block now wraps all logic to ensure finally is always called.
       try {
+        final bab = int.tryParse(babController.text.trim()) ?? -1;
+        final fasl = int.tryParse(faslController.text.trim()) ?? -1;
+        final number = int.tryParse(numberController.text.trim()) ?? -1;
+        final text = textController.text.trim();
+        final summary = summaryController.text.trim();
+        final reference = referenceController.text.trim();
+        final analysis = analysisController.text.trim();
+
+        if (bab <= 0 || fasl <= 0 || number <= 0) {
+          showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
+          return;
+        }
+        if (text.isEmpty) {
+          showMessage(context, 'نص الحديث مطلوب');
+          return;
+        }
+
+        final connectivityResult = await (Connectivity().checkConnectivity());
+        if (connectivityResult == ConnectivityResult.none && context.mounted) {
+          showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
+          return;
+        }
+
+        if (context.mounted) {
+          try {
+            final remoteVersion = await RemoteVersionFetcher().fetchRemoteVersion();
+            final localVersion = await LocalVersionHandler().getLocalVersion();
+            if (localVersion < remoteVersion) {
+              showMessage(context, 'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.');
+              return;
+            }
+          } catch (e) {
+            showMessage(context, 'فشل التحقق من تحديث البيانات. حاول مرة أخرى.');
+            return;
+          }
+        }
+
         final existenceCheck = await _checkChapterAndSectionExistence(bab, fasl);
         final isChapterMissing = existenceCheck['isChapterMissing'] as bool;
         final isSectionMissing = existenceCheck['isSectionMissing'] as bool;
         final existingChapterTitle = existenceCheck['chapterTitle'] as String?;
+        final hadithInSameSection = (ref.read(DataProvider).value ?? []).firstWhere(
+          (h) => h.bab == bab && h.fasl == fasl,
+          orElse: () => Hadith.empty(),
+        );
+        final existingSectionTitle = hadithInSameSection.section_title;
 
         String? chapterTitle = existingChapterTitle;
-        String? sectionTitle;
+        String? sectionTitle = existingSectionTitle;
 
         if (isChapterMissing || isSectionMissing) {
-          final result = await _showTitleInputDialog(
-            context,
-            isChapterMissing: isChapterMissing,
-            isSectionMissing: isSectionMissing,
-            existingChapterTitle: existingChapterTitle,
-          );
-
+          final result = await _showTitleInputDialog(context, isChapterMissing: isChapterMissing, isSectionMissing: isSectionMissing, existingChapterTitle: existingChapterTitle);
           if (result == null) {
             showMessage(context, 'لا يمكن إضافة الحديث بدون إدخال البيانات المطلوبة');
-            ref.read(addButtonEnabledProvider.notifier).state = true;
             return;
           }
-
           if (isChapterMissing) chapterTitle = result['chapterTitle'];
-          sectionTitle = result['sectionTitle'];
-
+          if (isSectionMissing) sectionTitle = result['sectionTitle'];
           if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
               (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
             showMessage(context, 'يرجى إدخال جميع العناوين المطلوبة');
-            ref.read(addButtonEnabledProvider.notifier).state = true;
             return;
           }
         }
 
-        final newHadith = Hadith(
-          id: 0,
-          deleted: false,
-          bab: bab,
-          fasl: fasl,
-          number: number,
-          text: text,
-          summary: summary.isNotEmpty ? summary : "",
-          reference: reference.isNotEmpty ? reference : "",
-          analysis: analysis.isNotEmpty ? analysis : "",
-          chapter_title: chapterTitle ?? "",
-          section_title: sectionTitle ?? "",
-        );
-
+        final newHadith = Hadith(id: 0, deleted: false, bab: bab, fasl: fasl, number: number, text: text, summary: summary, reference: reference, analysis: analysis, chapter_title: chapterTitle ?? "", section_title: sectionTitle ?? "");
         await dataManager.addHadith(newHadith, 4, context);
-        //showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
 
-        babController.clear();
-        faslController.clear();
-        numberController.clear();
-        textController.clear();
-        summaryController.clear();
-        referenceController.clear();
-        analysisController.clear();
-
-        ref.read(addButtonEnabledProvider.notifier).state = true;
-      } catch (e) {
-        String errorMessage;
-        if (e.toString().contains('network') || e.toString().contains('timeout')) {
-          errorMessage = 'فشل الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة';
-        } else if (e.toString().contains('permission') || e.toString().contains('unauthorized')) {
-          errorMessage = 'لا يوجد إذن كافٍ لإضافة الحديث، يرجى التحقق من الصلاحيات';
-        } else if (e.toString().contains('storage') || e.toString().contains('io')) {
-          errorMessage = 'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
-        } else {
-          errorMessage = 'حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا';
+        if (context.mounted) {
+          showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
+          babController.clear();
+          faslController.clear();
+          numberController.clear();
+          textController.clear();
+          summaryController.clear();
+          referenceController.clear();
+          analysisController.clear();
         }
-        showMessage(context, errorMessage);
-
+      } catch (e) {
+        if (context.mounted) {
+          showMessage(context, 'حدث خطأ: ${e.toString()}');
+        }
+      } finally {
+        // ROBUST FIX: This now runs ALWAYS, ensuring the button state is reset 
+        // even if the user navigates away or an error occurs.
         ref.read(addButtonEnabledProvider.notifier).state = true;
       }
     }
@@ -401,13 +311,8 @@ class AddHadithScreen extends ConsumerWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: Container( // إضافة Container للتحكم في الخلفية
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: TextApp.appBackgroundWidget.image, // استخدام الخلفية الموجودة
-              fit: BoxFit.cover,
-            ),
-          ),
+        body: Container(
+          decoration: BoxDecoration(image: DecorationImage(image: TextApp.appBackgroundWidget.image, fit: BoxFit.cover)),
           child: SafeArea(
             child: GestureDetector(
               onTap: _hideKeyboard,
@@ -422,9 +327,7 @@ class AddHadithScreen extends ConsumerWidget {
                       right: screenWidth * 0.04,
                     ),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: screenHeight - keyboardHeight,
-                      ),
+                      constraints: BoxConstraints(minHeight: screenHeight - keyboardHeight),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -433,20 +336,7 @@ class AddHadithScreen extends ConsumerWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'إضافة حديث',
-                                    style: GoogleFonts.cairo(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: screenWidth * 0.09,
-                                      color: const Color(0xfffcead0),
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: screenWidth * 0.03,
-                                          color: const Color(0xfffcead0),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  Text('إضافة حديث', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: screenWidth * 0.09, color: const Color(0xfffcead0), shadows: [Shadow(blurRadius: screenWidth * 0.03, color: const Color(0xfffcead0))])),
                                   TextApp.backButtonLoginAddRemovePages(context),
                                 ],
                               ),
@@ -455,87 +345,26 @@ class AddHadithScreen extends ConsumerWidget {
                                 width: isSmallScreen ? screenWidth * 0.9 : screenWidth * 0.9,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color.fromRGBO(0, 0, 0, 0.1),
-                                      blurRadius: isSmallScreen ? 5 : 10,
-                                      spreadRadius: isSmallScreen ? 1 : 3,
-                                    ),
-                                  ],
+                                  boxShadow: [BoxShadow(color: const Color.fromRGBO(0, 0, 0, 0.1), blurRadius: isSmallScreen ? 5 : 10, spreadRadius: isSmallScreen ? 1 : 3)],
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildNumberInputRow(
-                                      'رقم الباب',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: babController,
-                                      isSmallScreen: isSmallScreen,
-                                    ),
+                                    _buildNumberInputRow('رقم الباب', screenWidth, screenHeight, controller: babController, isSmallScreen: isSmallScreen),
                                     SizedBox(height: screenHeight * 0.015),
-                                    _buildNumberInputRow(
-                                      'رقم الفصل',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: faslController,
-                                      isSmallScreen: isSmallScreen,
-                                    ),
+                                    _buildNumberInputRow('رقم الفصل', screenWidth, screenHeight, controller: faslController, isSmallScreen: isSmallScreen),
                                     SizedBox(height: screenHeight * 0.015),
-                                    _buildNumberInputRow(
-                                      'رقم الحديث',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: numberController,
-                                      isSmallScreen: isSmallScreen,
-                                    ),
+                                    _buildNumberInputRow('رقم الحديث', screenWidth, screenHeight, controller: numberController, isSmallScreen: isSmallScreen),
                                     SizedBox(height: screenHeight * 0.02),
-                                    Divider(
-                                      color: Colors.white,
-                                      thickness: 2.0,
-                                      indent: 16.0,
-                                      endIndent: 16.0,
-                                    ),
+                                    Divider(color: Colors.white, thickness: 2.0, indent: 16.0, endIndent: 16.0),
                                     SizedBox(height: screenHeight * 0.015),
-                                    _buildTextInputField(
-                                      'نص الحديث',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: textController,
-                                      isSmallScreen: isSmallScreen,
-                                      maxLines: 3,
-                                      heightFactor: 0.08,
-                                    ),
+                                    _buildTextInputField('نص الحديث', screenWidth, screenHeight, controller: textController, isSmallScreen: isSmallScreen, maxLines: 3, heightFactor: 0.08),
                                     SizedBox(height: screenHeight * 0.015),
-                                    _buildTextInputField(
-                                      'الخلاصة',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: summaryController,
-                                      isSmallScreen: isSmallScreen,
-                                      maxLines: 3,
-                                      heightFactor: 0.08,
-                                    ),
+                                    _buildTextInputField('الخلاصة', screenWidth, screenHeight, controller: summaryController, isSmallScreen: isSmallScreen, maxLines: 3, heightFactor: 0.08),
                                     SizedBox(height: screenHeight * 0.015),
-                                    _buildTextInputField(
-                                      'التخريج',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: referenceController,
-                                      isSmallScreen: isSmallScreen,
-                                      maxLines: 3,
-                                      heightFactor: 0.08,
-                                    ),
+                                    _buildTextInputField('التخريج', screenWidth, screenHeight, controller: referenceController, isSmallScreen: isSmallScreen, maxLines: 3, heightFactor: 0.08),
                                     SizedBox(height: screenHeight * 0.015),
-                                    _buildTextInputField(
-                                      'الدراسة',
-                                      screenWidth,
-                                      screenHeight,
-                                      controller: analysisController,
-                                      isSmallScreen: isSmallScreen,
-                                      maxLines: 3,
-                                      heightFactor: 0.08,
-                                    ),
+                                    _buildTextInputField('الدراسة', screenWidth, screenHeight, controller: analysisController, isSmallScreen: isSmallScreen, maxLines: 3, heightFactor: 0.08),
                                     SizedBox(height: screenHeight * 0.04),
                                   ],
                                 ),
@@ -548,25 +377,14 @@ class AddHadithScreen extends ConsumerWidget {
                                     backgroundColor: const Color(0xff977c55),
                                     foregroundColor: const Color(0xff977c55),
                                     overlayColor: Colors.transparent,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: isSmallScreen ? 12 : 14,
-                                    ),
+                                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: isSmallScreen ? 12 : 14),
                                     minimumSize: const Size(0, 0),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                                   ),
-                                  onPressed: isButtonEnabled ? () => addHadith() : null,
-                                  child: Text(
-                                    "إضافة حديث",
-                                    style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-                                      color: Colors.white,
-                                      fontSize: isSmallScreen ? 16 : 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  onPressed: isButtonEnabled ? addHadith : null,
+                                  child: isButtonEnabled
+                                      ? Text("إضافة حديث", style: ArabicTextStyle(arabicFont: ArabicFont.avenirArabic, color: Colors.white, fontSize: isSmallScreen ? 16 : 18, fontWeight: FontWeight.bold))
+                                      : const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0)),
                                 ),
                               ),
                             ],
@@ -585,25 +403,11 @@ class AddHadithScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNumberInputRow(
-    String label,
-    double screenWidth,
-    double screenHeight, {
-    required TextEditingController controller,
-    required bool isSmallScreen,
-  }) {
+  Widget _buildNumberInputRow(String label, double screenWidth, double screenHeight, {required TextEditingController controller, required bool isSmallScreen}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.secodaryColor,
-            fontSize: isSmallScreen ? 20 : 22,
-          ),
-        ),
+        Text(label, style: ArabicTextStyle(arabicFont: ArabicFont.avenirArabic, fontWeight: FontWeight.w500, color: AppTheme.secodaryColor, fontSize: isSmallScreen ? 20 : 22)),
         SizedBox(
           width: isSmallScreen ? screenWidth * 0.2 : screenWidth * 0.2,
           child: TextFormField(
@@ -612,75 +416,26 @@ class AddHadithScreen extends ConsumerWidget {
             maxLines: 1,
             decoration: InputDecoration(
               hintText: '',
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: isSmallScreen ? 10 : 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(
-                  color: Color(0xffe2b97f),
-                  width: 4.5,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(
-                  color: Color(0xffe2b97f),
-                  width: 4.5,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(
-                  color: Color(0xffe2b97f),
-                  width: 4.5,
-                ),
-              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: isSmallScreen ? 10 : 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xffe2b97f), width: 4.5)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xffe2b97f), width: 4.5)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xffe2b97f), width: 4.5)),
               filled: true,
               fillColor: const Color.fromRGBO(255, 255, 255, 0.8),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: Colors.red, width: 2.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: Colors.red, width: 2.0),
-              ),
             ),
-            style: TextStyle(
-              fontSize: isSmallScreen ? 14 : 16,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: isSmallScreen ? 14 : 16, color: Colors.black),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTextInputField(
-    String label,
-    double screenWidth,
-    double screenHeight, {
-    required TextEditingController controller,
-    int maxLines = 1,
-    required bool isSmallScreen,
-    double? heightFactor,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+  Widget _buildTextInputField(String label, double screenWidth, double screenHeight, {required TextEditingController controller, int maxLines = 1, required bool isSmallScreen, double? heightFactor, TextInputType keyboardType = TextInputType.text}) {
     final baseHeight = heightFactor != null ? screenHeight * heightFactor + 10 : screenHeight * 0.06;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.secodaryColor,
-            fontSize: isSmallScreen ? 20 : 22,
-          ),
-        ),
+        Text(label, style: ArabicTextStyle(arabicFont: ArabicFont.avenirArabic, fontWeight: FontWeight.w500, color: AppTheme.secodaryColor, fontSize: isSmallScreen ? 20 : 22)),
         SizedBox(height: isSmallScreen ? 5 : 8),
         SizedBox(
           height: baseHeight,
@@ -691,46 +446,14 @@ class AddHadithScreen extends ConsumerWidget {
             keyboardType: keyboardType,
             decoration: InputDecoration(
               hintText: '',
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: isSmallScreen ? 10 : 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(
-                  color: Color(0xffe2b97f),
-                  width: 4.5,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(
-                  color: Color(0xffe2b97f),
-                  width: 4.5,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(
-                  color: Color(0xffe2b97f),
-                  width: 4.5,
-                ),
-              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: isSmallScreen ? 10 : 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xffe2b97f), width: 4.5)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xffe2b97f), width: 4.5)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xffe2b97f), width: 4.5)),
               filled: true,
               fillColor: const Color.fromRGBO(255, 255, 255, 0.8),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: Colors.red, width: 2.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: Colors.red, width: 2.0),
-              ),
             ),
-            style: TextStyle(
-              fontSize: isSmallScreen ? 14 : 16,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: isSmallScreen ? 14 : 16, color: Colors.black),
             expands: false,
           ),
         ),

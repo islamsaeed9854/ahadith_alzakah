@@ -9,9 +9,6 @@ import 'about_screen.dart';
 import '../providers/theme_provider.dart';
 import '../core/constants.dart';
 import 'hadith_details.dart';
-import '../screens/chapters_screen.dart';
-import '../notification_service.dart';
-import '../providers/notification_service_provider.dart';
 class HomeScreen extends ConsumerStatefulWidget {
   final bool showHadithDetails;
   const HomeScreen({super.key, this.showHadithDetails = false});

@@ -49,10 +49,7 @@ class DataSearcher {
       }
 
       final fullPhraseMatches = <Map<String, dynamic>>[];
-      final partialMatches = <Map<String, dynamic>>[];
-      final addedHadithIds = <int>{};
-
-     
+      final potentialPartials = <Map<String, dynamic>>[];
       for (final hadith in currentHadiths) {
         final combinedText = hadith.text;
         final normalizedText = normalizeArabicText(combinedText);
@@ -67,14 +64,10 @@ class DataSearcher {
         }
       }
 
-    
-      final potentialPartials = <Map<String, dynamic>>[];
       for (final hadith in currentHadiths) {
-
         final combinedText = hadith.text;
         final normalizedText = normalizeArabicText(combinedText);
         
-       
         final normalizedTextWords = normalizedText.split(' ').toSet();
         final matchedWords = queryWords.intersection(normalizedTextWords);
 
@@ -106,18 +99,27 @@ class DataSearcher {
         }
       }
 
-    
+  
       potentialPartials.sort((a, b) => (b['matchScore'] as int).compareTo(a['matchScore'] as int));
 
-     
+      final allMatches = <Map<String, dynamic>>[];
+
+      final addedHadithKeys = <String>{};
+      for (final match in fullPhraseMatches) {
+        final hadith = match['hadith'] as Hadith;
+        final compositeKey = "${hadith.bab}-${hadith.fasl}-${hadith.number}";
+        if (addedHadithKeys.add(compositeKey)) {
+          allMatches.add(match);
+        }
+      }
       for (final match in potentialPartials) {
-        if (!addedHadithIds.contains((match['hadith'] as Hadith).id)) {
-          partialMatches.add(match);
-          addedHadithIds.add((match['hadith'] as Hadith).id);
+        final hadith = match['hadith'] as Hadith;
+        final compositeKey = "${hadith.bab}-${hadith.fasl}-${hadith.number}";
+        if (addedHadithKeys.add(compositeKey)) {
+          allMatches.add(match);
         }
       }
 
-      final allMatches = [...fullPhraseMatches, ...partialMatches];
       final finalResults = allMatches.take(111).toList();
 
       if (context.mounted) {

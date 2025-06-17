@@ -5,8 +5,9 @@ import 'data_loader.dart';
 import 'data_adder.dart';
 import 'data_deleter.dart';
 import '../data_search_service/data_searcher.dart';
-import '../local_storage_service/local_version_handler.dart';
-
+import '../../../screens/add_hadith.dart';
+import '../../../screens/edit_hadith_screen.dart';
+import '../../../screens/remove_hadith.dart';
 final DataProvider =
     StateNotifierProvider<DataManager, AsyncValue<List<Hadith>>>(
       (ref) => DataManager(ref),
@@ -18,19 +19,19 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
   final DataAdder _adder;
   final DataDeleter _deleter;
   final DataSearcher _searcher;
-  final LocalVersionHandler _versionHandler;
-
   DataManager(this.ref)
     : _loader = DataLoader(),
       _adder = DataAdder(ref),
       _deleter = DataDeleter(),
       _searcher = DataSearcher(),
-      _versionHandler = LocalVersionHandler(),
       super(const AsyncValue.loading()) {
     loadHadiths();
   }
 
   Future<void> loadHadiths() async {
+    ref.read(addButtonEnabledProvider.notifier).state = true;
+    ref.read(editButtonEnabledProvider.notifier).state = true;
+     ref.read(isDeletingProvider.notifier).state = false;
     state = const AsyncValue.loading();
     try {
       final hadiths = await _loader.loadHadiths((hadiths) {
@@ -44,8 +45,14 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
         }
         return state;
       });
-      if (hadiths != null && hadiths.isNotEmpty)
-        state = AsyncValue.data(hadiths);
+      // Ensure the final state is set correctly, even if the stream was updated before.
+      if (state.isLoading) {
+        if (hadiths.isNotEmpty) {
+           state = AsyncValue.data(hadiths);
+        } else {
+           state = AsyncValue.error(Exception('No hadiths available or failed to load.'), StackTrace.current);
+        }
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -67,6 +74,7 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
   }
 
   Future<void> addHadith(
+    
     Hadith newHadith,
     int flag,
     BuildContext context,
@@ -80,13 +88,12 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
         (hadiths) => state = AsyncValue.data(hadiths),
       );
 
-      if (state.valueOrNull != null) {
-        await _loader.updateJsonData(
-          state.valueOrNull!,
-          await _versionHandler.getLocalVersion(),
-        );
-      }
+      // FIX: After the operation, force a full reload from the source of truth
+      // to ensure complete data consistency, fixing the missing titles issue.
+      await loadHadiths();
+
     } catch (e) {
+      // The adder handles showing snackbar messages. We just rethrow to signal failure.
       rethrow;
     }
   }
@@ -97,20 +104,20 @@ class DataManager extends StateNotifier<AsyncValue<List<Hadith>>> {
     int number,
     BuildContext context,
   ) async {
-    await _deleter.deleteHadith(
-      bab,
-      fasl,
-      number,
-      context,
-      state.valueOrNull ?? [],
-      (hadiths) => state = AsyncValue.data(hadiths),
-    );
-    // Update the JSON data after deletion
-    if (state.valueOrNull != null) {
-      await _loader.updateJsonData(
-        state.valueOrNull!,
-        await _versionHandler.getLocalVersion(),
-      );
+     try {
+        await _deleter.deleteHadith(
+          bab,
+          fasl,
+          number,
+          context,
+          state.valueOrNull ?? [],
+          (hadiths) => state = AsyncValue.data(hadiths),
+        );
+        // FIX: After deletion, force a full reload.
+        await loadHadiths();
+    } catch (e) {
+      // The deleter handles showing snackbar messages.
+      rethrow;
     }
   }
 

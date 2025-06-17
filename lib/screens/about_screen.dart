@@ -1,9 +1,7 @@
-import 'dart:math' as math; // For math.pi
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
-import '../core/theme.dart';
 import 'package:arabic_font/arabic_font.dart';
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
@@ -27,10 +25,10 @@ class AboutScreen extends ConsumerWidget {
                 // Title and Back Button Header
                 Container(
                   padding: EdgeInsets.only(
-                    top: 16,
-                    left: horizontalPadding,
-                    right: horizontalPadding,
-                    bottom: 16,
+                    top: screenWidth * 0.04,
+                    left: screenWidth * 0.04,
+                    right: screenWidth * 0.04,
+                    bottom: screenWidth * 0.04,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -64,11 +62,11 @@ class AboutScreen extends ConsumerWidget {
                         vertical: screenHeight * 0.02,
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // About Us Content
                           SizedBox(
-                            width: screenWidth * 0.92, // Consistent width
+                            width: screenWidth * 0.87, // Consistent width
                             child: Container(
                               decoration: BoxDecoration(
                                 color: const Color.fromRGBO(

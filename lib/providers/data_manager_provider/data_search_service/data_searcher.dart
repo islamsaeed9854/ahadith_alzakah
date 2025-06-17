@@ -27,7 +27,8 @@ class DataSearcher {
       return [];
     }
 
-    if (query.trim().isEmpty) {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) {
       if (context.mounted) {
         showSingleSnackBar(
           context,
@@ -40,71 +41,99 @@ class DataSearcher {
     }
 
     try {
-      final normalizedQuery = normalizeArabicText(query);
-      final queryWords = normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
-      final matches = <Map<String, dynamic>>[];
+      final normalizedQuery = normalizeArabicText(trimmedQuery);
+      final queryWords =
+          normalizedQuery.split(' ').where((w) => w.isNotEmpty).toSet();
+      if (queryWords.isEmpty) {
+        return [];
+      }
 
-      // Search for the full phrase
+      final fullPhraseMatches = <Map<String, dynamic>>[];
+      final partialMatches = <Map<String, dynamic>>[];
+      final addedHadithIds = <int>{};
+
+     
       for (final hadith in currentHadiths) {
         final combinedText = hadith.text;
         final normalizedText = normalizeArabicText(combinedText);
-        int index = -1;
-        while ((index = normalizedText.indexOf(normalizedQuery, index + 1)) != -1) {
-          matches.add({
+        int index = normalizedText.indexOf(normalizedQuery);
+        if (index != -1) {
+          fullPhraseMatches.add({
             'hadith': hadith,
             'startIndex': index,
-            'length': query.length,
+            'length': normalizedQuery.length,
             'content': combinedText,
           });
-          if (matches.length >= 111) break;
         }
-        if (matches.length >= 111) break;
       }
 
-      // Search for individual words
+    
+      final potentialPartials = <Map<String, dynamic>>[];
       for (final hadith in currentHadiths) {
+
         final combinedText = hadith.text;
         final normalizedText = normalizeArabicText(combinedText);
-        for (final word in queryWords) {
-          int index = -1;
-          while ((index = normalizedText.indexOf(word, index + 1)) != -1) {
-            matches.add({
-              'hadith': hadith,
-              'startIndex': index,
-              'length': word.length,
-              'content': combinedText,
-            });
-            if (matches.length >= 111) break;
+        
+       
+        final normalizedTextWords = normalizedText.split(' ').toSet();
+        final matchedWords = queryWords.intersection(normalizedTextWords);
+
+        if (matchedWords.isNotEmpty) {
+          int firstMatchIndex = -1;
+          int firstMatchLength = 0;
+
+          for (final queryWord in queryWords) {
+            if (matchedWords.contains(queryWord)) {
+              int index = normalizedText.indexOf(queryWord);
+              
+              if (index != -1) {
+                firstMatchIndex = index;
+                firstMatchLength = queryWord.length;
+                break;
+              }
+            }
           }
-          if (matches.length >= 111) break;
+
+          if (firstMatchIndex != -1) {
+            potentialPartials.add({
+              'hadith': hadith,
+              'startIndex': firstMatchIndex,
+              'length': firstMatchLength,
+              'content': combinedText,
+              'matchScore': matchedWords.length,
+            });
+          }
         }
-        if (matches.length >= 111) break;
       }
 
-      // Sort matches by relevance
-      matches.sort((a, b) {
-        final aText = normalizeArabicText(
-            '${(a['hadith'] as Hadith).text} ${(a['hadith'] as Hadith).reference} ${(a['hadith'] as Hadith).summary} ${(a['hadith'] as Hadith).analysis}');
-        final bText = normalizeArabicText(
-            '${(b['hadith'] as Hadith).text} ${(b['hadith'] as Hadith).reference} ${(b['hadith'] as Hadith).summary} ${(b['hadith'] as Hadith).analysis}');
-        final aScore = queryWords.fold(0, (sum, word) => sum + (aText.contains(word) ? 1 : 0));
-        final bScore = queryWords.fold(0, (sum, word) => sum + (bText.contains(word) ? 1 : 0));
-        return bScore.compareTo(aScore);
-      });
+    
+      potentialPartials.sort((a, b) => (b['matchScore'] as int).compareTo(a['matchScore'] as int));
+
+     
+      for (final match in potentialPartials) {
+        if (!addedHadithIds.contains((match['hadith'] as Hadith).id)) {
+          partialMatches.add(match);
+          addedHadithIds.add((match['hadith'] as Hadith).id);
+        }
+      }
+
+      final allMatches = [...fullPhraseMatches, ...partialMatches];
+      final finalResults = allMatches.take(111).toList();
 
       if (context.mounted) {
         showSingleSnackBar(
           context,
-          message: matches.isEmpty
+          message: finalResults.isEmpty
               ? 'لم يتم العثور على نتائج'
-              : 'تم العثور على ${matches.length} تطابق',
-          backgroundColor: matches.isEmpty ? Colors.redAccent : Colors.green,
+              : 'تم العثور على ${finalResults.length} تطابق',
+          backgroundColor:
+              finalResults.isEmpty ? Colors.redAccent : Colors.green,
           duration: const Duration(seconds: 3),
         );
       }
 
-      _logger.i('Search for "$query" returned ${matches.length} matches');
-      return matches;
+      _logger.i('Search for "$query" returned ${finalResults.length} matches');
+      return finalResults;
     } catch (e, st) {
       _logger.e('Search error: $e', stackTrace: st);
       if (context.mounted) {

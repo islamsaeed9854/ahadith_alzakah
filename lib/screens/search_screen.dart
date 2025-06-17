@@ -43,26 +43,35 @@ class SearchScreen extends ConsumerWidget {
     final controller = ref.watch(searchControllerProvider);
     final filterSearch = ref.read(filterSearchProvider);
 
+
+    final ScrollController _scrollController = ScrollController();
+
     void performSearch() {
       if (controller.text.trim().isEmpty) return;
 
       try {
         final searchStateNotifier = ref.read(searchStateProvider.notifier);
 
-        // Cancel any existing search operation
+        // إلغاء أي عملية بحث سابقة
         searchStateNotifier.stopSearch();
 
-        // Create a new cancellable search operation
+        // إنشاء عملية بحث جديدة قابلة للإلغاء
         final operation = CancelableOperation.fromFuture(
           Future(() async {
             await filterSearch(controller.text, context);
             if (context.mounted) {
               FocusScope.of(context).unfocus();
+            
+              _scrollController.animateTo(
+                0.0,
+                duration: Duration(milliseconds: 1000),
+                curve: Curves.easeInOut,
+              );
             }
           }),
         );
 
-        // Start the new search operation
+
         searchStateNotifier.startSearch(operation);
       } catch (e) {
         if (context.mounted) {
@@ -79,16 +88,16 @@ class SearchScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: false,
-      body: SafeArea( // إضافة SafeArea لتجنب القص
+      body: SafeArea(
         child: Container(
           height: screenSize.height,
           child: isLandscape
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // حقل البحث (ربع العرض) في الـ Landscape
+                 
                     Flexible(
-                      flex: 1, // 1/4 من العرض
+                      flex: 1,
                       child: Padding(
                         padding: EdgeInsets.only(
                           left: horizontalPadding,
@@ -122,7 +131,7 @@ class SearchScreen extends ConsumerWidget {
                             ),
                             SizedBox(height: screenSize.height * 0.01),
                             Container(
-                              width: double.infinity, // تأكد إن الحقل يملأ العرض المتاح
+                              width: double.infinity,
                               child: TextField(
                                 controller: controller,
                                 textInputAction: TextInputAction.search,
@@ -200,9 +209,9 @@ class SearchScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    // نتائج البحث (ثلاثة أرباع العرض) في الـ Landscape
+                   
                     Expanded(
-                      flex: 3, // 3/4 من العرض
+                      flex: 3,
                       child: Padding(
                         padding: EdgeInsets.only(
                           right: horizontalPadding,
@@ -212,7 +221,9 @@ class SearchScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Padding(
-                              padding: EdgeInsets.only(top: screenSize.height * 0.01, bottom: screenSize.height * 0.01),
+                              padding: EdgeInsets.only(
+                                  top: screenSize.height * 0.01,
+                                  bottom: screenSize.height * 0.01),
                               child: Text(
                                 'نتائج البحث',
                                 style: GoogleFonts.cairo(
@@ -226,7 +237,8 @@ class SearchScreen extends ConsumerWidget {
                               child: filteredResults.isEmpty
                                   ? Center(
                                       child: Padding(
-                                        padding: EdgeInsets.all(screenSize.width * 0.05),
+                                        padding:
+                                            EdgeInsets.all(screenSize.width * 0.05),
                                         child: Text(
                                           'لا توجد نتائج مطابقة',
                                           style: GoogleFonts.cairo(
@@ -237,6 +249,7 @@ class SearchScreen extends ConsumerWidget {
                                       ),
                                     )
                                   : ListView.builder(
+                                      controller: _scrollController, // إضافة ScrollController
                                       padding: EdgeInsets.only(bottom: 20),
                                       itemCount: filteredResults.length,
                                       itemBuilder: (context, index) {
@@ -265,14 +278,17 @@ class SearchScreen extends ConsumerWidget {
                                                   .state = ref
                                                       .read(searchControllerProvider)
                                                       .text;
-                                              ref.read(searchControllerProvider).text = '';
+                                              ref.read(searchControllerProvider).text =
+                                                  '';
                                               ref
                                                   .read(filteredResultsProvider.notifier)
                                                   .state = [];
                                               ref
                                                   .read(selectedHadithProvider.notifier)
                                                   .state = hadith;
-                                              ref.read(navigationProvider.notifier).changeTab(1);
+                                              ref
+                                                  .read(navigationProvider.notifier)
+                                                  .changeTab(1);
                                             },
                                             child: Container(
                                               padding: EdgeInsets.all(15),
@@ -297,7 +313,8 @@ class SearchScreen extends ConsumerWidget {
                                                 ],
                                               ),
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   buildResultTitle(
                                                     hadith,
@@ -334,7 +351,7 @@ class SearchScreen extends ConsumerWidget {
               : Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(                   
+                      padding: EdgeInsets.all(
                         screenWidth * 0.04,
                       ),
                       child: Column(
@@ -428,7 +445,7 @@ class SearchScreen extends ConsumerWidget {
                               child: Text(
                                 'بحث',
                                 style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
+                                  arabicFont: ArabicFont.avenirArabic,
                                   fontSize: buttonFontSize,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -466,8 +483,8 @@ class SearchScreen extends ConsumerWidget {
                                   child: Text(
                                     'لا توجد نتائج مطابقة',
                                     style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-                        fontWeight: FontWeight.w900,
+                                      arabicFont: ArabicFont.avenirArabic,
+                                      fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       fontSize: emptyResultsFontSize,
                                     ),
@@ -475,6 +492,7 @@ class SearchScreen extends ConsumerWidget {
                                 ),
                               )
                             : ListView.builder(
+                                controller: _scrollController, // إضافة ScrollController
                                 padding: EdgeInsets.only(bottom: 20),
                                 itemCount: filteredResults.length,
                                 itemBuilder: (context, index) {

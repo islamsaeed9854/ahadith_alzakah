@@ -76,6 +76,8 @@ class DataSearcher {
           int firstMatchLength = 0;
 
           for (final queryWord in queryWords) {
+            if(queryWord.length < 3)
+            continue;
             if (matchedWords.contains(queryWord)) {
               int index = normalizedText.indexOf(queryWord);
               
@@ -100,10 +102,9 @@ class DataSearcher {
       }
 
   
-      potentialPartials.sort((a, b) => (b['matchScore'] as int).compareTo(a['matchScore'] as int));
-
+     // potentialPartials.sort((a, b) => (b['matchScore'] as int).compareTo(a['matchScore'] as int));
+      potentialPartials.shuffle();
       final allMatches = <Map<String, dynamic>>[];
-
       final addedHadithKeys = <String>{};
       for (final match in fullPhraseMatches) {
         final hadith = match['hadith'] as Hadith;
@@ -112,6 +113,7 @@ class DataSearcher {
           allMatches.add(match);
         }
       }
+      final full_match_counter = allMatches.length;
       for (final match in potentialPartials) {
         final hadith = match['hadith'] as Hadith;
         final compositeKey = "${hadith.bab}-${hadith.fasl}-${hadith.number}";
@@ -127,7 +129,7 @@ class DataSearcher {
           context,
           message: finalResults.isEmpty
               ? 'لم يتم العثور على نتائج'
-              : 'تم العثور على ${finalResults.length} تطابق',
+              : 'تم العثور على ${full_match_counter} نتائج مطابقة و ${allMatches.length-full_match_counter} نتائج مشابهة',
           backgroundColor:
               finalResults.isEmpty ? Colors.redAccent : Colors.green,
           duration: const Duration(seconds: 3),

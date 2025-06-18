@@ -12,7 +12,7 @@ import 'screens/chapters_screen.dart';
 import 'providers/notification_service_provider.dart';
 import 'data/models/hadith.dart';
 import 'notification_service.dart';
-
+import 'core/secure_supabase_storage.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// This class handles the logic for what happens when a notification is tapped.
@@ -81,6 +81,9 @@ Future<void> _initializeApp() async {
     url: 'https://oqjnppmlqqehnqktejfl.supabase.co',
     anonKey:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xam5wcG1scXFlaG5xa3RlamZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5OTg0NzgsImV4cCI6MjA2MzU3NDQ3OH0.ponVTjJnEhFJsjO5Ol25PJt5d2zrYToJxxHXDsbcLLE",
+    authOptions: FlutterAuthClientOptions(
+      localStorage: SecureSupabaseStorage(),
+    ),
   );
 }
 

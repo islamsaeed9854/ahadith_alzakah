@@ -81,6 +81,7 @@ class SettingsScreen extends ConsumerWidget {
     ref.read(lastTapTimeProvider.notifier).state = now;
 
     if (tapCount.state >= 5) {
+      ref.read(isLoadingProvider.notifier).state = false;
       tapCount.state = 0;
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const LoginScreen()),

@@ -52,10 +52,10 @@ class SearchScreen extends ConsumerWidget {
       try {
         final searchStateNotifier = ref.read(searchStateProvider.notifier);
 
-        // إلغاء أي عملية بحث سابقة
+      
         searchStateNotifier.stopSearch();
 
-        // إنشاء عملية بحث جديدة قابلة للإلغاء
+      
         final operation = CancelableOperation.fromFuture(
           Future(() async {
             await filterSearch(controller.text, context);

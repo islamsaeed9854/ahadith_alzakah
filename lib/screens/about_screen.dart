@@ -107,19 +107,22 @@ class AboutScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: screenHeight * 0.04),
                           // Contact Us Title
-                          Text(
-                            'تواصل معنا',
-                            style: GoogleFonts.cairo(
-                              color: const Color(0xfffcead0),
-                              fontSize: screenWidth * 0.08,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 4,
-                                  color: Colors.black.withOpacity(0.3),
-                                ),
-                              ],
+                          Row(
+                            children :[Text(
+                              'تواصل معنا',
+                              style: GoogleFonts.cairo(
+                                color: const Color(0xfffcead0),
+                                fontSize: screenWidth * 0.08,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    blurRadius: 4,
+                                    color: Colors.black.withOpacity(0.3),
+                                  ),
+                                ],
+                              ),
                             ),
+                            ]
                           ),
                           SizedBox(height: screenHeight * 0.02),
                           // Contact Us Content
@@ -155,7 +158,7 @@ class AboutScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'البريد الإلكتروني:support@appname.com',
+                                    'البريد الإلكتروني : Phve20@gmail.com',
                                     style: ArabicTextStyle(
                             arabicFont: ArabicFont.avenirArabic,
                         fontWeight: FontWeight.w900,

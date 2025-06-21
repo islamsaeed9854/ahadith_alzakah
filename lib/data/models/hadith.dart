@@ -30,14 +30,14 @@ class Hadith {
       id: json['id'] as int? ?? 0,
       number: json['number'] as int? ?? 0,
       deleted: json['deleted'] as bool? ?? false,
-      text: json['text'] as String? ?? '',
-      reference: json['reference'] as String? ?? '',
-      analysis: json['analysis'] as String? ?? '',
-      summary: json['summary'] as String? ?? '',
+      text: json['text'].replaceAll('P','ﷺ') as String? ?? '',
+      reference: json['reference'].replaceAll('P','ﷺ') as String? ?? '',
+      analysis: json['analysis'].replaceAll('P','ﷺ') as String? ?? '',
+      summary: json['summary'].replaceAll('P','ﷺ') as String? ?? '',
       bab: json['bab'] as int? ?? 0,
       fasl: json['fasl'] as int? ?? 0,
-      chapter_title: json['chapter_title'] as String? ?? '',
-      section_title: json['section_title'] as String? ?? '',
+      chapter_title: json['chapter_title'].replaceAll('  P ','') as String? ?? '',
+      section_title: json['section_title'].replaceAll('  P ','') as String? ?? '',
     );
   }
 

@@ -42,6 +42,11 @@ class SearchStateNotifier extends StateNotifier<SearchState> {
       searchOperation: null,
     );
   }
+
+
+  void setIsSearching(bool value) {
+    state = state.copyWith(isSearching: value);
+  }
 }
 
 final searchStateProvider = StateNotifierProvider<SearchStateNotifier, SearchState>((ref) {

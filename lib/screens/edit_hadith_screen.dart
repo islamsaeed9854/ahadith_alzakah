@@ -9,6 +9,8 @@ import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'add_hadith.dart';
 import '../core/utils.dart';
 import 'package:arabic_font/arabic_font.dart';
+import 'package:ahadith_alzakah/providers/data_manager_provider/local_storage_service/local_version_handler.dart';
+import 'package:ahadith_alzakah/providers/data_manager_provider/network_service/remote_version_fetcher.dart';
 
 // Provider للتحكم في حالة زر التعديل (معطل أو لا)
 final editButtonEnabledProvider = StateProvider<bool>((ref) => true);
@@ -35,12 +37,30 @@ class EditHadithScreen extends ConsumerWidget {
         final keyboardHeight = mediaQuery.viewInsets.bottom;
 
         // Calculate responsive values
-        final paddingHorizontal = isLandscape ? screenWidth * 0.06 : screenWidth * 0.04;
-        final paddingVertical = isLandscape ? screenHeight * 0.03 : screenHeight * 0.04;
-        final titleFontSize = isLandscape ? screenWidth * 0.06 : screenWidth * 0.09;
-        final inputFontSize = isSmallScreen ? 14.0 : isLandscape ? 12.0 : 16.0;
-        final labelFontSize = isSmallScreen ? 18.0 : isLandscape ? 16.0 : 22.0;
-        final buttonFontSize = isSmallScreen ? 16.0 : isLandscape ? 14.0 : 18.0;
+        final paddingHorizontal =
+            isLandscape ? screenWidth * 0.06 : screenWidth * 0.04;
+        final paddingVertical =
+            isLandscape ? screenHeight * 0.03 : screenHeight * 0.04;
+        final titleFontSize =
+            isLandscape ? screenWidth * 0.06 : screenWidth * 0.09;
+        final inputFontSize =
+            isSmallScreen
+                ? 14.0
+                : isLandscape
+                ? 12.0
+                : 16.0;
+        final labelFontSize =
+            isSmallScreen
+                ? 18.0
+                : isLandscape
+                ? 16.0
+                : 22.0;
+        final buttonFontSize =
+            isSmallScreen
+                ? 16.0
+                : isLandscape
+                ? 14.0
+                : 18.0;
 
         // Controllers from add_hadith.dart
         final babController = ref.watch(babControllerProvider);
@@ -56,28 +76,33 @@ class EditHadithScreen extends ConsumerWidget {
 
         // Current hadith
         final currentHadiths = ref.watch(DataProvider).value ?? [];
-        final hadith = hadithToEdit ??
+        final hadith =
+            hadithToEdit ??
             (currentHadiths.isNotEmpty
                 ? currentHadiths.first
                 : Hadith(
-                    id: 0,
-                    deleted: false,
-                    bab: 0,
-                    fasl: 0,
-                    number: 0,
-                    text: '',
-                    summary: '',
-                    reference: '',
-                    analysis: '',
-                    chapter_title: '',
-                    section_title: '',
-                  ));
+                  id: 0,
+                  deleted: false,
+                  bab: 0,
+                  fasl: 0,
+                  number: 0,
+                  text: '',
+                  summary: '',
+                  reference: '',
+                  analysis: '',
+                  chapter_title: '',
+                  section_title: '',
+                ));
 
         // حالة الزر (معطل/شغال)
         final isButtonEnabled = ref.watch(editButtonEnabledProvider);
 
         // Show message function using showSingleSnackBar
-        void showMessage(BuildContext context, String message, {bool isSuccess = false}) {
+        void showMessage(
+          BuildContext context,
+          String message, {
+          bool isSuccess = false,
+        }) {
           if (context.mounted && message.isNotEmpty) {
             showSingleSnackBar(
               context,
@@ -90,12 +115,10 @@ class EditHadithScreen extends ConsumerWidget {
 
         // Update hadith function
         Future<void> updateHadith() async {
-          if (!isButtonEnabled) return; // لا تعمل إذا كان الزر معطلاً
+          if (!isButtonEnabled) return;
 
-          // إزالة التركيز عن الحقول لإخفاء اللوحة
           FocusScope.of(context).unfocus();
 
-          // تعطيل الزر أثناء العملية
           ref.read(editButtonEnabledProvider.notifier).state = false;
 
           final bab = int.tryParse(babController.text.trim()) ?? -1;
@@ -108,28 +131,71 @@ class EditHadithScreen extends ConsumerWidget {
 
           // Validation
           if (bab <= 0 || fasl <= 0 || number <= 0) {
-            showMessage(context, 'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر');
-            ref.read(editButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+            showMessage(
+              context,
+              'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر',
+            );
+            ref.read(editButtonEnabledProvider.notifier).state = true;
             return;
           }
 
-          if (text.isEmpty && (selectedOption == 'نص الحديث' || selectedOption == 'الكل')) {
+          if (text.isEmpty &&
+              (selectedOption == 'نص الحديث' || selectedOption == 'الكل')) {
             showMessage(context, 'نص الحديث مطلوب');
-            ref.read(editButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+            ref.read(editButtonEnabledProvider.notifier).state = true;
             return;
           }
 
           // Check connectivity
           final connectivityResult = await Connectivity().checkConnectivity();
           if (connectivityResult == ConnectivityResult.none) {
-            showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
-            ref.read(editButtonEnabledProvider.notifier).state = true; // إعادة تفعيل الزر
+            showMessage(
+              context,
+              'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة',
+            );
+            ref.read(editButtonEnabledProvider.notifier).state = true;
             return;
           }
 
           try {
-            final existingHadith = await dataManager.retrieveHadith(bab, fasl, number, context);
+            final existingHadith = await dataManager.retrieveHadith(
+              bab,
+              fasl,
+              number,
+              context,
+            );
+            final connectivityResult =
+                await (Connectivity().checkConnectivity());
+            if (connectivityResult == ConnectivityResult.none &&
+                context.mounted) {
+              showMessage(
+                context,
+                'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة',
+              );
+              return;
+            }
 
+            if (context.mounted) {
+              try {
+                final remoteVersion =
+                    await RemoteVersionFetcher().fetchRemoteVersion();
+                final localVersion =
+                    await LocalVersionHandler().getLocalVersion();
+                if (localVersion < remoteVersion) {
+                  showMessage(
+                    context,
+                    'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.',
+                  );
+                  return;
+                }
+              } catch (e) {
+                showMessage(
+                  context,
+                  'فشل التحقق من تحديث البيانات. حاول مرة أخرى.',
+                );
+                return;
+              }
+            }
             int flag;
             switch (selectedOption) {
               case 'نص الحديث':
@@ -184,12 +250,18 @@ class EditHadithScreen extends ConsumerWidget {
             String errorMessage;
             if (e.toString().contains('الحديث غير موجود')) {
               errorMessage = 'لم يتم العثور على الحديث المطلوب';
-            } else if (e.toString().contains('network') || e.toString().contains('timeout')) {
-              errorMessage = 'فشل الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة';
-            } else if (e.toString().contains('permission') || e.toString().contains('unauthorized')) {
-              errorMessage = 'لا يوجد إذن كافٍ لتعديل الحديث، يرجى التحقق من الصلاحيات';
-            } else if (e.toString().contains('storage') || e.toString().contains('io')) {
-              errorMessage = 'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
+            } else if (e.toString().contains('network') ||
+                e.toString().contains('timeout')) {
+              errorMessage =
+                  'فشل الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة';
+            } else if (e.toString().contains('permission') ||
+                e.toString().contains('unauthorized')) {
+              errorMessage =
+                  'لا يوجد إذن كافٍ لتعديل الحديث، يرجى التحقق من الصلاحيات';
+            } else if (e.toString().contains('storage') ||
+                e.toString().contains('io')) {
+              errorMessage =
+                  'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
             } else {
               errorMessage = 'حدث خطأ أثناء التعديل، يرجى المحاولة لاحقًا';
             }
@@ -213,7 +285,9 @@ class EditHadithScreen extends ConsumerWidget {
                 // Content
                 SingleChildScrollView(
                   padding: EdgeInsets.only(
-                    top: paddingVertical + (keyboardHeight > 0 ? keyboardHeight * 0.1 : 0),
+                    top:
+                        paddingVertical +
+                        (keyboardHeight > 0 ? keyboardHeight * 0.1 : 0),
                     bottom: keyboardHeight > 0 ? keyboardHeight + 40 : 40,
                     left: paddingHorizontal,
                     right: paddingHorizontal,
@@ -255,10 +329,21 @@ class EditHadithScreen extends ConsumerWidget {
                             SizedBox(height: screenHeight * 0.02),
                             // Form Container
                             Container(
-                              padding: EdgeInsets.all(isSmallScreen ? 12 : isLandscape ? 16 : 18),
-                              width: isLandscape ? screenWidth * 0.85 : screenWidth * 0.9,
+                              padding: EdgeInsets.all(
+                                isSmallScreen
+                                    ? 12
+                                    : isLandscape
+                                    ? 16
+                                    : 18,
+                              ),
+                              width:
+                                  isLandscape
+                                      ? screenWidth * 0.85
+                                      : screenWidth * 0.9,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
+                                borderRadius: BorderRadius.circular(
+                                  isSmallScreen ? 15 : 20,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Color.fromRGBO(0, 0, 0, 0.1),
@@ -306,7 +391,8 @@ class EditHadithScreen extends ConsumerWidget {
                                   ),
                                   SizedBox(height: screenHeight * 0.015),
                                   // Text fields based on selected option
-                                  if (selectedOption == 'نص الحديث' || selectedOption == 'الكل')
+                                  if (selectedOption == 'نص الحديث' ||
+                                      selectedOption == 'الكل')
                                     _buildTextInputField(
                                       'نص الحديث',
                                       controller: textController,
@@ -318,9 +404,11 @@ class EditHadithScreen extends ConsumerWidget {
                                       isSmallScreen: isSmallScreen,
                                       isLandscape: isLandscape,
                                     ),
-                                  if (selectedOption == 'نص الحديث' || selectedOption == 'الكل')
+                                  if (selectedOption == 'نص الحديث' ||
+                                      selectedOption == 'الكل')
                                     SizedBox(height: screenHeight * 0.015),
-                                  if (selectedOption == 'الخلاصة' || selectedOption == 'الكل')
+                                  if (selectedOption == 'الخلاصة' ||
+                                      selectedOption == 'الكل')
                                     _buildTextInputField(
                                       'الخلاصة',
                                       controller: summaryController,
@@ -332,9 +420,11 @@ class EditHadithScreen extends ConsumerWidget {
                                       isSmallScreen: isSmallScreen,
                                       isLandscape: isLandscape,
                                     ),
-                                  if (selectedOption == 'الخلاصة' || selectedOption == 'الكل')
+                                  if (selectedOption == 'الخلاصة' ||
+                                      selectedOption == 'الكل')
                                     SizedBox(height: screenHeight * 0.015),
-                                  if (selectedOption == 'التخريج' || selectedOption == 'الكل')
+                                  if (selectedOption == 'التخريج' ||
+                                      selectedOption == 'الكل')
                                     _buildTextInputField(
                                       'التخريج',
                                       controller: referenceController,
@@ -346,9 +436,11 @@ class EditHadithScreen extends ConsumerWidget {
                                       isSmallScreen: isSmallScreen,
                                       isLandscape: isLandscape,
                                     ),
-                                  if (selectedOption == 'التخريج' || selectedOption == 'الكل')
+                                  if (selectedOption == 'التخريج' ||
+                                      selectedOption == 'الكل')
                                     SizedBox(height: screenHeight * 0.015),
-                                  if (selectedOption == 'الدراسة' || selectedOption == 'الكل')
+                                  if (selectedOption == 'الدراسة' ||
+                                      selectedOption == 'الكل')
                                     _buildTextInputField(
                                       'الدراسة',
                                       controller: analysisController,
@@ -360,7 +452,8 @@ class EditHadithScreen extends ConsumerWidget {
                                       isSmallScreen: isSmallScreen,
                                       isLandscape: isLandscape,
                                     ),
-                                  if (selectedOption == 'الدراسة' || selectedOption == 'الكل')
+                                  if (selectedOption == 'الدراسة' ||
+                                      selectedOption == 'الكل')
                                     SizedBox(height: screenHeight * 0.04),
                                 ],
                               ),
@@ -370,35 +463,50 @@ class EditHadithScreen extends ConsumerWidget {
                             Align(
                               alignment: Alignment.center,
                               child: SizedBox(
-                                width: isLandscape ? screenWidth * 0.3 : screenWidth * 0.4,
-                                height: isLandscape ? screenHeight * 0.1 : screenHeight * 0.06,
+                                width:
+                                    isLandscape
+                                        ? screenWidth * 0.3
+                                        : screenWidth * 0.4,
+                                height:
+                                    isLandscape
+                                        ? screenHeight * 0.1
+                                        : screenHeight * 0.06,
                                 child: Material(
-                                  color: isButtonEnabled ? const Color(0xff977c55) : Colors.transparent,
+                                  color:
+                                      isButtonEnabled
+                                          ? const Color(0xff977c55)
+                                          : Colors.transparent,
                                   borderRadius: BorderRadius.circular(30),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(30),
-                                    onTap: isButtonEnabled ? updateHadith : null,
+                                    onTap:
+                                        isButtonEnabled ? updateHadith : null,
                                     splashColor: Colors.white.withOpacity(0.3),
-                                    highlightColor: Colors.white.withOpacity(0.1),
+                                    highlightColor: Colors.white.withOpacity(
+                                      0.1,
+                                    ),
                                     child: Center(
-                                      child: isButtonEnabled
-                                          ? Text(
-                                              "حفظ التعديلات",
-                                              style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-                                                color: Colors.white,
-                                                fontSize: buttonFontSize,
-                                                fontWeight: FontWeight.bold,
+                                      child:
+                                          isButtonEnabled
+                                              ? Text(
+                                                "حفظ التعديلات",
+                                                style: ArabicTextStyle(
+                                                  arabicFont:
+                                                      ArabicFont.avenirArabic,
+                                                  color: Colors.white,
+                                                  fontSize: buttonFontSize,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              )
+                                              : const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2,
+                                                    ),
                                               ),
-                                            )
-                                          : const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
                                     ),
                                   ),
                                 ),
@@ -406,7 +514,12 @@ class EditHadithScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: isLandscape ? screenHeight * 0.03 : screenHeight * 0.02),
+                        SizedBox(
+                          height:
+                              isLandscape
+                                  ? screenHeight * 0.03
+                                  : screenHeight * 0.02,
+                        ),
                       ],
                     ),
                   ),
@@ -433,7 +546,7 @@ class EditHadithScreen extends ConsumerWidget {
         Text(
           label,
           style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
+            arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w500,
             color: AppTheme.secodaryColor,
             fontSize: labelFontSize,
@@ -483,10 +596,7 @@ class EditHadithScreen extends ConsumerWidget {
                 borderSide: const BorderSide(color: Colors.red, width: 2.0),
               ),
             ),
-            style: TextStyle(
-              fontSize: fontSize,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: fontSize, color: Colors.black),
           ),
         ),
       ],
@@ -510,13 +620,20 @@ class EditHadithScreen extends ConsumerWidget {
         Text(
           label,
           style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
+            arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w500,
             color: AppTheme.secodaryColor,
             fontSize: labelFontSize,
           ),
         ),
-        SizedBox(height: isSmallScreen ? 5 : isLandscape ? 5 : 8),
+        SizedBox(
+          height:
+              isSmallScreen
+                  ? 5
+                  : isLandscape
+                  ? 5
+                  : 8,
+        ),
         SizedBox(
           height: screenHeight * heightFactor * (isLandscape ? 3 : 1),
           child: TextFormField(
@@ -561,10 +678,7 @@ class EditHadithScreen extends ConsumerWidget {
                 borderSide: const BorderSide(color: Colors.red, width: 2.0),
               ),
             ),
-            style: TextStyle(
-              fontSize: fontSize,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: fontSize, color: Colors.black),
             expands: false,
           ),
         ),

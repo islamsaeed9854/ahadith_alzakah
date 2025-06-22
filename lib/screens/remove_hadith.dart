@@ -9,6 +9,8 @@ import 'add_hadith.dart';
 import '../data/models/hadith.dart';
 import '../core/utils.dart';
 import 'package:arabic_font/arabic_font.dart';
+import 'package:ahadith_alzakah/providers/data_manager_provider/local_storage_service/local_version_handler.dart';
+import 'package:ahadith_alzakah/providers/data_manager_provider/network_service/remote_version_fetcher.dart';
 final isDeletingProvider = StateProvider<bool>((ref) => false);
 
 class RemoveHadithScreen extends ConsumerWidget {
@@ -56,13 +58,9 @@ class RemoveHadithScreen extends ConsumerWidget {
         ref.read(isDeletingProvider.notifier).state = false;
         return;
       }
-      final connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult == ConnectivityResult.none) {
-        _showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
-        ref.read(isDeletingProvider.notifier).state = false;
-        return;
-      }
-
+   
+     
+      
       try {
         final currentHadiths = ref.read(DataProvider).value ?? [];
         final hadithToDelete = currentHadiths.firstWhere(
@@ -72,7 +70,25 @@ class RemoveHadithScreen extends ConsumerWidget {
               hadith.number == number,
           orElse: () => Hadith.empty(),
         );
+         final connectivityResult = await (Connectivity().checkConnectivity());
+        if (connectivityResult == ConnectivityResult.none && context.mounted) {
+          _showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
+          return;
+        }
 
+        if (context.mounted) {
+          try {
+            final remoteVersion = await RemoteVersionFetcher().fetchRemoteVersion();
+            final localVersion = await LocalVersionHandler().getLocalVersion();
+            if (localVersion < remoteVersion) {
+              _showMessage(context, 'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.');
+              return;
+            }
+          } catch (e) {
+            _showMessage(context, 'فشل التحقق من تحديث البيانات. حاول مرة أخرى.');
+            return;
+          }
+        }
         await dataManager.deleteHadith(
           hadithToDelete.bab,
           hadithToDelete.fasl,

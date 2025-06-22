@@ -9,6 +9,7 @@ import 'about_screen.dart';
 import '../providers/theme_provider.dart';
 import '../core/constants.dart';
 import 'hadith_details.dart';
+
 class HomeScreen extends ConsumerStatefulWidget {
   final bool showHadithDetails;
   const HomeScreen({super.key, this.showHadithDetails = false});
@@ -32,6 +33,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Widget _buildCustomBottomNavBar({
+    required int currentIndex,
+    required bool isDarkMode,
+    required Function(int) onTap,
+  }) {
+   
+    final Color backgroundColor = (isDarkMode && currentIndex == 1)
+        ? const Color(0xff1c1c1c)
+        : const Color(0xfffcf3e8);
+
+    final navItems = [
+      {'icon': Icons.home, 'label': 'الرئيسية'},
+      {'icon': Icons.book, 'label': 'ألاحاديث'},
+      {'icon': Icons.search, 'label': 'البحث'},
+      {'icon': Icons.settings, 'label': 'الاعدادات'},
+      {'icon': Icons.info, 'label': 'عن الموسوعة'},
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+       
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.black.withOpacity(0.1),
+        //     spreadRadius: 0,
+        //     blurRadius: 10,
+        //   ),
+        // ],
+      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom), 
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(navItems.length, (index) {
+          final item = navItems[index];
+          final bool isSelected = currentIndex == index;
+
+      
+          final Color selectedColor = const Color.fromARGB(255, 192, 144, 76);
+          final Color unselectedColor = (isDarkMode && currentIndex == 1)
+              ? const Color(0xfffcead0)
+              : const Color.fromARGB(255, 26, 23, 23);
+          final Color itemColor = isSelected ? selectedColor : unselectedColor;
+
+       
+          return Expanded(
+            child: InkWell(
+              onTap: () => onTap(index),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(item['icon'] as IconData, color: itemColor),
+                    const SizedBox(height: 4),
+                    Text(
+                      item['label'] as String,
+                      style: TextStyle(
+                        color: itemColor,
+                        fontSize: 12, 
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+  
+
+
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
@@ -43,10 +120,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'HomeScreen rendered with currentIndex: $currentIndex, innerBooksScreenPr: $innerBooksScreenPr',
     );
 
-    // Screens for navigation with background
     final List<Widget> pages = [
       _buildScreenWithBackground(innerBooksScreenPr ?? BooksScreen()),
-      _buildScreenWithBackground(const HadithDetails()), // Tab 1: HadithDetails
+      _buildScreenWithBackground(const HadithDetails()),
       _buildScreenWithBackground(SearchScreen()),
       _buildScreenWithBackground(SettingsScreen()),
       _buildScreenWithBackground(AboutScreen()),
@@ -58,12 +134,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (!didPop && currentIndex != 0) {
           navNotifier.changeTab(0);
           ref.read(innerBooksScreenProvider.notifier).state = null;
-          debugPrint(
-            'Pop invoked: Switched to tab 0 and reset innerBooksScreenProvider',
-          );
         } else if (!didPop && currentIndex == 0 && innerBooksScreenPr != null) {
           ref.read(innerBooksScreenProvider.notifier).state = null;
-          debugPrint('Pop invoked: Reset innerBooksScreenProvider');
         }
       },
       child: Directionality(
@@ -73,68 +145,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           body: Stack(
             children: [
               TextApp.appBackgroundWidget,
-              // Current page content
               pages[currentIndex],
             ],
           ),
-          bottomNavigationBar: Opacity(
-            opacity: (isDarkMode && currentIndex == 1) ? 1 : 1,
-            child: BottomNavigationBar(
-              currentIndex: currentIndex,
-              backgroundColor:
-                  (isDarkMode && currentIndex == 1)
-                      ? const Color(0xff1c1c1c)
-                      : const Color(0xfffcf3e8),              onTap: (index) {
-                if (index != 0) {
-                  ref.read(innerBooksScreenProvider.notifier).state = null;
-                }
-                if (index != 1) { // If not navigating to HadithDetails
-                  ref.read(showDailyHadithProvider.notifier).state = false;
-                }
-                navNotifier.changeTab(index);
-                debugPrint(
-                  'BottomNavigationBar tapped: Switched to tab $index',
-                );
-              },
-              selectedItemColor: const Color.fromARGB(255, 192, 144, 76),
-              unselectedItemColor:
-                  (isDarkMode && currentIndex == 1)
-                      ? const Color(0xfffcead0)
-                      : const Color.fromARGB(255, 26, 23, 23),
-              showUnselectedLabels: true,
-              type: BottomNavigationBarType.fixed,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: "الرئيسية",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.book),
-                  label: "ألاحاديث",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.search),
-                  label: "البحث",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: "الاعدادات",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.info),
-                  label: "عن الموسوعة",
-                ),
-              ],
-            ),
+ 
+          bottomNavigationBar: _buildCustomBottomNavBar(
+            currentIndex: currentIndex,
+            isDarkMode: isDarkMode,
+            onTap: (index) {
+              if (index != 0) {
+                ref.read(innerBooksScreenProvider.notifier).state = null;
+              }
+              if (index != 1) {
+                ref.read(showDailyHadithProvider.notifier).state = false;
+              }
+              navNotifier.changeTab(index);
+              debugPrint('Custom Nav Bar tapped: Switched to tab $index');
+            },
           ),
-         // Test button for immediate notification
-          // floatingActionButton: FloatingActionButton(
-          //   onPressed: () {
-          //     ref.read(notificationServiceProvider).sendImmediateNotification();
-          //     debugPrint('Triggered immediate notification');
-          //   },
-          //   child: const Icon(Icons.notification_add),
-          // ),
+         
         ),
       ),
     );

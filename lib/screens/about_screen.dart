@@ -66,7 +66,7 @@ class AboutScreen extends ConsumerWidget {
                         children: [
                           // About Us Content
                           SizedBox(
-                            width: screenWidth * 0.87, // Consistent width
+                            width: screenWidth * 0.92, // Consistent width
                             child: Container(
                               decoration: BoxDecoration(
                                 color: const Color.fromRGBO(

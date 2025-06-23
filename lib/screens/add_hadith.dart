@@ -287,7 +287,7 @@ class AddHadithScreen extends ConsumerWidget {
         await dataManager.addHadith(newHadith, 4, context);
 
         if (context.mounted) {
-          showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
+        //  showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
           babController.clear();
           faslController.clear();
           numberController.clear();

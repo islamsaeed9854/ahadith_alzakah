@@ -127,10 +127,10 @@ class LoginScreen extends ConsumerWidget {
             Positioned.fill(child: TextApp.appBackgroundWidget),
             SingleChildScrollView(
               padding: EdgeInsets.only(
-                top: screenHeight * 0.04,
+                top: screenHeight * 0.2,
                 bottom: keyboardHeight > 0 ? keyboardHeight + screenHeight * 0.1 : screenHeight * 0.1,
-                left: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
-                right: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.1,
+                left: isSmallScreen ? screenWidth * 0.05 : isLandscape ? screenWidth * 0.25 : screenWidth * 0.1,
+                right: isSmallScreen ? screenWidth * 0.05 :isLandscape ? screenWidth * 0.25 : screenWidth * 0.1,
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -155,7 +155,7 @@ class LoginScreen extends ConsumerWidget {
                           ],
                         )
                       : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             _buildLoginForm(
                               context,
@@ -224,7 +224,7 @@ class LoginScreen extends ConsumerWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: screenWidth * 0.08),
+         SizedBox(height:isLandscape ? screenWidth * 0.02: screenWidth * 0.08),
           buildTextField(
             'البريد الالكترونى',
             controller: loginFormState.emailController,
@@ -232,7 +232,7 @@ class LoginScreen extends ConsumerWidget {
             isFocused: loginFormState.emailFocused,
             isPassword: false,
           ),
-          SizedBox(height: screenWidth * 0.05),
+           SizedBox(height:isLandscape ? screenWidth * 0.02: screenWidth * 0.05),
           buildTextField(
             'كلمة السر',
             controller: loginFormState.passwordController,
@@ -240,7 +240,7 @@ class LoginScreen extends ConsumerWidget {
             isFocused: loginFormState.passwordFocused,
             isPassword: true,
           ),
-          SizedBox(height: screenWidth * 0.08),
+          SizedBox(height:isLandscape ? screenWidth * 0.02: screenWidth * 0.08),
           SizedBox(
             width: isLandscape ? screenWidth * 0.2 : screenWidth * 0.3,
             height: isLandscape ? screenHeight * 0.15 : screenHeight * 0.05,

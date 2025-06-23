@@ -263,7 +263,7 @@ class RemoveHadithScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          flex: 3,
+          flex: 4,
           child: Text(
             label,
             style: ArabicTextStyle(
@@ -277,7 +277,7 @@ class RemoveHadithScreen extends ConsumerWidget {
         ),
         const SizedBox(width: 20),
         Expanded(
-          flex: 1,
+          flex: 2,
           child: TextFormField(
             controller: controller,
             textDirection: TextDirection.rtl,

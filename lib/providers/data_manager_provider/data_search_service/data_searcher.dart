@@ -42,8 +42,12 @@ class DataSearcher {
 
     try {
       final normalizedQuery = normalizeArabicText(trimmedQuery);
-      final queryWords =
-          normalizedQuery.split(' ').where((w) => w.isNotEmpty).toSet();
+      final allQueryWords =
+          normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
+      
+      allQueryWords.sort((a, b) => b.length.compareTo(a.length));
+      final queryWords = allQueryWords.take(5).toSet();
+      
       if (queryWords.isEmpty) {
         return [];
       }
@@ -60,7 +64,7 @@ class DataSearcher {
         hadithSnippets[hadithKey] = hadithSnippets[hadithKey] ?? <String>{};
  
         int index = 0;
-        while ((index = normalizedText.indexOf(normalizedQuery, index)) != -1) {
+         while ((index = normalizedText.indexOf(normalizedQuery, index)) != -1) {
           final snippet = _getSnippetForDedup(combinedText, index, normalizedQuery.length);
           final normalizedSnippet = normalizeArabicText(snippet);
           bool isHighlyOverlapping = hadithSnippets[hadithKey]!.any((prev) => _isHighlyOverlapping(normalizedSnippet, prev));
@@ -82,10 +86,10 @@ class DataSearcher {
           }
           index += normalizedQuery.length;
         }
+    
         if (shouldLimit && reachedLimit) break;
        
         for (final word in queryWords) {
-          if (word.length <= 2) continue;
           int wordIndex = 0;
           while ((wordIndex = normalizedText.indexOf(word, wordIndex)) != -1) {
             final snippet = _getSnippetForDedup(combinedText, wordIndex, word.length);
@@ -146,7 +150,7 @@ class DataSearcher {
           duration: const Duration(seconds: 3),
         );
       }
-      _logger.i('Search for "$query" returned \\${finalResults.length} matches');
+      _logger.i('Search for "$query" returned ${finalResults.length} matches');
       return finalResults;
     } catch (e, st) {
       _logger.e('Search error: $e', stackTrace: st);

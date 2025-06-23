@@ -504,83 +504,99 @@ class SearchScreen extends ConsumerWidget {
 
     final displayedResults = filteredResults.take(displayCount).toList();
 
-    return ListView.builder(
-      controller: scrollController,
-      padding: EdgeInsets.only(bottom: 80),
-      itemCount: displayedResults.length + (batchLoading ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == displayedResults.length) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollNotification) {
+        if (scrollNotification is ScrollEndNotification &&
+            scrollNotification.metrics.pixels >=
+                scrollNotification.metrics.maxScrollExtent - 200) {
+          // عند الاقتراب من نهاية القائمة، زد عدد النتائج المعروضة تدريجيًا
+          if (displayCount < filteredResults.length && !batchLoading) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              ref.read(displayCountProvider.notifier).state =
+                  (displayCount + 20).clamp(0, filteredResults.length);
+            });
+          }
+        }
+        return false;
+      },
+      child: ListView.builder(
+        controller: scrollController,
+        padding: EdgeInsets.only(bottom: 80),
+        itemCount: displayedResults.length + (batchLoading ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == displayedResults.length) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xffe6a345)),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          final result = displayedResults[index];
+          final hadith = result['hadith'] as Hadith;
+          final snippet = result['snippet'] as String;
+          final searchWords = result['searchWords'] as List<String>;
+
           return Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(
-              child: SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xffe6a345)),
-                  strokeWidth: 3,
+            padding: EdgeInsets.only(
+              bottom: screenSize.height * 0.02,
+            ),
+            child: GestureDetector(
+              onTap: () {
+                ref.watch(Hadith_Details_Helper_provider.notifier).state = 
+                    ref.read(searchControllerProvider).text;
+                ref.read(searchControllerProvider).text = '';
+                ref.read(filteredResultsProvider.notifier).state = [];
+                ref.read(selectedHadithProvider.notifier).state = hadith;
+                ref.read(navigationProvider.notifier).changeTab(1);
+              },
+              child: Container(
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(255, 255, 255, .9),
+                  borderRadius: BorderRadius.circular(55),
+                  border: Border.all(
+                    color: const Color(0xffe6a345),
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    buildResultTitle(
+                      hadith,
+                      isLandscape,
+                      screenSize.width,
+                    ),
+                    SizedBox(height: 5),
+                    buildResultSnippet(
+                      snippet: snippet,
+                      searchWords: searchWords,
+                      isLandscape: isLandscape,
+                      screenWidth: screenSize.width,
+                    ),
+                  ],
                 ),
               ),
             ),
           );
-        }
-
-        final result = displayedResults[index];
-        final hadith = result['hadith'] as Hadith;
-        final snippet = result['snippet'] as String;
-        final searchWords = result['searchWords'] as List<String>;
-
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: screenSize.height * 0.02,
-          ),
-          child: GestureDetector(
-            onTap: () {
-              ref.watch(Hadith_Details_Helper_provider.notifier).state = 
-                  ref.read(searchControllerProvider).text;
-              ref.read(searchControllerProvider).text = '';
-              ref.read(filteredResultsProvider.notifier).state = [];
-              ref.read(selectedHadithProvider.notifier).state = hadith;
-              ref.read(navigationProvider.notifier).changeTab(1);
-            },
-            child: Container(
-              padding: EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(255, 255, 255, .9),
-                borderRadius: BorderRadius.circular(55),
-                border: Border.all(
-                  color: const Color(0xffe6a345),
-                  width: 3,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildResultTitle(
-                    hadith,
-                    isLandscape,
-                    screenSize.width,
-                  ),
-                  SizedBox(height: 5),
-                  buildResultSnippet(
-                    snippet: snippet,
-                    searchWords: searchWords,
-                    isLandscape: isLandscape,
-                    screenWidth: screenSize.width,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }

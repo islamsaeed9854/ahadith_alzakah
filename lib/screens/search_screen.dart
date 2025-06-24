@@ -61,6 +61,7 @@ class SearchScreen extends ConsumerWidget {
     });
 
     void performSearch() {
+      controller.text..replaceAll(RegExp("[\\[\\]{}<>.,;:\"'!@#\$%^&*_+=|\\/~`-]"), '').replaceAll('،', '');
       if (controller.text.trim().isEmpty) return;
       
       try {

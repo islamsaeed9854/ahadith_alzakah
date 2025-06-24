@@ -125,7 +125,7 @@ class DataSearcher {
       
           if (allMatches.length % 10 == 0) {
             final elapsed = DateTime.now().difference(wordSearchStart).inMilliseconds;
-            if (elapsed > 5000) {
+            if (elapsed > 2000) {
               timeLimitReached = true;
               break;
             }

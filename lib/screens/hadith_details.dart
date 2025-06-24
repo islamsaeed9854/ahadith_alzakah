@@ -1,5 +1,6 @@
 import 'package:ahadith_alzakah/core/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
@@ -82,6 +83,24 @@ class HadithDetails extends ConsumerWidget {
     return spans;
   }
 
+  void _setStatusBarStyle(bool isDarkMode) {
+    if (isDarkMode) {
+ 
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ));
+    } else {
+     
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(settingsInitializerProvider);
@@ -96,6 +115,9 @@ class HadithDetails extends ConsumerWidget {
     final showDaily = ref.watch(showDailyHadithProvider);
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
     final backgroundColor = theme.scaffoldBackgroundColor;
+
+  
+    _setStatusBarStyle(isDark);
 
     final hadithToDisplay =
         showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
@@ -151,6 +173,12 @@ class HadithDetails extends ConsumerWidget {
                     controller.state = '';
                     navNotifier.changeTab(0);
                     ref.read(showDailyHadithProvider.notifier).state = false;
+                   
+                    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+                      statusBarColor: Colors.transparent,
+                      statusBarIconBrightness: Brightness.dark,
+                      statusBarBrightness: Brightness.light,
+                    ));
                   },
                 ),
               ],
@@ -181,7 +209,13 @@ class HadithDetails extends ConsumerWidget {
             if (!didPop) {
               controller.state = '';
               navNotifier.changeTab(0);
-               ref.read(showDailyHadithProvider.notifier).state = false;
+              ref.read(showDailyHadithProvider.notifier).state = false;
+            
+              SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
+              ));
             }
           },
           child: Directionality(
@@ -274,7 +308,13 @@ class HadithDetails extends ConsumerWidget {
                                       onPressed: () {
                                         controller.state = '';
                                         navNotifier.changeTab(0);
-                                         ref.read(showDailyHadithProvider.notifier).state = false;
+                                        ref.read(showDailyHadithProvider.notifier).state = false;
+                                       
+                                        SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+                                          statusBarColor: Colors.transparent,
+                                          statusBarIconBrightness: Brightness.dark,
+                                          statusBarBrightness: Brightness.light,
+                                        ));
                                       },
                                     ),
                                   ],

@@ -31,7 +31,7 @@ class SearchProcessor {
     String query,
   ) async {
     return await Isolate.run(() {
-      final normalizedQuery = query.trim().toLowerCase();
+      final normalizedQuery = query.replaceAll(RegExp("[\\[\\]{}<>.,;:\"'!@#\$%^&*_+=|\\/~`-]"), '').replaceAll('،', '').trim().toLowerCase();
       final searchWords = normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
       
       return rawResults.where((result) {

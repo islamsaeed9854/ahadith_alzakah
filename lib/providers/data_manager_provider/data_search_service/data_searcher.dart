@@ -27,7 +27,7 @@ class DataSearcher {
       return [];
     }
 
-    final trimmedQuery = query.trim();
+    final trimmedQuery = query.replaceAll(RegExp("[\\[\\]{}<>.,;:\"'!@#\$%^&*_+=|\\/~`-]"), '').replaceAll('،', '').trim();
     if (trimmedQuery.isEmpty) {
       if (context.mounted) {
         showSingleSnackBar(
@@ -41,33 +41,60 @@ class DataSearcher {
     }
 
     try {
-      final normalizedQuery = normalizeArabicText(trimmedQuery);
+   
+      String cleanText(String text) {
+      
+        return text
+            .replaceAll(RegExp(r'O\(|\)O'), '')
+            .replaceAll(RegExp(r'[a-zA-Z]'), '')
+            .replaceAll('،', '') 
+    
+      .replaceAll(RegExp("[\\[\\]{}<>.,;:\"'!@#\$%^&*_+=|\\/~`-]"), '');
+      }
+      final normalizedQuery = normalizeArabicText(cleanText(trimmedQuery));
       final allQueryWords =
           normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
-      
+
       allQueryWords.sort((a, b) => b.length.compareTo(a.length));
       final queryWords = allQueryWords.take(5).toSet();
-      
+      bool shouldLimit = false;
+      while (queryWords.length > 1 &&
+          queryWords.elementAt(queryWords.length - 1).length < 3) {
+        queryWords.remove(queryWords.elementAt(queryWords.length - 1));
+      }
       if (queryWords.isEmpty) {
         return [];
       }
-
+      if (queryWords.elementAt(queryWords.length - 1).length < 3) {
+        shouldLimit = true;
+      }
       final allMatches = <Map<String, dynamic>>[];
       final hadithSnippets = <String, Set<String>>{};
       bool reachedLimit = false;
-      bool shouldLimit = trimmedQuery.length <= 3;
+      shouldLimit = shouldLimit ? true : trimmedQuery.length <= 3;
+    
+      final DateTime wordSearchStart = DateTime.now();
+      bool timeLimitReached = false;
       for (final hadith in currentHadiths) {
         if (shouldLimit && reachedLimit) break;
-        final combinedText = hadith.text;
+        final combinedText = cleanText(hadith.text);
         final normalizedText = normalizeArabicText(combinedText);
         String hadithKey = "${hadith.bab}-${hadith.fasl}-${hadith.number}";
         hadithSnippets[hadithKey] = hadithSnippets[hadithKey] ?? <String>{};
- 
+
         int index = 0;
-         while ((index = normalizedText.indexOf(normalizedQuery, index)) != -1) {
-          final snippet = _getSnippetForDedup(combinedText, index, normalizedQuery.length);
+        while ((index = normalizedText.indexOf(normalizedQuery, index)) != -1) {
+     
+          if (normalizedQuery.isEmpty || normalizedQuery.length == 0) break;
+          final snippet = _getSnippetForDedup(
+            combinedText,
+            index,
+            normalizedQuery.length,
+          );
           final normalizedSnippet = normalizeArabicText(snippet);
-          bool isHighlyOverlapping = hadithSnippets[hadithKey]!.any((prev) => _isHighlyOverlapping(normalizedSnippet, prev));
+          bool isHighlyOverlapping = hadithSnippets[hadithKey]!.any(
+            (prev) => _isHighlyOverlapping(normalizedSnippet, prev),
+          );
           if (!isHighlyOverlapping) {
             allMatches.add({
               'hadith': hadith,
@@ -84,17 +111,38 @@ class DataSearcher {
               break;
             }
           }
+         
+          int oldIndex = index;
           index += normalizedQuery.length;
+          if (index == oldIndex) break;
         }
-    
+
         if (shouldLimit && reachedLimit) break;
-       
+
+    
         for (final word in queryWords) {
+          if (word.isEmpty || word.length < 2) continue;
+      
+          if (allMatches.length % 10 == 0) {
+            final elapsed = DateTime.now().difference(wordSearchStart).inMilliseconds;
+            if (elapsed > 5000) {
+              timeLimitReached = true;
+              break;
+            }
+          }
           int wordIndex = 0;
           while ((wordIndex = normalizedText.indexOf(word, wordIndex)) != -1) {
-            final snippet = _getSnippetForDedup(combinedText, wordIndex, word.length);
+          
+            if (word.isEmpty || word.length == 0) break;
+            final snippet = _getSnippetForDedup(
+              combinedText,
+              wordIndex,
+              word.length,
+            );
             final normalizedSnippet = normalizeArabicText(snippet);
-            bool isHighlyOverlapping = hadithSnippets[hadithKey]!.any((prev) => _isHighlyOverlapping(normalizedSnippet, prev));
+            bool isHighlyOverlapping = hadithSnippets[hadithKey]!.any(
+              (prev) => _isHighlyOverlapping(normalizedSnippet, prev),
+            );
             if (!isHighlyOverlapping) {
               allMatches.add({
                 'hadith': hadith,
@@ -111,40 +159,65 @@ class DataSearcher {
                 break;
               }
             }
+          
+            int oldWordIndex = wordIndex;
             wordIndex += word.length;
+            if (wordIndex == oldWordIndex) break;
           }
           if (shouldLimit && reachedLimit) break;
+          if (timeLimitReached) break;
         }
+        if (timeLimitReached) break;
       }
-      
-      List<String> searchWordsList = trimmedQuery.split(' ').where((w) => w.isNotEmpty).toList();
+
+      List<String> searchWordsList =
+          trimmedQuery.split(' ').where((w) => w.isNotEmpty).toList();
       allMatches.sort((a, b) {
-     
         if (a['type'] == 'full' && b['type'] != 'full') return -1;
         if (a['type'] != 'full' && b['type'] == 'full') return 1;
-      
-        int aUnique = _countUniqueSearchWordsInSnippet(a['snippetForDedup'], searchWordsList);
-        int bUnique = _countUniqueSearchWordsInSnippet(b['snippetForDedup'], searchWordsList);
+
+        int aUnique = _countUniqueSearchWordsInSnippet(
+          a['snippetForDedup'],
+          searchWordsList,
+        );
+        int bUnique = _countUniqueSearchWordsInSnippet(
+          b['snippetForDedup'],
+          searchWordsList,
+        );
         if (aUnique != bUnique) return bUnique.compareTo(aUnique);
-     
-        int aTotal = _countTotalSearchWordsInSnippet(a['snippetForDedup'], searchWordsList);
-        int bTotal = _countTotalSearchWordsInSnippet(b['snippetForDedup'], searchWordsList);
+
+        int aTotal = _countTotalSearchWordsInSnippet(
+          a['snippetForDedup'],
+          searchWordsList,
+        );
+        int bTotal = _countTotalSearchWordsInSnippet(
+          b['snippetForDedup'],
+          searchWordsList,
+        );
         if (aTotal != bTotal) return bTotal.compareTo(aTotal);
-     
-        bool aOnlyShort = _snippetHasOnlyShortWords(a['snippetForDedup'], searchWordsList);
-        bool bOnlyShort = _snippetHasOnlyShortWords(b['snippetForDedup'], searchWordsList);
+
+        bool aOnlyShort = _snippetHasOnlyShortWords(
+          a['snippetForDedup'],
+          searchWordsList,
+        );
+        bool bOnlyShort = _snippetHasOnlyShortWords(
+          b['snippetForDedup'],
+          searchWordsList,
+        );
         if (aOnlyShort && !bOnlyShort) return 1;
         if (!aOnlyShort && bOnlyShort) return -1;
         return 0;
       });
-   
-      final finalResults = shouldLimit ? allMatches.take(111).toList() : allMatches;
+
+      final finalResults =
+          shouldLimit ? allMatches.take(111).toList() : allMatches.take(100).toList();
       if (context.mounted) {
         showSingleSnackBar(
           context,
-          message: finalResults.isEmpty
-              ? 'لم يتم العثور على نتائج'
-              : 'تم العثور على ${finalResults.where((m) => m['type'] == 'full').length} نتائج مطابقة و ${finalResults.where((m) => m['type'] == 'partial').length} نتائج مشابهة',
+          message:
+              finalResults.isEmpty
+                  ? 'لم يتم العثور على نتائج'
+                  : 'تم العثور على ${finalResults.where((m) => m['type'] == 'full').length} نتائج مطابقة و ${finalResults.where((m) => m['type'] == 'partial').length} نتائج مشابهة',
           backgroundColor:
               finalResults.isEmpty ? Colors.redAccent : Colors.green,
           duration: const Duration(seconds: 3),
@@ -170,16 +243,24 @@ class DataSearcher {
     return _normalizer.normalizeArabicText(text);
   }
 
- 
   String _getSnippetForDedup(String text, int start, int length) {
-    final diacriticRegex = RegExp(r'[\p{P}\u0617-\u061A\u064B-\u065F]', unicode: true);
-    String clean = text.replaceAll(RegExp(r'[OX]'), '');
+    
+    String clean = text
+        .replaceAll(RegExp(r'O\(|\)O'), '')
+        .replaceAll(RegExp(r'[a-zA-Z]'), '')
+        .replaceAll('،', '') 
+     
+      .replaceAll(RegExp("[\\[\\]{}<>.,;:\"'!@#\$%^&*_+=|\\/~`-]"), '');
+    final diacriticRegex = RegExp(
+      r'[\p{P}\u0617-\u061A\u064B-\u065F]',
+      unicode: true,
+    );
     int nonDiacriticPos = 0;
     int adjustedStartIndex = 0;
-    int adjustedEndIndex = text.length;
+    int adjustedEndIndex = clean.length;
     bool startFound = false;
-    for (int i = 0; i < text.length; i++) {
-      if (!diacriticRegex.hasMatch(text[i])) {
+    for (int i = 0; i < clean.length; i++) {
+      if (!diacriticRegex.hasMatch(clean[i])) {
         if (nonDiacriticPos == start) {
           adjustedStartIndex = i;
           startFound = true;
@@ -191,10 +272,13 @@ class DataSearcher {
         nonDiacriticPos++;
       }
     }
-    if (!startFound) {
-      adjustedStartIndex = start.clamp(0, text.length - 1);
-      adjustedEndIndex = (start + length).clamp(adjustedStartIndex, text.length);
+    
+    if (!startFound || adjustedStartIndex >= adjustedEndIndex) {
+      adjustedStartIndex = 0;
+      adjustedEndIndex = clean.length;
     }
+    adjustedStartIndex = adjustedStartIndex.clamp(0, clean.length - 1);
+    adjustedEndIndex = adjustedEndIndex.clamp(adjustedStartIndex, clean.length);
     final words = clean.split(RegExp(r'\s'));
     int charPos = 0;
     int matchWordIndex = 0;
@@ -208,13 +292,20 @@ class DataSearcher {
     }
     int startWord = (matchWordIndex - 15).clamp(0, words.length);
     int endWord = (matchWordIndex + 15 + 1).clamp(0, words.length);
+
+    if (startWord >= endWord) {
+      startWord = 0;
+      endWord = words.length;
+    }
     final snippetWords = words.sublist(startWord, endWord);
     final snippet = snippetWords.join(' ');
     return snippet;
   }
 
- 
-  int _countUniqueSearchWordsInSnippet(String snippet, List<String> searchWords) {
+  int _countUniqueSearchWordsInSnippet(
+    String snippet,
+    List<String> searchWords,
+  ) {
     Set<String> found = {};
     String normalizedSnippet = normalizeArabicText(snippet);
     for (final word in searchWords) {
@@ -225,7 +316,10 @@ class DataSearcher {
     return found.length;
   }
 
-  int _countTotalSearchWordsInSnippet(String snippet, List<String> searchWords) {
+  int _countTotalSearchWordsInSnippet(
+    String snippet,
+    List<String> searchWords,
+  ) {
     int total = 0;
     String normalizedSnippet = normalizeArabicText(snippet);
     for (final word in searchWords) {
@@ -239,7 +333,7 @@ class DataSearcher {
     }
     return total;
   }
-  
+
   bool _snippetHasOnlyShortWords(String snippet, List<String> searchWords) {
     for (final word in searchWords) {
       if (word.trim().length > 3 && snippet.contains(word)) return false;

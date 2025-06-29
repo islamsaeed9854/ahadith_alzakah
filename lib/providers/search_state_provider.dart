@@ -1,5 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:async/async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SearchState {
   final bool isSearching;
@@ -16,7 +16,7 @@ class SearchState {
   }) {
     return SearchState(
       isSearching: isSearching ?? this.isSearching,
-      searchOperation: searchOperation ?? this.searchOperation,
+      searchOperation: searchOperation, // Allow setting it to null
     );
   }
 }
@@ -25,11 +25,8 @@ class SearchStateNotifier extends StateNotifier<SearchState> {
   SearchStateNotifier() : super(SearchState());
 
   void startSearch(CancelableOperation<void> operation) {
-    // Cancel any existing search operation
     state.searchOperation?.cancel();
-    
-    // Start new search
-    state = SearchState(
+    state = state.copyWith(
       isSearching: true,
       searchOperation: operation,
     );
@@ -37,18 +34,14 @@ class SearchStateNotifier extends StateNotifier<SearchState> {
 
   void stopSearch() {
     state.searchOperation?.cancel();
-    state = SearchState(
+    state = state.copyWith(
       isSearching: false,
       searchOperation: null,
     );
   }
-
-
-  void setIsSearching(bool value) {
-    state = state.copyWith(isSearching: value);
-  }
 }
 
-final searchStateProvider = StateNotifierProvider<SearchStateNotifier, SearchState>((ref) {
+final searchStateProvider =
+    StateNotifierProvider<SearchStateNotifier, SearchState>((ref) {
   return SearchStateNotifier();
 });

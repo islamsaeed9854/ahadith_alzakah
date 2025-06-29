@@ -24,7 +24,8 @@ class SearchScreen extends ConsumerWidget {
     final displayCount = ref.watch(displayCountProvider);
     final batchLoading = ref.watch(batchLoadingProvider);
     final screenWidth = MediaQuery.of(context).size.width;
-    
+    final searchState = ref.watch(searchStateProvider);
+
     final double horizontalPadding =
         isLandscape ? screenSize.width * 0.01 : screenSize.width * 0.04;
 
@@ -49,11 +50,9 @@ class SearchScreen extends ConsumerWidget {
 
     final ScrollController _scrollController = ScrollController();
 
-   
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= 
+      if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
-       
         if (displayCount < filteredResults.length && !batchLoading) {
           loadMore();
         }
@@ -61,53 +60,9 @@ class SearchScreen extends ConsumerWidget {
     });
 
     void performSearch() {
-      controller.text..replaceAll(RegExp("[\\[\\]{}<>.,;:\"'!@#\$%^&*_+=|\\/~`-]"), '').replaceAll('،', '');
       if (controller.text.trim().isEmpty) return;
-      
-      try {
-        
-        FocusScope.of(context).unfocus();
-        
-       
-        ref.read(filteredResultsProvider.notifier).state = [];
-        ref.read(displayCountProvider.notifier).state = 20;
-        
-        final searchStateNotifier = ref.read(searchStateProvider.notifier);
-        searchStateNotifier.stopSearch();
-        searchStateNotifier.setIsSearching(true);
-        
-        final operation = CancelableOperation.fromFuture(
-          Future(() async {
-            await filterSearch(controller.text, context);
-            
-            if (context.mounted) {
-            
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_scrollController.hasClients) {
-                  _scrollController.animateTo(
-                    0.0,
-                    duration: Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              });
-            }
-            
-            searchStateNotifier.setIsSearching(false);
-          }),
-        );
-        
-        searchStateNotifier.startSearch(operation);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('حدث خطأ أثناء البحث: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+      FocusScope.of(context).unfocus();
+      ref.read(filterSearchProvider)(controller.text, context);
     }
 
     return Scaffold(
@@ -171,8 +126,9 @@ class SearchScreen extends ConsumerWidget {
                                     fontSize: inputFontSize,
                                   ),
                                   filled: true,
-                                  fillColor: const Color.fromRGBO(255, 255, 255, 0.9),
-                                  contentPadding: EdgeInsets.symmetric(
+                                  fillColor:
+                                      const Color.fromRGBO(255, 255, 255, 0.9),
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                     vertical: 14,
                                   ),
@@ -203,7 +159,7 @@ class SearchScreen extends ConsumerWidget {
                             SizedBox(height: screenSize.height * 0.025),
                             Center(
                               child: ElevatedButton(
-                                onPressed: performSearch,
+                                onPressed: searchState.isSearching ? null : performSearch,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF937848),
                                   padding: EdgeInsets.symmetric(
@@ -215,14 +171,23 @@ class SearchScreen extends ConsumerWidget {
                                   ),
                                   elevation: 3,
                                 ),
-                                child: Text(
-                                  'بحث',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: buttonFontSize,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                child: searchState.isSearching
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        'بحث',
+                                        style: GoogleFonts.cairo(
+                                          fontSize: buttonFontSize,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
                           ],
@@ -255,7 +220,7 @@ class SearchScreen extends ConsumerWidget {
                                   ),
                                   if (filteredResults.isNotEmpty)
                                     Padding(
-                                      padding: EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.only(right: 8),
                                       child: Text(
                                         '(${displayCount}/${filteredResults.length})',
                                         style: GoogleFonts.cairo(
@@ -277,6 +242,7 @@ class SearchScreen extends ConsumerWidget {
                                 ref,
                                 batchLoading,
                                 emptyResultsFontSize,
+                                searchState.isSearching,
                               ),
                             ),
                           ],
@@ -330,8 +296,9 @@ class SearchScreen extends ConsumerWidget {
                                 fontSize: inputFontSize,
                               ),
                               filled: true,
-                              fillColor: const Color.fromRGBO(255, 255, 255, 0.9),
-                              contentPadding: EdgeInsets.symmetric(
+                              fillColor:
+                                  const Color.fromRGBO(255, 255, 255, 0.9),
+                              contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 14,
                               ),
@@ -361,7 +328,7 @@ class SearchScreen extends ConsumerWidget {
                           SizedBox(height: screenSize.height * 0.025),
                           Center(
                             child: ElevatedButton(
-                              onPressed: performSearch,
+                              onPressed: searchState.isSearching ? null : performSearch,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF937848),
                                 padding: EdgeInsets.symmetric(
@@ -373,15 +340,24 @@ class SearchScreen extends ConsumerWidget {
                                 ),
                                 elevation: 3,
                               ),
-                              child: Text(
-                                'بحث',
-                                style: ArabicTextStyle(
-                                  arabicFont: ArabicFont.avenirArabic,
-                                  fontSize: buttonFontSize,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              child: searchState.isSearching
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      'بحث',
+                                      style: ArabicTextStyle(
+                                        arabicFont: ArabicFont.avenirArabic,
+                                        fontSize: buttonFontSize,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -393,79 +369,40 @@ class SearchScreen extends ConsumerWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: horizontalPadding,
                         ),
-                        child: Consumer(
-                          builder: (context, ref, child) {
-                            final searchState = ref.watch(searchStateProvider);
-                            return searchState.isSearching
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        SizedBox(
-                                          width: isLandscape ? screenSize.width * 0.06 : 60,
-                                          height: isLandscape ? screenSize.width * 0.06 : 60,
-                                          child: CircularProgressIndicator(
-                                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xffe6a345)),
-                                            strokeWidth: 6,
-                                          ),
-                                        ),
-                                        SizedBox(height: 16),
-                                        Text(
-                                          'جاري البحث...',
-                                          style: GoogleFonts.cairo(
-                                            color: Colors.white,
-                                            fontSize: emptyResultsFontSize,
-                                          ),
-                                        ),
-                                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(
+                                  top: screenSize.height * 0.01,
+                                  bottom: screenSize.height * 0.01),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'نتائج البحث',
+                                    style: GoogleFonts.cairo(
+                                      fontSize: sectionTitleFontSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
                                     ),
-                                  )
-                                : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Padding(
-                                        padding: EdgeInsets.only(
-                                            top: screenSize.height * 0.01,
-                                            bottom: screenSize.height * 0.01),
-                                        child: Row(
-                                          children: [
-                                            Text(
-                                              'نتائج البحث',
-                                              style: GoogleFonts.cairo(
-                                                fontSize: sectionTitleFontSize,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            // if (filteredResults.isNotEmpty)
-                                            //   Padding(
-                                            //     padding: EdgeInsets.only(right: 8),
-                                            //     child: Text(
-                                            //       '(${displayCount}/${filteredResults.length})',
-                                            //       style: GoogleFonts.cairo(
-                                            //         fontSize: sectionTitleFontSize * 0.8,
-                                            //         color: Colors.white70,
-                                            //       ),
-                                            //     ),
-                                            //   ),
-                                          ],
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: _buildResultsList(
-                                          filteredResults,
-                                          displayCount,
-                                          _scrollController,
-                                          screenSize,
-                                          isLandscape,
-                                          ref,
-                                          batchLoading,
-                                          emptyResultsFontSize,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                          },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildResultsList(
+                                filteredResults,
+                                displayCount,
+                                _scrollController,
+                                screenSize,
+                                isLandscape,
+                                ref,
+                                batchLoading,
+                                emptyResultsFontSize,
+                                searchState.isSearching,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -485,7 +422,34 @@ class SearchScreen extends ConsumerWidget {
     WidgetRef ref,
     bool batchLoading,
     double emptyResultsFontSize,
+    bool isSearching,
   ) {
+    if (isSearching) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: isLandscape ? screenSize.width * 0.06 : 60,
+              height: isLandscape ? screenSize.width * 0.06 : 60,
+              child: const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xffe6a345)),
+                strokeWidth: 6,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'جاري البحث...',
+              style: GoogleFonts.cairo(
+                color: Colors.white,
+                fontSize: emptyResultsFontSize,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (filteredResults.isEmpty) {
       return Center(
         child: Padding(
@@ -510,7 +474,6 @@ class SearchScreen extends ConsumerWidget {
         if (scrollNotification is ScrollEndNotification &&
             scrollNotification.metrics.pixels >=
                 scrollNotification.metrics.maxScrollExtent - 200) {
-          // عند الاقتراب من نهاية القائمة، زد عدد النتائج المعروضة تدريجيًا
           if (displayCount < filteredResults.length && !batchLoading) {
             Future.delayed(const Duration(milliseconds: 100), () {
               ref.read(displayCountProvider.notifier).state =
@@ -522,18 +485,19 @@ class SearchScreen extends ConsumerWidget {
       },
       child: ListView.builder(
         controller: scrollController,
-        padding: EdgeInsets.only(bottom: 80),
+        padding: const EdgeInsets.only(bottom: 80),
         itemCount: displayedResults.length + (batchLoading ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == displayedResults.length) {
-            return Padding(
+            return const Padding(
               padding: EdgeInsets.all(20),
               child: Center(
                 child: SizedBox(
                   width: 30,
                   height: 30,
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xffe6a345)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xffe6a345)),
                     strokeWidth: 3,
                   ),
                 ),
@@ -552,7 +516,7 @@ class SearchScreen extends ConsumerWidget {
             ),
             child: GestureDetector(
               onTap: () {
-                ref.watch(Hadith_Details_Helper_provider.notifier).state = 
+                ref.watch(Hadith_Details_Helper_provider.notifier).state =
                     ref.read(searchControllerProvider).text;
                 ref.read(searchControllerProvider).text = '';
                 ref.read(filteredResultsProvider.notifier).state = [];
@@ -560,7 +524,7 @@ class SearchScreen extends ConsumerWidget {
                 ref.read(navigationProvider.notifier).changeTab(1);
               },
               child: Container(
-                padding: EdgeInsets.all(15),
+                padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
                   color: const Color.fromRGBO(255, 255, 255, .9),
                   borderRadius: BorderRadius.circular(55),
@@ -572,7 +536,7 @@ class SearchScreen extends ConsumerWidget {
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 6,
-                      offset: Offset(0, 3),
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -584,7 +548,7 @@ class SearchScreen extends ConsumerWidget {
                       isLandscape,
                       screenSize.width,
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     buildResultSnippet(
                       snippet: snippet,
                       searchWords: searchWords,

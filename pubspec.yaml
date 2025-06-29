@@ -33,11 +33,9 @@ dependencies:
   flutter_riverpod: ^2.6.1
   arabic_font: ^0.0.9
   google_fonts: ^6.2.1
-  flutter_launcher_icons: ^0.14.3
   supabase_flutter: ^2.9.0
   flutter_secure_storage: ^9.2.4
   connectivity_plus: ^6.1.4
-  timezone: any
   awesome_notifications: ^0.10.1
   number_to_word_arabic: ^0.0.8
 dev_dependencies:
@@ -52,6 +50,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   logger: ^2.5.0
+  flutter_launcher_icons: ^0.14.3
 flutter_icons:
   android: true
   ios: true

@@ -30,7 +30,7 @@ class SearchScreen extends ConsumerWidget {
         isLandscape ? screenSize.width * 0.01 : screenSize.width * 0.04;
 
     final double titleFontSize =
-        isLandscape ? screenSize.width * 0.02 : screenSize.width * 0.09;
+        isLandscape ? screenSize.width * 0.03 : screenSize.width * 0.09;
 
     final double inputFontSize =
         isLandscape ? screenSize.width * 0.015 : screenSize.width * 0.045;

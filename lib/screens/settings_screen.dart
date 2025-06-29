@@ -256,7 +256,7 @@ class SettingsScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final double padding = screenWidth * 0.04;
 
-    final double titleFontSize = isLandscape ? screenWidth * 0.06 : screenWidth * 0.09;
+    final double titleFontSize = isLandscape ? screenWidth * 0.03 : screenWidth * 0.09;
 
     return Scaffold(
       backgroundColor: Colors.transparent,

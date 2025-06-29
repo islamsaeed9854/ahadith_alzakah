@@ -34,7 +34,7 @@ void _isolateSearch(_SearchIsolateData isolateData) {
       normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
 
   allQueryWords.sort((a, b) => b.length.compareTo(a.length));
-  final queryWords = allQueryWords.take(10).toSet();
+  final queryWords = allQueryWords.take(20).toSet();
 
   if (queryWords.isEmpty) {
     isolateData.sendPort.send([]);

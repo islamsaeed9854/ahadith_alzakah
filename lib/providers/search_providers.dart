@@ -60,9 +60,7 @@ final filterSearchProvider = Provider((ref) {
   Timer? _debounceTimer;
   
   return (String query, BuildContext context) async {
-    // إلغاء البحث السابق إذا كان موجوداً
     _debounceTimer?.cancel();
-    
     if (query.trim().isEmpty) {
       ref.read(filteredResultsProvider.notifier).state = [];
       ref.read(displayCountProvider.notifier).state = 20;

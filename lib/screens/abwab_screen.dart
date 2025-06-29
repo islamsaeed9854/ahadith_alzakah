@@ -8,6 +8,7 @@ import '../widgets/bab_card.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../core/utils.dart';
 import '../core/methods.dart';
+import '../core/constants.dart';
 
 class BooksScreen extends ConsumerWidget {
   BooksScreen({super.key});
@@ -161,13 +162,15 @@ class BooksScreen extends ConsumerWidget {
                             },
                           ),
                           const Padding(
-                            padding: EdgeInsets.only(top: 20, bottom: 12),
+                            padding: EdgeInsets.only(top: 20, bottom: 10),
                           ),
+                          TextApp.drSamyKhalilName,
                         ],
                       ),
                     ),
                   ),
                 ),
+                
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),

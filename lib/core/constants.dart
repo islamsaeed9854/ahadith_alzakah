@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'theme.dart';
 import '../providers/navigation_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:arabic_font/arabic_font.dart';
 
 class TextApp {
   static Text drSamyKhalilName = Text(
-    "د/سامى خليل",
-    style: GoogleFonts.amiri(
+    "د/سامى الخليل",
+    style: ArabicTextStyle(
+      arabicFont: ArabicFont.avenirArabic,
       fontWeight: FontWeight.bold,
       fontSize: 30,
       color: AppTheme.primaryColor,
@@ -48,7 +50,7 @@ class TextApp {
         color: AppTheme.secodaryColor,
         size: 30,
       ),
-      onPressed: () =>  Navigator.of(context).pop(),
+      onPressed: () => Navigator.of(context).pop(),
     );
   }
 }

@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../data/models/hadith.dart';
-
+import 'package:flutter/services.dart';
 class SecureStorageService {
   final _storage = const FlutterSecureStorage();
   final String jsonKey = 'hadith_zakah_data';
@@ -14,10 +14,20 @@ class SecureStorageService {
   }
 
   Future<List<Hadith>> getHadithList() async {
-    final jsonData = await _storage.read(key: jsonKey);
-    if (jsonData == null) return [];
-    final List<dynamic> list = json.decode(jsonData);
-    return list.map((e) => Hadith.fromJson(e)).toList();
+    try {
+      final jsonData = await _storage.read(key: jsonKey);
+      if (jsonData == null) return [];
+      final List<dynamic> list = json.decode(jsonData);
+      return list.map((e) => Hadith.fromJson(e)).toList();
+    } on PlatformException catch (e) {
+      print("SecureStorage Read Error (getHadithList): $e. Deleting corrupt data.");
+      await deleteAllData(); 
+      return []; 
+    } catch (e) {
+      print("General Error (getHadithList): $e. Deleting corrupt data.");
+      await deleteAllData();
+      return [];
+    }
   }
 
   Future<void> saveHadithJson(String jsonData) async {
@@ -25,7 +35,13 @@ class SecureStorageService {
   }
 
   Future<String?> getHadithJson() async {
-    return await _storage.read(key: jsonKey);
+    try {
+      return await _storage.read(key: jsonKey);
+    } on PlatformException catch (e) {
+      print("SecureStorage Read Error (getHadithJson): $e. Deleting corrupt data.");
+      await deleteAllData();
+      return null;
+    }
   }
 
   Future<bool> hasHadithJson() async {
@@ -42,8 +58,18 @@ class SecureStorageService {
   }
 
   Future<int> getJsonVersion() async {
-    final versionStr = await _storage.read(key: versionKey);
-    if (versionStr == null) return 0;
-    return int.tryParse(versionStr) ?? 0;
+    try {
+      final versionStr = await _storage.read(key: versionKey);
+      if (versionStr == null) return 0;
+      return int.tryParse(versionStr) ?? 0;
+    } on PlatformException catch (e) {
+      print("SecureStorage Read Error (getJsonVersion): $e. Deleting corrupt data.");
+      await deleteAllData();
+      return 0; 
+    }
+  }
+
+  Future<void> deleteAllData() async {
+    await _storage.deleteAll();
   }
 }

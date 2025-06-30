@@ -1,20 +1,19 @@
-// === remote_json_fetcher.dart (مُعدّل وآمن) ===
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'dart:math';
 
-// --- بداية التعديل ---
+
 const _dataUrl = String.fromEnvironment(
   'DATA_URL',
   defaultValue: 'URL_NOT_FOUND',
 );
-// --- نهاية التعديل ---
+
 
 class RemoteJsonFetcher {
   final Logger _logger = Logger();
   
-  // تم إزالة الرابط من هنا
+
 
   String addTimestamp(String url) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -23,16 +22,16 @@ class RemoteJsonFetcher {
   }
 
   Future<Map<String, dynamic>?> fetchRemoteJson() async {
-    // --- بداية التعديل ---
+   
     if (_dataUrl == 'URL_NOT_FOUND') {
       _logger.e('DATA_URL not provided. Use --dart-define to provide it.');
       throw Exception('DATA_URL not provided');
     }
-    // --- نهاية التعديل ---
+  
 
     try {
       final response = await http.get(
-        Uri.parse(addTimestamp(_dataUrl)), // استخدام المتغير الآمن
+        Uri.parse(addTimestamp(_dataUrl)), 
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',

@@ -15,7 +15,6 @@ import 'data/models/hadith.dart';
 import 'notification_service.dart';
 import 'core/secure_supabase_storage.dart';
 
-// --- بداية التعديل: قراءة المفاتيح من متغيرات البيئة ---
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
   defaultValue: 'URL_NOT_FOUND',
@@ -25,12 +24,12 @@ const supabaseAnonKey = String.fromEnvironment(
   'SUPABASE_ANON_KEY',
   defaultValue: 'ANON_KEY_NOT_FOUND',
 );
-// --- نهاية التعديل ---
+
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class NotificationController {
-  // ... ( باقي الكلاس يبقى كما هو )
+
   @pragma('vm:entry-point')
   static Future<void> onActionReceivedMethod(
     ReceivedAction receivedAction,
@@ -70,7 +69,7 @@ class NotificationController {
 }
 
 Future<void> _initializeApp() async {
-  // --- بداية التعديل: التحقق من وجود المفاتيح ---
+
   if (supabaseUrl == 'URL_NOT_FOUND' || supabaseAnonKey == 'ANON_KEY_NOT_FOUND') {
     throw Exception('Supabase URL/Key not provided. Use --dart-define to provide them.');
   }
@@ -78,7 +77,7 @@ Future<void> _initializeApp() async {
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
-    // --- نهاية التعديل ---
+   
     authOptions: FlutterAuthClientOptions(
       localStorage: SecureSupabaseStorage(),
     ),
@@ -100,7 +99,7 @@ void main() async {
 }
 
 class MyApp extends ConsumerWidget {
-  // ... ( باقي الكلاس يبقى كما هو )
+  
   const MyApp({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {

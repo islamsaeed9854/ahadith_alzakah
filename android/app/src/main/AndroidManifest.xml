@@ -16,6 +16,7 @@
         android:enableOnBackInvokedCallback="true"
         android:label="أحاديث الزكاة"
         android:name="${applicationName}"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

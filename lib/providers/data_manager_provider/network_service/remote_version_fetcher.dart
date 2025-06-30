@@ -1,12 +1,20 @@
+// === remote_version_fetcher.dart (مُعدّل وآمن) ===
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'dart:math';
 
+// --- بداية التعديل ---
+const _versionUrl = String.fromEnvironment(
+  'VERSION_URL',
+  defaultValue: 'URL_NOT_FOUND',
+);
+// --- نهاية التعديل ---
+
 class RemoteVersionFetcher {
   final Logger _logger = Logger();
-  final String versionUrl =
-      'https://oqjnppmlqqehnqktejfl.supabase.co/storage/v1/object/sign/ahadith.alzakah.app/ahadith_alzakah_data/version.json?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzQ5ZTFkMTFmLWIzMDMtNGFjZi04NDY3LTc5Yjk0YzAwMWQ4YyJ9.eyJ1cmwiOiJhaGFkaXRoLmFsemFrYWguYXBwL2FoYWRpdGhfYWx6YWthaF9kYXRhL3ZlcnNpb24uanNvbiIsImlhdCI6MTc0ODA4NTUyMywiZXhwIjo4NjQwMDAwMDAwMDE3NDgxMDAwMDB9.bNnG8MGc7hwT4-Drbc8Xx1XJIXZVD5F9_qEKdRYjRW8';
+
+  // تم إزالة الرابط من هنا
 
   String addTimestamp(String url) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -15,9 +23,16 @@ class RemoteVersionFetcher {
   }
 
   Future<int> fetchRemoteVersion() async {
+    // --- بداية التعديل ---
+    if (_versionUrl == 'URL_NOT_FOUND') {
+      _logger.e('VERSION_URL not provided. Use --dart-define to provide it.');
+      throw Exception('VERSION_URL not provided');
+    }
+    // --- نهاية التعديل ---
+
     try {
       final response = await http.get(
-        Uri.parse(addTimestamp(versionUrl)),
+        Uri.parse(addTimestamp(_versionUrl)), // استخدام المتغير الآمن
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',

@@ -1,3 +1,4 @@
+// === main.dart (مُعدّل وآمن) ===
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,8 +14,23 @@ import 'providers/notification_service_provider.dart';
 import 'data/models/hadith.dart';
 import 'notification_service.dart';
 import 'core/secure_supabase_storage.dart';
+
+// --- بداية التعديل: قراءة المفاتيح من متغيرات البيئة ---
+const supabaseUrl = String.fromEnvironment(
+  'SUPABASE_URL',
+  defaultValue: 'URL_NOT_FOUND',
+);
+
+const supabaseAnonKey = String.fromEnvironment(
+  'SUPABASE_ANON_KEY',
+  defaultValue: 'ANON_KEY_NOT_FOUND',
+);
+// --- نهاية التعديل ---
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class NotificationController {
+  // ... ( باقي الكلاس يبقى كما هو )
   @pragma('vm:entry-point')
   static Future<void> onActionReceivedMethod(
     ReceivedAction receivedAction,
@@ -52,17 +68,25 @@ class NotificationController {
     }
   }
 }
+
 Future<void> _initializeApp() async {
+  // --- بداية التعديل: التحقق من وجود المفاتيح ---
+  if (supabaseUrl == 'URL_NOT_FOUND' || supabaseAnonKey == 'ANON_KEY_NOT_FOUND') {
+    throw Exception('Supabase URL/Key not provided. Use --dart-define to provide them.');
+  }
+
   await Supabase.initialize(
-    url: 'https://oqjnppmlqqehnqktejfl.supabase.co',
-    anonKey:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xam5wcG1scXFlaG5xa3RlamZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5OTg0NzgsImV4cCI6MjA2MzU3NDQ3OH0.ponVTjJnEhFJsjO5Ol25PJt5d2zrYToJxxHXDsbcLLE",
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    // --- نهاية التعديل ---
     authOptions: FlutterAuthClientOptions(
       localStorage: SecureSupabaseStorage(),
     ),
   );
 }
+
 ReceivedAction? _initialAction;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _initializeApp();
@@ -74,7 +98,9 @@ void main() async {
   }
   runApp(const ProviderScope(child: MyApp()));
 }
+
 class MyApp extends ConsumerWidget {
+  // ... ( باقي الكلاس يبقى كما هو )
   const MyApp({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {

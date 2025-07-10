@@ -98,7 +98,11 @@ class BooksScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          SizedBox(height: isLandscape ? 8 : 16),
+                           const Padding(
+                            padding: EdgeInsets.only(top: 8, bottom:8),
+                          ),
+                          TextApp.drSamyKhalilName,
+                          SizedBox(height: isLandscape ? 8 : 12),
                           GestureDetector(
                             onTap: () {
                               ref.read(navigationProvider.notifier).changeTab(2);
@@ -161,10 +165,7 @@ class BooksScreen extends ConsumerWidget {
                               );
                             },
                           ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 20, bottom: 10),
-                          ),
-                          TextApp.drSamyKhalilName,
+                         
                         ],
                       ),
                     ),

@@ -323,8 +323,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                                                   child: Text(
                                                     hadith.text.length > 150
                                                         ? '${maskEnglishLetters(hadith.text.trim()).substring(0, 150)}...'
-                                                        : maskEnglishLetters(
-                                                            hadith.text),
+                                                        : '${maskEnglishLetters(hadith.text.trim())}...',
                                                     style:
                                                         const ArabicTextStyle(
                                                       arabicFont:

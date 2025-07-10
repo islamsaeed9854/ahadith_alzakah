@@ -214,7 +214,7 @@ class DataSearcher {
       if (context.mounted) {
         showSingleSnackBar(
           context,
-          message: 'خطأ في البحث: ${e.toString()}',
+          message: 'خطأ في البحث',
           backgroundColor: Colors.redAccent,
           duration: const Duration(seconds: 3),
         );

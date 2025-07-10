@@ -1,7 +1,7 @@
 import 'package:ahadith_alzakah/core/constants.dart';
 import 'package:ahadith_alzakah/core/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // <-- إضافة مهمة لإغلاق الكيبورد
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -125,7 +125,6 @@ class AddHadithScreen extends ConsumerWidget {
       final chapterTitleController = TextEditingController();
       final sectionTitleController = TextEditingController();
 
-      // NEW KEYBOARD FIX: Use a more direct method
       void forceHideKeyboard() {
         SystemChannels.textInput.invokeMethod('TextInput.hide');
       }
@@ -134,78 +133,79 @@ class AddHadithScreen extends ConsumerWidget {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) {
-          return AlertDialog(
-            title: Text('إدخال العناوين المفقودة', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: const Color(0xff977c55))),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isChapterMissing && existingChapterTitle != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Column(
+          return Directionality(
+             textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              title: Text('إدخال العناوين المفقودة', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: const Color(0xff977c55))),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isChapterMissing && existingChapterTitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('اسم الباب الموجود:', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.green[700])),
+                            SizedBox(height: 4),
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green[200]!)),
+                              child: Text(existingChapterTitle, style: GoogleFonts.cairo(color: Colors.green[800], fontWeight: FontWeight.w500)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (isChapterMissing)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('اسم الباب (مطلوب)' , style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w500)),
+                             _buildTextInputField('', MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, controller: chapterTitleController, isSmallScreen: true, maxLines: 1),
+                          ],
+                        ),
+                      ),
+                    if (isSectionMissing)
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('اسم الباب الموجود:', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.green[700])),
-                          SizedBox(height: 4),
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green[200]!)),
-                            child: Text(existingChapterTitle, style: GoogleFonts.cairo(color: Colors.green[800], fontWeight: FontWeight.w500)),
-                          ),
+                          Text('اسم الفصل (مطلوب)', style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w500)),
+                          _buildTextInputField('', MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, controller: sectionTitleController, isSmallScreen: true, maxLines: 1),
                         ],
                       ),
-                    ),
-                  if (isChapterMissing)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('اسم الباب (مطلوب)', style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w500)),
-                          SizedBox(height: 8),
-                          _buildTextInputField('أدخل اسم الباب', MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, controller: chapterTitleController, isSmallScreen: true, maxLines: 1),
-                        ],
-                      ),
-                    ),
-                  if (isSectionMissing)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('اسم الفصل (مطلوب)', style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w500)),
-                        SizedBox(height: 8),
-                        _buildTextInputField('أدخل اسم الفصل', MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, controller: sectionTitleController, isSmallScreen: true, maxLines: 1),
-                      ],
-                    ),
-                ],
+                  ],
+                ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    forceHideKeyboard();
+                    Navigator.pop(dialogContext, null);
+                  },
+                  child: Text('إلغاء', style: GoogleFonts.cairo(color: Colors.red)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff977c55)),
+                  onPressed: () {
+                    forceHideKeyboard();
+                    final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : existingChapterTitle;
+                    final sectionTitle = isSectionMissing ? sectionTitleController.text.trim() : null;
+                    if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
+                        (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
+                      showMessage(dialogContext, 'يرجى إدخال جميع البيانات المطلوبة');
+                      return;
+                    }
+                    Navigator.pop(dialogContext, {'chapterTitle': chapterTitle, 'sectionTitle': sectionTitle});
+                  },
+                  child: Text('حفظ', style: GoogleFonts.cairo(color: Colors.white)),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  forceHideKeyboard();
-                  Navigator.pop(dialogContext, null);
-                },
-                child: Text('إلغاء', style: GoogleFonts.cairo(color: Colors.red)),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff977c55)),
-                onPressed: () {
-                  forceHideKeyboard();
-                  final chapterTitle = isChapterMissing ? chapterTitleController.text.trim() : existingChapterTitle;
-                  final sectionTitle = isSectionMissing ? sectionTitleController.text.trim() : null;
-                  if ((isChapterMissing && (chapterTitle == null || chapterTitle.isEmpty)) ||
-                      (isSectionMissing && (sectionTitle == null || sectionTitle.isEmpty))) {
-                    showMessage(dialogContext, 'يرجى إدخال جميع البيانات المطلوبة');
-                    return;
-                  }
-                  Navigator.pop(dialogContext, {'chapterTitle': chapterTitle, 'sectionTitle': sectionTitle});
-                },
-                child: Text('حفظ', style: GoogleFonts.cairo(color: Colors.white)),
-              ),
-            ],
           );
         },
       );
@@ -216,7 +216,6 @@ class AddHadithScreen extends ConsumerWidget {
       if (!ref.read(addButtonEnabledProvider)) return;
       ref.read(addButtonEnabledProvider.notifier).state = false;
 
-      // ROBUST FIX: The try block now wraps all logic to ensure finally is always called.
       try {
         final bab = int.tryParse(babController.text.trim()) ?? -1;
         final fasl = int.tryParse(faslController.text.trim()) ?? -1;
@@ -235,6 +234,7 @@ class AddHadithScreen extends ConsumerWidget {
           return;
         }
 
+        // MODIFIED: Pre-emptive checks for network and data freshness
         final connectivityResult = await (Connectivity().checkConnectivity());
         if (connectivityResult == ConnectivityResult.none && context.mounted) {
           showMessage(context, 'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة');
@@ -287,7 +287,6 @@ class AddHadithScreen extends ConsumerWidget {
         await dataManager.addHadith(newHadith, 4, context);
 
         if (context.mounted) {
-        //  showMessage(context, 'تم إضافة الحديث بنجاح', isSuccess: true);
           babController.clear();
           faslController.clear();
           numberController.clear();
@@ -301,8 +300,6 @@ class AddHadithScreen extends ConsumerWidget {
           showMessage(context, 'حدث خطأ: ${e.toString()}');
         }
       } finally {
-        // ROBUST FIX: This now runs ALWAYS, ensuring the button state is reset 
-        // even if the user navigates away or an error occurs.
         ref.read(addButtonEnabledProvider.notifier).state = true;
       }
     }

@@ -13,7 +13,7 @@ import 'providers/notification_service_provider.dart';
 import 'data/models/hadith.dart';
 import 'notification_service.dart';
 import 'core/secure_supabase_storage.dart';
-
+import 'package:flutter/services.dart';
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
   defaultValue: 'URL_NOT_FOUND',
@@ -94,6 +94,12 @@ void main() async {
   if (_initialAction != null) {
       debugPrint('App was launched by a notification action.');
   }
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   runApp(const ProviderScope(child: MyApp()));
 }
 

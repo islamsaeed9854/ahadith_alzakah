@@ -12,7 +12,6 @@ import 'package:arabic_font/arabic_font.dart';
 import 'package:ahadith_alzakah/providers/data_manager_provider/local_storage_service/local_version_handler.dart';
 import 'package:ahadith_alzakah/providers/data_manager_provider/network_service/remote_version_fetcher.dart';
 
-// Provider للتحكم في حالة زر التعديل (معطل أو لا)
 final editButtonEnabledProvider = StateProvider<bool>((ref) => true);
 
 class EditHadithScreen extends ConsumerWidget {
@@ -36,7 +35,6 @@ class EditHadithScreen extends ConsumerWidget {
         final isLandscape = orientation == Orientation.landscape;
         final keyboardHeight = mediaQuery.viewInsets.bottom;
 
-        // Calculate responsive values
         final paddingHorizontal =
             isLandscape ? screenWidth * 0.06 : screenWidth * 0.04;
         final paddingVertical =
@@ -62,7 +60,6 @@ class EditHadithScreen extends ConsumerWidget {
                 ? 14.0
                 : 18.0;
 
-        // Controllers from add_hadith.dart
         final babController = ref.watch(babControllerProvider);
         final faslController = ref.watch(faslControllerProvider);
         final numberController = ref.watch(numberControllerProvider);
@@ -71,10 +68,8 @@ class EditHadithScreen extends ConsumerWidget {
         final referenceController = ref.watch(referenceControllerProvider);
         final analysisController = ref.watch(analysisControllerProvider);
 
-        // Data manager
         final dataManager = ref.read(DataProvider.notifier);
 
-        // Current hadith
         final currentHadiths = ref.watch(DataProvider).value ?? [];
         final hadith =
             hadithToEdit ??
@@ -94,10 +89,8 @@ class EditHadithScreen extends ConsumerWidget {
                   section_title: '',
                 ));
 
-        // حالة الزر (معطل/شغال)
         final isButtonEnabled = ref.watch(editButtonEnabledProvider);
 
-        // Show message function using showSingleSnackBar
         void showMessage(
           BuildContext context,
           String message, {
@@ -113,7 +106,6 @@ class EditHadithScreen extends ConsumerWidget {
           }
         }
 
-        // Update hadith function
         Future<void> updateHadith() async {
           if (!isButtonEnabled) return;
 
@@ -121,131 +113,115 @@ class EditHadithScreen extends ConsumerWidget {
 
           ref.read(editButtonEnabledProvider.notifier).state = false;
 
-          final bab = int.tryParse(babController.text.trim()) ?? -1;
-          final fasl = int.tryParse(faslController.text.trim()) ?? -1;
-          final number = int.tryParse(numberController.text.trim()) ?? -1;
-          final text = textController.text.trim();
-          final summary = summaryController.text.trim();
-          final reference = referenceController.text.trim();
-          final analysis = analysisController.text.trim();
-
-          // Validation
-          if (bab <= 0 || fasl <= 0 || number <= 0) {
-            showMessage(
-              context,
-              'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر',
-            );
-            ref.read(editButtonEnabledProvider.notifier).state = true;
-            return;
-          }
-
-          if (text.isEmpty &&
-              (selectedOption == 'نص الحديث' || selectedOption == 'الكل')) {
-            showMessage(context, 'نص الحديث مطلوب');
-            ref.read(editButtonEnabledProvider.notifier).state = true;
-            return;
-          }
-
-          // Check connectivity
-          final connectivityResult = await Connectivity().checkConnectivity();
-          if (connectivityResult == ConnectivityResult.none) {
-            showMessage(
-              context,
-              'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة',
-            );
-            ref.read(editButtonEnabledProvider.notifier).state = true;
-            return;
-          }
-
           try {
-            final existingHadith = await dataManager.retrieveHadith(
-              bab,
-              fasl,
-              number,
-              context,
-            );
-            final connectivityResult =
-                await (Connectivity().checkConnectivity());
-            if (connectivityResult == ConnectivityResult.none &&
-                context.mounted) {
-              showMessage(
-                context,
-                'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة',
-              );
-              return;
-            }
+              final bab = int.tryParse(babController.text.trim()) ?? -1;
+              final fasl = int.tryParse(faslController.text.trim()) ?? -1;
+              final number = int.tryParse(numberController.text.trim()) ?? -1;
+              final text = textController.text.trim();
+              final summary = summaryController.text.trim();
+              final reference = referenceController.text.trim();
+              final analysis = analysisController.text.trim();
 
-            if (context.mounted) {
-              try {
-                final remoteVersion =
-                    await RemoteVersionFetcher().fetchRemoteVersion();
-                final localVersion =
-                    await LocalVersionHandler().getLocalVersion();
-                if (localVersion < remoteVersion) {
-                  showMessage(
-                    context,
-                    'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.',
-                  );
-                  return;
-                }
-              } catch (e) {
+              if (bab <= 0 || fasl <= 0 || number <= 0) {
                 showMessage(
                   context,
-                  'فشل التحقق من تحديث البيانات. حاول مرة أخرى.',
+                  'رقم الباب أو الفصل أو الحديث يجب أن يكون أكبر من صفر',
                 );
                 return;
               }
-            }
-            int flag;
-            switch (selectedOption) {
-              case 'نص الحديث':
-                flag = 3;
-                break;
-              case 'الخلاصة':
-                flag = 0;
-                break;
-              case 'التخريج':
-                flag = 2;
-                break;
-              case 'الدراسة':
-                flag = 1;
-                break;
-              case 'الكل':
-                flag = 5;
-                break;
-              default:
-                flag = 5;
-            }
 
-            final updatedHadith = Hadith(
-              id: hadith.id,
-              deleted: hadith.deleted,
-              bab: bab,
-              fasl: fasl,
-              number: number,
-              text: text.isNotEmpty ? text : hadith.text,
-              summary: summary.isNotEmpty ? summary : hadith.summary,
-              reference: reference.isNotEmpty ? reference : hadith.reference,
-              analysis: analysis.isNotEmpty ? analysis : hadith.analysis,
-              chapter_title: existingHadith.chapter_title,
-              section_title: existingHadith.section_title,
-            );
+              if (text.isEmpty &&
+                  (selectedOption == 'نص الحديث' || selectedOption == 'الكل')) {
+                showMessage(context, 'نص الحديث مطلوب');
+                return;
+              }
 
-            await dataManager.addHadith(updatedHadith, flag, context);
-            // showMessage(context, 'تم تعديل الحديث بنجاح', isSuccess: true);
+              // MODIFIED: Pre-emptive checks for network and data freshness
+              final connectivityResult = await Connectivity().checkConnectivity();
+              if (connectivityResult == ConnectivityResult.none) {
+                showMessage(
+                  context,
+                  'لا يوجد اتصال بالإنترنت، يرجى التحقق من الشبكة',
+                );
+                return;
+              }
 
-            // Clear controllers after success
-            babController.clear();
-            faslController.clear();
-            numberController.clear();
-            textController.clear();
-            summaryController.clear();
-            referenceController.clear();
-            analysisController.clear();
+              if (context.mounted) {
+                try {
+                  final remoteVersion =
+                      await RemoteVersionFetcher().fetchRemoteVersion();
+                  final localVersion =
+                      await LocalVersionHandler().getLocalVersion();
+                  if (localVersion < remoteVersion) {
+                    showMessage(
+                      context,
+                      'بياناتك ليست محدّثة. يرجى تحديث الأحاديث أولاً.',
+                    );
+                    return;
+                  }
+                } catch (e) {
+                  showMessage(
+                    context,
+                    'فشل التحقق من تحديث البيانات. حاول مرة أخرى.',
+                  );
+                  return;
+                }
+              }
 
-            if (context.mounted) {
-              // Navigator.pop(context);
-            }
+              final existingHadith = await dataManager.retrieveHadith(
+                bab,
+                fasl,
+                number,
+                context,
+              );
+
+              
+
+              int flag;
+              switch (selectedOption) {
+                case 'نص الحديث':
+                  flag = 3;
+                  break;
+                case 'الخلاصة':
+                  flag = 0;
+                  break;
+                case 'التخريج':
+                  flag = 2;
+                  break;
+                case 'الدراسة':
+                  flag = 1;
+                  break;
+                case 'الكل':
+                  flag = 5;
+                  break;
+                default:
+                  flag = 5;
+              }
+
+              final updatedHadith = Hadith(
+                id: existingHadith.id,
+                deleted: existingHadith.deleted,
+                bab: bab,
+                fasl: fasl,
+                number: number,
+                text: text.isNotEmpty ? text : existingHadith.text,
+                summary: summary.isNotEmpty ? summary : existingHadith.summary,
+                reference: reference.isNotEmpty ? reference : existingHadith.reference,
+                analysis: analysis.isNotEmpty ? analysis : existingHadith.analysis,
+                chapter_title: existingHadith.chapter_title,
+                section_title: existingHadith.section_title,
+              );
+
+              await dataManager.addHadith(updatedHadith, flag, context);
+
+              babController.clear();
+              faslController.clear();
+              numberController.clear();
+              textController.clear();
+              summaryController.clear();
+              referenceController.clear();
+              analysisController.clear();
+
           } catch (e) {
             String errorMessage;
             if (e.toString().contains('الحديث غير موجود')) {
@@ -263,11 +239,10 @@ class EditHadithScreen extends ConsumerWidget {
               errorMessage =
                   'مشكلة في التخزين المحلي، يرجى التأكد من المساحة المتاحة';
             } else {
-              errorMessage = 'حدث خطأ أثناء التعديل، يرجى المحاولة لاحقًا';
+              errorMessage = 'حدث خطأ أثناء التعديل: ${e.toString()}';
             }
             showMessage(context, errorMessage);
           } finally {
-            // إعادة تعيين حالة الزر
             ref.read(editButtonEnabledProvider.notifier).state = true;
           }
         }
@@ -279,10 +254,8 @@ class EditHadithScreen extends ConsumerWidget {
             body: Stack(
               fit: StackFit.expand,
               children: [
-                // Background
                 SizedBox.expand(child: TextApp.appBackgroundWidget),
                 Container(),
-                // Content
                 SingleChildScrollView(
                   padding: EdgeInsets.only(
                     top:
@@ -302,7 +275,6 @@ class EditHadithScreen extends ConsumerWidget {
                       children: [
                         Column(
                           children: [
-                            // Header
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -327,7 +299,6 @@ class EditHadithScreen extends ConsumerWidget {
                               ],
                             ),
                             SizedBox(height: screenHeight * 0.02),
-                            // Form Container
                             Container(
                               padding: EdgeInsets.all(
                                 isSmallScreen
@@ -355,7 +326,6 @@ class EditHadithScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Number inputs
                                   _buildNumberInputRow(
                                     'رقم الباب',
                                     controller: babController,
@@ -390,7 +360,6 @@ class EditHadithScreen extends ConsumerWidget {
                                     endIndent: 16.0,
                                   ),
                                   SizedBox(height: screenHeight * 0.015),
-                                  // Text fields based on selected option
                                   if (selectedOption == 'نص الحديث' ||
                                       selectedOption == 'الكل')
                                     _buildTextInputField(
@@ -459,7 +428,6 @@ class EditHadithScreen extends ConsumerWidget {
                               ),
                             ),
                             SizedBox(height: screenHeight * 0.02),
-                            // Save Button
                             Align(
                               alignment: Alignment.center,
                               child: SizedBox(
@@ -475,7 +443,7 @@ class EditHadithScreen extends ConsumerWidget {
                                   color:
                                       isButtonEnabled
                                           ? const Color(0xff977c55)
-                                          : Colors.transparent,
+                                          : Colors.grey.withOpacity(0.5),
                                   borderRadius: BorderRadius.circular(30),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(30),

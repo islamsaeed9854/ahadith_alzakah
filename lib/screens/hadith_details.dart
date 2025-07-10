@@ -12,92 +12,28 @@ import '../core/methods.dart';
 import 'settings_screen.dart';
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import 'package:arabic_font/arabic_font.dart';
+import '../core/hadith_text_parser.dart';
 
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
-  List<TextSpan> _buildFormattedText(
-    String text,
-    bool isDark,
-    double fontSize,
-  ) {
-    List<TextSpan> spans = [];
-
-    void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
-      if (text.isEmpty) return;
-  
-      bool needsSpace = addSpace && !text.endsWith(' ') && text != '*';
-      spans.add(TextSpan(text: text + (needsSpace ? ' ' : ''), style: style));
-    }
-
-    final baseStyle = TextStyle(
-      color: isDark ? Colors.white : Color(0xff513c2e),
-      fontSize: fontSize,
-      height: 1.8,
-    );
-
-   
-
-    RegExp pattern = RegExp(r'(X[^X]+X|O[^O]+O|\[[^\]]+\]|\*)');
-    int lastIndex = 0;
-
-    for (final match in pattern.allMatches(text)) {
-      String before = text.substring(lastIndex, match.start); 
-      if (before.isNotEmpty) addTextSpan(before, baseStyle);
-
-      String matchText = match.group(0)!;
-      if (matchText.startsWith('X') && matchText.endsWith('X')) {
-        final mcolor = isDark ? Color(0xffe09d3c) : Color(0xff10834b);
-        addTextSpan(
-          matchText.substring(1, matchText.length - 1),
-          baseStyle.copyWith(color: mcolor),
-        );
-      } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-        final mcolor = isDark ? Color(0xffb5a7a7) : Color(0xff912929);
-        addTextSpan(
-          matchText.substring(1, matchText.length - 1),
-          baseStyle.copyWith(color: mcolor),
-        );
-      } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-        final mcolor = isDark ? Color(0xffa5947b) : Color(0xffa37635);
-        addTextSpan(
-          matchText.substring(0, matchText.length),
-          baseStyle.copyWith(color: mcolor),
-        );
-      } else if (matchText == '*') {
-        addTextSpan(
-          matchText,
-          baseStyle.copyWith(fontWeight: FontWeight.bold),
-          addSpace: false,
-        );
-      }
-      lastIndex = match.end;
-    }
-
-    if (lastIndex < text.length) {
-      String remaining = text.substring(lastIndex); 
-      if (remaining.isNotEmpty)
-        addTextSpan(remaining, baseStyle, addSpace: false);
-    }
-
-    return spans;
-  }
-
   void _setStatusBarStyle(bool isDarkMode) {
     if (isDarkMode) {
- 
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ));
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+      );
     } else {
-     
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ));
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+      );
     }
   }
 
@@ -116,7 +52,6 @@ class HadithDetails extends ConsumerWidget {
     final controller = ref.watch(Hadith_Details_Helper_provider.notifier);
     final backgroundColor = theme.scaffoldBackgroundColor;
 
-  
     _setStatusBarStyle(isDark);
 
     final hadithToDisplay =
@@ -126,32 +61,32 @@ class HadithDetails extends ConsumerWidget {
     return allHadithsAsyncValue.when(
       loading:
           () => Scaffold(
-        backgroundColor: backgroundColor,
-        body: Center(
-          child: SizedBox(
-            width: 80,
-            height: 80,
-            child: CircularProgressIndicator(
-              strokeWidth: 7,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isDark ? Colors.white : AppTheme.primaryColor,
+            backgroundColor: backgroundColor,
+            body: Center(
+              child: SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  strokeWidth: 7,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? Colors.white : AppTheme.primaryColor,
+                  ),
+                  backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
+                ),
               ),
-              backgroundColor: isDark ? Colors.black26 : Colors.brown[100],
             ),
           ),
-        ),
-      ),
       error:
           (error, stack) => Scaffold(
-        backgroundColor: backgroundColor,
-        body: Center(
-          child: _buildErrorWidget(
-            theme,
-            'لا توجد أحاديث لعرضها حاليًا',
-            Icons.error_outline,
+            backgroundColor: backgroundColor,
+            body: Center(
+              child: _buildErrorWidget(
+                theme,
+                'لا توجد أحاديث لعرضها حاليًا',
+                Icons.error_outline,
+              ),
+            ),
           ),
-        ),
-      ),
       data: (allHadiths) {
         if (allHadiths.isEmpty || hadithToDisplay == null) {
           return Scaffold(
@@ -173,12 +108,14 @@ class HadithDetails extends ConsumerWidget {
                     controller.state = '';
                     navNotifier.changeTab(0);
                     ref.read(showDailyHadithProvider.notifier).state = false;
-                   
-                    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-                      statusBarColor: Colors.transparent,
-                      statusBarIconBrightness: Brightness.dark,
-                      statusBarBrightness: Brightness.light,
-                    ));
+
+                    SystemChrome.setSystemUIOverlayStyle(
+                      const SystemUiOverlayStyle(
+                        statusBarColor: Colors.transparent,
+                        statusBarIconBrightness: Brightness.dark,
+                        statusBarBrightness: Brightness.light,
+                      ),
+                    );
                   },
                 ),
               ],
@@ -210,12 +147,14 @@ class HadithDetails extends ConsumerWidget {
               controller.state = '';
               navNotifier.changeTab(0);
               ref.read(showDailyHadithProvider.notifier).state = false;
-            
-              SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark,
-                statusBarBrightness: Brightness.light,
-              ));
+
+              SystemChrome.setSystemUIOverlayStyle(
+                const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.dark,
+                  statusBarBrightness: Brightness.light,
+                ),
+              );
             }
           },
           child: Directionality(
@@ -239,7 +178,7 @@ class HadithDetails extends ConsumerWidget {
                         return Column(
                           children: [
                             SizedBox(
-                              height:  screenWidth > screenHeight ? 50 : 100,
+                              height: screenWidth > screenHeight ? 50 : 100,
                               child: Padding(
                                 padding: EdgeInsets.only(
                                   top: 0,
@@ -247,15 +186,15 @@ class HadithDetails extends ConsumerWidget {
                                       screenWidth > screenHeight
                                           ? 15
                                           : MediaQuery.of(
-                                                  context,
-                                                ).padding.left +
+                                                context,
+                                              ).padding.left +
                                               16,
                                   right:
                                       screenWidth > screenHeight
                                           ? 15
                                           : MediaQuery.of(
-                                                  context,
-                                                ).padding.right +
+                                                context,
+                                              ).padding.right +
                                               16,
                                 ),
                                 child: Row(
@@ -308,13 +247,21 @@ class HadithDetails extends ConsumerWidget {
                                       onPressed: () {
                                         controller.state = '';
                                         navNotifier.changeTab(0);
-                                        ref.read(showDailyHadithProvider.notifier).state = false;
-                                       
-                                        SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-                                          statusBarColor: Colors.transparent,
-                                          statusBarIconBrightness: Brightness.dark,
-                                          statusBarBrightness: Brightness.light,
-                                        ));
+                                        ref
+                                            .read(
+                                              showDailyHadithProvider.notifier,
+                                            )
+                                            .state = false;
+
+                                        SystemChrome.setSystemUIOverlayStyle(
+                                          const SystemUiOverlayStyle(
+                                            statusBarColor: Colors.transparent,
+                                            statusBarIconBrightness:
+                                                Brightness.dark,
+                                            statusBarBrightness:
+                                                Brightness.light,
+                                          ),
+                                        );
                                       },
                                     ),
                                   ],
@@ -331,8 +278,8 @@ class HadithDetails extends ConsumerWidget {
                                       screenWidth > screenHeight
                                           ? 15
                                           : MediaQuery.of(
-                                                  context,
-                                                ).padding.left +
+                                                context,
+                                              ).padding.left +
                                               screenWidth * 0.06,
                                 ),
                                 child: ScrollConfiguration(
@@ -344,13 +291,12 @@ class HadithDetails extends ConsumerWidget {
                                     child: RichText(
                                       textAlign: TextAlign.justify,
                                       text: TextSpan(
-                             
-                                        children: _buildFormattedText(
+                                     
+                                        children: parseHadithText(
                                           hadith.text.trim(),
                                           isDark,
                                           fontSize.toDouble(),
                                         ),
-                         
                                       ),
                                     ),
                                   ),
@@ -455,72 +401,7 @@ class TabContent extends ConsumerWidget {
     required this.screenWidth,
   }) : super(key: key);
 
-  List<TextSpan> _buildFormattedText(
-    String text,
-    bool isDark,
-    double fontSize,
-  ) {
-    List<TextSpan> spans = [];
-
-    void addTextSpan(String text, TextStyle style, {bool addSpace = true}) {
-      if (text.isEmpty) return;
-     
-      bool needsSpace = addSpace && !text.endsWith(' ') && text != '*';
-      spans.add(TextSpan(text: text + (needsSpace ? ' ' : ''), style: style));
-    }
-
-    final baseStyle = TextStyle(
-      color: isDark ? const Color(0xffd6c9b3) : const Color(0xff513c2e),
-      fontSize: fontSize,
-      height: 1.8,
-    );
-
   
-
-    RegExp pattern = RegExp(r'(X[^X]+X|O[^O]+O|\[[^\]]+\]|\*)');
-    int lastIndex = 0;
-
-    for (final match in pattern.allMatches(text)) {
-      String before = text.substring(lastIndex, match.start); // .trim() is removed
-      if (before.isNotEmpty) addTextSpan(before, baseStyle);
-
-      String matchText = match.group(0)!;
-      if (matchText.startsWith('X') && matchText.endsWith('X')) {
-        final mcolor = isDark ? Color(0xffe09d3c) : const Color(0xff10834b);
-        addTextSpan(
-          matchText.substring(1, matchText.length - 1),
-          baseStyle.copyWith(color: mcolor),
-        );
-      } else if (matchText.startsWith('O') && matchText.endsWith('O')) {
-        final mcolor = isDark ? Color(0xffb5a7a7) : const Color(0xff912929);
-        addTextSpan(
-          matchText.substring(1, matchText.length - 1),
-          baseStyle.copyWith(color: mcolor),
-        );
-      } else if (matchText.startsWith('[') && matchText.endsWith(']')) {
-        final mcolor = isDark ? Color(0xffa5947b) : const Color(0xffa37635);
-        addTextSpan(
-          matchText.substring(0, matchText.length),
-          baseStyle.copyWith(color: mcolor),
-        );
-      } else if (matchText == '*') {
-        addTextSpan(
-          matchText,
-          baseStyle.copyWith(fontWeight: FontWeight.bold),
-          addSpace: false,
-        );
-      }
-      lastIndex = match.end;
-    }
-
-    if (lastIndex < text.length) {
-      String remaining = text.substring(lastIndex); 
-      if (remaining.isNotEmpty)
-        addTextSpan(remaining, baseStyle, addSpace: false);
-    }
-
-    return spans;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -541,7 +422,12 @@ class TabContent extends ConsumerWidget {
           child: RichText(
             textAlign: TextAlign.justify,
             text: TextSpan(
-              children: _buildFormattedText(text.trim(), isDark, fontSize.toDouble()),
+             
+              children: parseHadithText(
+                text.trim(),
+                isDark,
+                fontSize.toDouble(),
+              ),
             ),
           ),
         ),

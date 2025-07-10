@@ -455,7 +455,7 @@ class SearchScreen extends ConsumerWidget {
         child: Padding(
           padding: EdgeInsets.all(screenSize.width * 0.05),
           child: Text(
-            'لا توجد نتائج مطابقة',
+            '',
             style: ArabicTextStyle(
               arabicFont: ArabicFont.avenirArabic,
               fontWeight: FontWeight.w900,

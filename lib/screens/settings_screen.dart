@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/setting_card.dart';
 import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
+import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -79,8 +80,8 @@ class SettingsScreen extends ConsumerWidget {
     }
 
     ref.read(lastTapTimeProvider.notifier).state = now;
-
-    if (tapCount.state >= 5) {
+    final AuthChecker _authChecker =  AuthChecker();
+    if (tapCount.state >= 5&&!_authChecker.isUserAuthenticated()) {
       ref.read(isLoadingProvider.notifier).state = false;
       tapCount.state = 0;
       Navigator.of(context).push(
@@ -458,7 +459,8 @@ class SettingsScreen extends ConsumerWidget {
                 loading: () => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                error: (error, stackTrace) => Center(child: Text('خطأ: $error')),
+                error: (error, stackTrace) => Center(child: Text('')),
+                //error: (error, stackTrace) => Center(child: Text('خطأ: $error')),
               ),
               SizedBox(height: screenHeight * 0.02),
             ],

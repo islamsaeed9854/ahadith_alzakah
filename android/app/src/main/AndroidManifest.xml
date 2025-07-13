@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-   package="com.example.ahadith_alzakah">
+   package="com.moussat.ahadithAlzakah">
 
 
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
@@ -14,7 +14,7 @@
 
     <application
         android:enableOnBackInvokedCallback="true"
-        android:label="أحاديث الزكاة"
+        android:label="موسوعة الزكاة"
         android:name="${applicationName}"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">

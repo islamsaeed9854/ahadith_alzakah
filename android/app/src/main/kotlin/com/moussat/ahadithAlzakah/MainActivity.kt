@@ -1,4 +1,4 @@
-package com.example.ahadith_alzakah
+package com.moussat.ahadithAlzakah
 
 import io.flutter.embedding.android.FlutterActivity
 

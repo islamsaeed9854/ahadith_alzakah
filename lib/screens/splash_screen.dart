@@ -81,7 +81,7 @@ class SplashScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              "ألزكاة",
+                              "الزكاة",
                               style: GoogleFonts.cairo(
                                 fontWeight: FontWeight.bold,
                                 fontSize: subFontSize,

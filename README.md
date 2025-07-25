@@ -7,7 +7,7 @@
 - **Structured Content**:
   - Organized into **Chapters** (Books)
   - Each chapter contains **Sections** (Categories)
-  - Each section contains numbered **Ahadith**
+  - Each section contains numbered **Ahadith** that have **Summary** **reference** and **analysis**
 - **Dark/Light Theme**: Switch between themes for comfortable reading.
 - **Search Functionality**: Easily find specific Hadiths by keywords.
 - **Cross-Platform**: Available for both **Android** and **iOS**.

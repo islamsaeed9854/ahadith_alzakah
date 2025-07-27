@@ -18,8 +18,6 @@
 |-------------------------------|-----------------------------------|-----------------------------------|
 | ![Home](screenshots/home.jpg) | ![Hadith](screenshots/hadith.jpg) | ![Search](screenshots/search.jpg) |
 
-> 📂 *Make sure to place your screenshots inside a `screenshots/` folder in the root of your repo.*
-
 ### Android
 Available soon on Google Play
 

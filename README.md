@@ -7,13 +7,21 @@
 - **Structured Content**:
   - Organized into **Chapters** (Books)
   - Each chapter contains **Sections** (Categories)
-  - Each section contains numbered **Ahadith** that have **Summary** **reference** and **analysis**
+  - Each section contains numbered **Ahadith** that have **Summary**, **Reference**, and **Analysis**
 - **Dark/Light Theme**: Switch between themes for comfortable reading.
 - **Search Functionality**: Easily find specific Hadiths by keywords.
 - **Cross-Platform**: Available for both **Android** and **iOS**.
 
+## Screenshots 📸
+
+| Home                          | Hadith View                       | Search                            |
+|-------------------------------|-----------------------------------|-----------------------------------|
+| ![Home](screenshots/home.jpg) | ![Hadith](screenshots/hadith.jpg) | ![Search](screenshots/search.jpg) |
+
+> 📂 *Make sure to place your screenshots inside a `screenshots/` folder in the root of your repo.*
+
 ### Android
-Avaliable soon on the Google play
+Available soon on Google Play
 
 ### iOS
-Available soon on the App Store
+Available on the App Store

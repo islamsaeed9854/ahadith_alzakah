@@ -13,7 +13,7 @@ import '../../../core/utils.dart';
 class DataAdder {
   final AuthChecker _authChecker;
   final DataUploader _dataUploader;
-  final VersionUploader _versionUploader;
+  //final VersionUploader _versionUploader;
   final LocalJsonHandler _jsonHandler;
   final LocalVersionHandler _versionHandler;
   final HadithGrouper _grouper;
@@ -22,7 +22,7 @@ class DataAdder {
   DataAdder(this.ref)
     : _authChecker = AuthChecker(),
       _dataUploader = DataUploader(),
-      _versionUploader = VersionUploader(),
+    //  _versionUploader = VersionUploader(),
       _jsonHandler = LocalJsonHandler(),
       _versionHandler = LocalVersionHandler(),
       _grouper = HadithGrouper();
@@ -189,7 +189,7 @@ class DataAdder {
       final jsonMap = {'version': version, 'chapters': grouped};
 
       await _dataUploader.uploadData(jsonMap, context);
-      await _versionUploader.uploadVersion(version, context, '');
+      //await _versionUploader.uploadVersion(version, context, '');
 
       await _jsonHandler.saveHadithJson(jsonMap);
       await _versionHandler.setLocalVersion(version);
@@ -199,7 +199,7 @@ class DataAdder {
           DataLoader(); 
       await dataLoader.updateJsonData(stagedHadiths, version);
 
-      // تحديث الحالة
+    
       updateState(stagedHadiths);
 
       if (context.mounted) {

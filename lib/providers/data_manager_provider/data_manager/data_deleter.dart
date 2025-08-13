@@ -12,7 +12,7 @@ import '../../../core/utils.dart';
 class DataDeleter {
   final AuthChecker _authChecker;
   final DataUploader _dataUploader;
-  final VersionUploader _versionUploader;
+  //final VersionUploader _versionUploader;
   final LocalJsonHandler _jsonHandler;
   final LocalVersionHandler _versionHandler;
   final HadithGrouper _grouper;
@@ -20,7 +20,7 @@ class DataDeleter {
   DataDeleter()
     : _authChecker = AuthChecker(),
       _dataUploader = DataUploader(),
-      _versionUploader = VersionUploader(),
+      //_versionUploader = VersionUploader(),
       _jsonHandler = LocalJsonHandler(),
       _versionHandler = LocalVersionHandler(),
       _grouper = HadithGrouper();
@@ -85,11 +85,11 @@ class DataDeleter {
       final jsonMap = {'version': version, 'chapters': grouped};
 
       await _dataUploader.uploadData(jsonMap, context);
-      await _versionUploader.uploadVersion(
-        version,
-        context,
-        '🗑️ تم الحذف بنجاح',
-      );
+      // await _versionUploader.uploadVersion(
+      //   version,
+      //   context,
+      //   '🗑️ تم الحذف بنجاح',
+      // );
       updateState(stagedHadiths);
       await _jsonHandler.saveHadithJson(jsonMap);
       await _versionHandler.setLocalVersion(version);

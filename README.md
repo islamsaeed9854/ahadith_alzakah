@@ -1,16 +1,25 @@
-# ahadith_alzakah
+# Ahadith Al-Zakah - Flutter App 📱
 
-A new Flutter project.
+**Ahadith Al-Zakah** is the first mobile encyclopedia, to our knowledge, that includes all the Hadiths related to *Zakat* (charitable giving in Islam). The Hadiths are critically studied and thoroughly verified using a detailed and rigorous academic methodology.
 
-## Getting Started
+## Features ✨
+- **Complete Collection**: All authenticated Hadiths about Zakat in one place.
+- **Structured Content**:
+  - Organized into **Chapters** (Books)
+  - Each chapter contains **Sections** (Categories)
+  - Each section contains numbered **Ahadith** that have **Summary**, **Reference**, and **Analysis**
+- **Dark/Light Theme**: Switch between themes for comfortable reading.
+- **Search Functionality**: Easily find specific Hadiths by keywords.
+- **Cross-Platform**: Available for both **Android** and **iOS**.
 
-This project is a starting point for a Flutter application.
+## Screenshots 📸
 
-A few resources to get you started if this is your first Flutter project:
+| Home                          | Hadith View                       | Search                            |
+|-------------------------------|-----------------------------------|-----------------------------------|
+| ![Home](screenshots/home.jpg) | ![Hadith](screenshots/hadith.jpg) | ![Search](screenshots/search.jpg) |
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Android
+Available soon on Google Play
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### iOS
+Available on the App Store

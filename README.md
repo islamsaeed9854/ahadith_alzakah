@@ -19,7 +19,7 @@
 | ![Home](screenshots/home.jpg) | ![Hadith](screenshots/hadith.jpg) | ![Search](screenshots/search.jpg) |
 
 ### Android
-Available soon on Google Play
+Available on Google Play
 
 ### iOS
 Available on the App Store

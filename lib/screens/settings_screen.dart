@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'dart:developer';
 import 'package:ahadith_alzakah/screens/login_screen.dart';
 import 'package:ahadith_alzakah/screens/remove_hadith.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +19,7 @@ import '../widgets/setting_card.dart';
 import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
+
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -26,6 +30,10 @@ final authStateProvider = StreamProvider<bool>((ref) {
 final notificationsEnabledProvider = StateProvider<bool>((ref) {
   return false;
 });
+
+// Providers for scheduled notification time (hour and minute)
+final notificationHourProvider = StateProvider<int>((ref) => 12);
+final notificationMinuteProvider = StateProvider<int>((ref) => 0);
 
 // Providers to manage tap count and timing
 final tapCountProvider = StateProvider<int>((ref) => 0);
@@ -46,6 +54,12 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
   // Load notifications enabled state
   bool isEnabled = prefs.getBool('notifications_enabled') ?? false;
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
+
+  // Load scheduled notification time (hour/minute)
+  final hour = prefs.getInt('daily_notification_hour') ?? 12;
+  final minute = prefs.getInt('daily_notification_minute') ?? 0;
+  ref.read(notificationHourProvider.notifier).state = hour;
+  ref.read(notificationMinuteProvider.notifier).state = minute;
 
   // Configure notifications based on state
   if (isEnabled) {
@@ -95,6 +109,7 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -204,43 +219,73 @@ class SettingsScreen extends ConsumerWidget {
     final prefs = await SharedPreferences.getInstance();
 
     if (value) {
-      bool hasPermission =
-          await notificationService.hasNotificationPermission();
-      if (!hasPermission) {
-        hasPermission =
-            await notificationService.requestNotificationPermission();
+      try {
+        bool hasPermission =
+            await notificationService.hasNotificationPermission();
         if (!hasPermission) {
-          ref.read(notificationsEnabledProvider.notifier).state = false;
-          await prefs.setBool('notifications_enabled', false);
-          showSingleSnackBar(
-            context,
-            message:
-                'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
-            backgroundColor: Colors.redAccent,
-            duration: const Duration(seconds: 3),
-          );
-          return;
+          hasPermission =
+              await notificationService.requestNotificationPermission();
+          if (!hasPermission && (!kIsWeb && !Platform.isWindows)) {
+            ref.read(notificationsEnabledProvider.notifier).state = false;
+            await prefs.setBool('notifications_enabled', false);
+            showSingleSnackBar(
+              context,
+              message:
+                  'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 3),
+            );
+            return;
+          }
         }
+
+        // Update UI state and preferences early so the switch updates immediately
+        ref.read(notificationsEnabledProvider.notifier).state = true;
+        await prefs.setBool('notifications_enabled', true);
+
+        // Schedule notification (may perform async work)
+        await notificationService.scheduleDailyHadithNotification();
+
+        showSingleSnackBar(
+          context,
+          message: 'تم تفعيل الإشعارات اليومية',
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        );
+      } catch (e) {
+        // Revert UI state on error
+        ref.read(notificationsEnabledProvider.notifier).state = false;
+        await prefs.setBool('notifications_enabled', false);
+        showSingleSnackBar(
+          context,
+          message: 'فشل تفعيل الإشعارات: $e',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
       }
-      await notificationService.scheduleDailyHadithNotification();
-      ref.read(notificationsEnabledProvider.notifier).state = true;
-      await prefs.setBool('notifications_enabled', true);
-      showSingleSnackBar(
-        context,
-        message: 'تم تفعيل الإشعارات اليومية',
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      );
     } else {
-      await notificationService.cancelNotifications();
-      ref.read(notificationsEnabledProvider.notifier).state = false;
-      await prefs.setBool('notifications_enabled', false);
-      showSingleSnackBar(
-        context,
-        message: 'تم إلغاء الإشعارات اليومية',
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      );
+      try {
+        // Update UI state and prefs first to avoid blocking the UI
+        ref.read(notificationsEnabledProvider.notifier).state = false;
+        await prefs.setBool('notifications_enabled', false);
+
+        await notificationService.cancelNotifications();
+
+        showSingleSnackBar(
+          context,
+          message: 'تم إلغاء الإشعارات اليومية',
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        );
+      } catch (e) {
+        // If cancel failed, inform the user and keep state consistent
+        showSingleSnackBar(
+          context,
+          message: 'فشل إلغاء الإشعارات: $e',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        );
+      }
     }
   }
 
@@ -350,6 +395,81 @@ class SettingsScreen extends ConsumerWidget {
                   onChanged: (value) => _toggleNotifications(value, ref, context),
                   activeColor: const Color(0xff977c55),
                   inactiveTrackColor: Colors.grey[300],
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.015),
+              // Notification time picker and test button
+              buildSettingCard(
+                context,
+                label: 'وقت الإشعار اليومي',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final hour = ref.watch(notificationHourProvider);
+                        final minute = ref.watch(notificationMinuteProvider);
+                        final timeText = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+                        return Text(
+                          timeText,
+                          style: ArabicTextStyle(
+                                    arabicFont: ArabicFont.avenirArabic,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.brown.shade800,
+                                fontSize: screenWidth * 0.045,
+                              ),
+                        );
+                      },
+                    ),
+                    SizedBox(width: screenWidth * 0.04),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(hour: ref.read(notificationHourProvider), minute: ref.read(notificationMinuteProvider)),
+                        );
+                        if (picked != null) {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setInt('daily_notification_hour', picked.hour);
+                          await prefs.setInt('daily_notification_minute', picked.minute);
+                          ref.read(notificationHourProvider.notifier).state = picked.hour;
+                          ref.read(notificationMinuteProvider.notifier).state = picked.minute;
+
+                          // Reschedule notifications
+                          final notificationService = ref.read(notificationServiceProvider);
+                          await notificationService.scheduleDailyHadithNotification();
+
+                          showSingleSnackBar(
+                            context,
+                            message: 'تم حفظ وقت الإشعار: ${picked.format(context)}',
+                            backgroundColor: Colors.green,
+                            duration: const Duration(seconds: 2),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff977c55),
+                      ),
+                      child: const Text('اختر وقت'),
+                    ),
+                    SizedBox(width: screenWidth * 0.03),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final notificationService = ref.read(notificationServiceProvider);
+                        await notificationService.sendImmediateNotificationTest();
+                        showSingleSnackBar(
+                          context,
+                          message: 'تم إرسال إشعار تجريبي',
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 2),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueGrey,
+                      ),
+                      child: const Text('إرسال تجريبي'),
+                    ),
+                  ],
                 ),
               ),
               authState.when(

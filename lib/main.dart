@@ -16,6 +16,7 @@ import 'screens/chapters_screen.dart';
 import 'providers/notification_service_provider.dart';
 import 'data/models/hadith.dart';
 import 'notification_service.dart';
+import 'core/single_instance.dart';
 import 'core/secure_supabase_storage.dart';
 import 'package:flutter/services.dart';
 
@@ -31,6 +32,49 @@ const supabaseAnonKey = String.fromEnvironment(
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/// Standalone entry point for scheduler tasks.
+/// This runs a minimal app instance to show a notification and then exits.
+@pragma('vm:entry-point')
+void notificationMain() async {
+  // Required initialization for background tasks.
+  WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('notificationMain: Starting background task initialization');
+  
+  // Setup local notifications for Windows.
+  if (Platform.isWindows) {
+    debugPrint('notificationMain: Setting up local notifier for Windows');
+    await localNotifier.setup(
+      appName: 'أحاديث الزكاة',
+      shortcutPolicy: ShortcutPolicy.requireCreate,
+    );
+  }
+  
+  // Initialize providers in a new, separate scope.
+  final container = ProviderContainer();
+  debugPrint('notificationMain: Initializing Supabase');
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    authOptions: FlutterAuthClientOptions(
+      localStorage: SecureSupabaseStorage(),
+    ),
+  );
+  
+  final notificationService = container.read(notificationServiceProvider);
+  debugPrint('notificationMain: Handling launch from scheduler');
+  await notificationService.handleLaunchFromScheduler();
+  
+  // Instead of exiting, keep the app running in the background on Windows
+  if (Platform.isWindows) {
+    debugPrint('notificationMain: Keeping app running in background');
+    await windowManager.hide(); // Hide the window instead of exiting
+    await windowManager.setSkipTaskbar(true); // Remove from taskbar
+  } else {
+    debugPrint('notificationMain: Exiting after scheduler task');
+    exit(0); // Exit only on non-Windows platforms
+  }
+}
+
 class NotificationController {
   @pragma('vm:entry-point')
   static Future<void> onActionReceivedMethod(
@@ -38,7 +82,13 @@ class NotificationController {
   ) async {
     debugPrint('Notification action received at ${DateTime.now()}');
 
-    // إضافة delay للتأكد من أن التطبيق جاهز
+    // When a notification is clicked, bring the main app to the front.
+    if (Platform.isWindows) {
+      final message = json.encode({'args': ['--show-window-from-notification']});
+      await SingleInstance.sendMessage(message);
+    }
+
+    // A delay to allow the main instance to respond.
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (navigatorKey.currentState != null &&
@@ -60,10 +110,9 @@ class NotificationController {
       container.read(innerBooksScreenProvider.notifier).state = null;
       container.read(navigationProvider.notifier).changeTab(1);
       debugPrint('Set navigationProvider to index 1');
-      
-      // استخدام delay إضافي قبل التنقل
+
       await Future.delayed(const Duration(milliseconds: 200));
-      
+
       navigatorKey.currentState!.pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => const HomeScreen(showHadithDetails: true),
@@ -71,22 +120,15 @@ class NotificationController {
         (Route<dynamic> route) => false,
       );
       debugPrint('Navigated to HomeScreen with showHadithDetails: true');
-    } else {
-      debugPrint('Navigator state or context is null. Retrying in 1 second...');
-      // إعادة المحاولة بعد ثانية واحدة
-      await Future.delayed(const Duration(seconds: 1));
-      if (navigatorKey.currentState != null && navigatorKey.currentContext != null) {
-        await onActionReceivedMethod(receivedAction);
-      } else {
-        debugPrint('Navigator still not ready. The app may need more time to initialize.');
-      }
     }
   }
 }
 
 Future<void> _initializeApp() async {
-  if (supabaseUrl == 'URL_NOT_FOUND' || supabaseAnonKey == 'ANON_KEY_NOT_FOUND') {
-    throw Exception('Supabase URL/Key not provided. Use --dart-define to provide them.');
+  if (supabaseUrl == 'URL_NOT_FOUND' ||
+      supabaseAnonKey == 'ANON_KEY_NOT_FOUND') {
+    throw Exception(
+        'Supabase URL/Key not provided. Use --dart-define to provide them.');
   }
 
   await Supabase.initialize(
@@ -99,47 +141,92 @@ Future<void> _initializeApp() async {
 }
 
 ReceivedAction? _initialAction;
-bool _launchedForDailyHadith = false;
 
-void main() async {
+void main(List<String> args) async {
+  debugPrint('main: Application started with args: $args');
   WidgetsFlutterBinding.ensureInitialized();
   
+  bool hideOnStartup = Platform.isWindows && args.contains('--startup');
+  debugPrint('main: hideOnStartup set to $hideOnStartup');
+
+  if (Platform.isWindows && args.contains('--show-daily-hadith-scheduler')) {
+    debugPrint('main: Detected scheduler launch, running notificationMain');
+    notificationMain();
+    return;
+  }
+
   if (Platform.isWindows) {
+    debugPrint('main: Initializing SingleInstance server');
+    final becamePrimary = await SingleInstance.startServer();
+    if (!becamePrimary) {
+      debugPrint('main: Another instance is primary, sending message and exiting');
+      final message = json.encode({'args': args});
+      await SingleInstance.sendMessage(message);
+      return;
+    }
+    debugPrint('main: Became primary instance, setting up message listener');
+    SingleInstance.messages.listen((msg) async {
+      try {
+        final Map<String, dynamic> data = json.decode(msg) as Map<String, dynamic>;
+        if (data.containsKey('args')) {
+          final List<dynamic> receivedArgs = data['args'] as List<dynamic>;
+          if (receivedArgs.contains('--show-window-from-notification')) {
+            debugPrint('main: Received show-window-from-notification command');
+            await windowManager.show();
+            await windowManager.focus();
+          }
+        }
+      } catch (_) {
+        debugPrint('main: Error decoding message');
+      }
+    });
+  }
+
+  if (Platform.isWindows) {
+    debugPrint('main: Setting up local notifier');
     await localNotifier.setup(
       appName: 'أحاديث الزكاة',
       shortcutPolicy: ShortcutPolicy.requireCreate,
     );
+    debugPrint('main: Initializing window manager');
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(800, 900),
+      minimumSize: Size(550, 750),
+      center: true,
+      title: 'موسوعة أحاديث الزكاة',
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      debugPrint('main: Window ready to show, hideOnStartup is $hideOnStartup');
+      if (!hideOnStartup) {
+        await windowManager.show();
+        await windowManager.focus();
+      } else {
+        await windowManager.hide(); // Hide on startup
+        await windowManager.setSkipTaskbar(true); // Remove from taskbar
+      }
+    });
     await windowManager.ensureInitialized();
     windowManager.setPreventClose(true);
+    debugPrint('main: Window manager initialized and preventClose set');
   }
-  
-  // Detect scheduler launch flag and extract hadith data
-  if (Platform.isWindows) {
-    final args = Platform.executableArguments;
-    if (args.contains('--show-daily-hadith')) {
-  _launchedForDailyHadith = true;
-    }
-  }
-  
+
   await _initializeApp();
-  
+  debugPrint('main: Supabase initialized');
+
   if (!Platform.isWindows) {
-    _initialAction = await AwesomeNotifications().getInitialNotificationAction(
-      removeFromActionEvents: false
+    _initialAction =
+        await AwesomeNotifications().getInitialNotificationAction(
+      removeFromActionEvents: false,
     );
   }
-  
-  if (_initialAction != null) {
-    debugPrint('App was launched by a notification action.');
-  }
-  
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -150,7 +237,8 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener {
+class _MyAppState extends ConsumerState<MyApp>
+    with WindowListener, TrayListener {
   @override
   void initState() {
     super.initState();
@@ -160,19 +248,10 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
       _initTray();
     }
     ref.read(notificationServiceProvider).init();
-    
-    if (_launchedForDailyHadith) {
-      // Call the handler after a longer delay so providers are ready
-      Future.delayed(const Duration(milliseconds: 800), () {
-        ref.read(notificationServiceProvider).handleLaunchFromScheduler();
-        _launchedForDailyHadith = false;
-      
-      });
-    }
-    
+    debugPrint('MyAppState: Notification service initialized');
+
     if (_initialAction != null) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        debugPrint('Handling initial notification action after the first frame.');
         NotificationController.onActionReceivedMethod(_initialAction!);
         _initialAction = null;
       });
@@ -198,6 +277,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
     );
     await trayManager.setContextMenu(menu);
     await trayManager.setToolTip('موسوعة أحاديث الزكاة');
+    debugPrint('MyAppState: Tray initialized');
   }
 
   @override
@@ -229,9 +309,9 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
           ),
           child: DefaultTextStyle(
             style: DefaultTextStyle.of(context).style.copyWith(
-              fontSize: fontSize.toDouble(),
-              fontFamily: 'Roboto',
-            ),
+                  fontSize: fontSize.toDouble(),
+                  fontFamily: 'Roboto',
+                ),
             child: child!,
           ),
         );

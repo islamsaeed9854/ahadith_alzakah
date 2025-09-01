@@ -4,7 +4,7 @@ import 'package:arabic_font/arabic_font.dart';
 class ChapterCard extends StatelessWidget {
   final String title;
   final String text;
-  final bool isLandscape;
+  final double screenWidth; //  تم التغيير من isLandscape إلى screenWidth
   final VoidCallback? onTap;
   final bool isExpanded;
 
@@ -12,10 +12,26 @@ class ChapterCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.text,
-    required this.isLandscape,
+    required this.screenWidth, // مطلوب الآن
     this.onTap,
     this.isExpanded = false,
   });
+
+  // دالة مساعدة لتحديد حجم خط العنوان بناءً على عرض الشاشة
+  double _getTitleFontSize(double width) {
+    if (width > 1800) return 22.0; // كبير جدًا
+    if (width > 1200) return 20.0; // كبير
+    if (width > 600) return 19.0;  // متوسط
+    return 18.0; // صغير
+  }
+
+  // دالة مساعدة لتحديد حجم خط النص بناءً على عرض الشاشة
+  double _getTextFontSize(double width) {
+    if (width > 1800) return 17.0; // كبير جدًا
+    if (width > 1200) return 16.0; // كبير
+    if (width > 600) return 15.0;  // متوسط
+    return 14.0; // صغير
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +42,9 @@ class ChapterCard extends StatelessWidget {
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            // تم إزالة الهامش الأفقي ليتم التحكم به من الشاشة الرئيسية
+            margin: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
               color: const Color.fromRGBO(255, 255, 255, .8),
               borderRadius: BorderRadius.circular(33),
@@ -52,29 +69,28 @@ class ChapterCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           title,
                           style: ArabicTextStyle(
                             arabicFont: ArabicFont.cairo,
-                            fontSize: isLandscape ? 20 : 18,
+                            fontSize: _getTitleFontSize(screenWidth), // حجم خط متجاوب
                             fontWeight: FontWeight.bold,
                             color: const Color(0xffe6a345),
                           ),
                         ),
                       ),
-                      //const SizedBox(height: 8),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           text,
                           style: ArabicTextStyle(
                             arabicFont: ArabicFont.avenirArabic,
-                        fontWeight: FontWeight.w900,
-                            fontSize: isLandscape ? 16 : 14,
+                            fontWeight: FontWeight.w900,
+                            fontSize: _getTextFontSize(screenWidth), // حجم خط متجاوب
                             color: Colors.black87,
                           ),
-                          maxLines: isLandscape ? 3 : 2,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -84,7 +100,7 @@ class ChapterCard extends StatelessWidget {
                 Icon(
                   isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                   color: Colors.black,
-                  size: 24,
+                  size: 28,
                 ),
               ],
             ),

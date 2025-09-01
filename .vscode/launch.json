@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run with Environment Variables",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define=SUPABASE_URL=https://iccvwmacddhakaypawvn.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljY3Z3bWFjZGRoYWtheXBhd3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyODYzMzUsImV4cCI6MjA2Njg2MjMzNX0.ucpKV7V0Z57VdvDAdUVEvIC4X4F9NTjtiEa4NZev-nQ",
+                "--dart-define=DATA_ZIP_URL=https://iccvwmacddhakaypawvn.supabase.co/storage/v1/object/sign/compreesed.files/ahadith_alzakah_data/ahadith_zakah.zip?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYWM2OGIxNC02ZjE0LTQwMDAtOGIyOS1mNjUxMzYwZTcxYTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wcmVlc2VkLmZpbGVzL2FoYWRpdGhfYWx6YWthaF9kYXRhL2FoYWRpdGhfemFrYWguemlwIiwiaWF0IjoxNzU0NzQwNzI2LCJleHAiOjk2MDE3NTQ3MzExMjZ9.L_-WGzw50zhU-JOuKAKyEclU59r3VhPqOjOFguYuAV8",
+                "--dart-define=VERSION_URL=https://iccvwmacddhakaypawvn.supabase.co/storage/v1/object/sign/compreesed.files/ahadith_alzakah_data/version.json?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYWM2OGIxNC02ZjE0LTQwMDAtOGIyOS1mNjUxMzYwZTcxYTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wcmVlc2VkLmZpbGVzL2FoYWRpdGhfYWx6YWthaF9kYXRhL3ZlcnNpb24uanNvbiIsImlhdCI6MTc1NDc0MzUzNiwiZXhwIjo5NjAwMTc1NDczMzkzNn0.p0S7FWlEQ7dwq48Uo9spvs3AfglToqVWKFMnrjM2ZXQ"
+            ]
+        }
+    ]
+}

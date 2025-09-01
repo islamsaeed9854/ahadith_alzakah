@@ -15,16 +15,16 @@ dependencies:
   supabase_flutter: ^2.9.0
   flutter_secure_storage: ^9.2.4
   connectivity_plus: ^6.1.4
-  awesome_notifications: ^0.10.1
+  awesome_notifications: 
   number_to_word_arabic: ^0.0.8
   archive: ^4.0.7
   
   # desktop-specific packages
-  local_notifier: ^0.1.6
-  tray_manager: ^0.2.1
-  window_manager: ^0.3.7
-  path_provider: ^2.0.11
-  win32: ^5.0.0
+  local_notifier: 
+  tray_manager: 
+  window_manager: 
+  path_provider: 
+  win32: 
   
 
 dev_dependencies:

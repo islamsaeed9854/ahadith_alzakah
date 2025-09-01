@@ -20,6 +20,19 @@ import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
 
+// ====== دوال مساعدة للتصميم المتجاوب ======
+double _getMaxContentWidth(double screenWidth) {
+  if (screenWidth > 800) return 700; // للشاشات الكبيرة جدًا
+  return screenWidth; // للشاشات الصغيرة والمتوسطة
+}
+
+double _getTitleFontSize(double screenWidth) {
+  if (screenWidth > 1200) return 42.0;
+  if (screenWidth > 600) return 38.0;
+  return 34.0;
+}
+// ===========================================
+
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -31,43 +44,30 @@ final notificationsEnabledProvider = StateProvider<bool>((ref) {
   return false;
 });
 
-// Providers for scheduled notification time (hour and minute)
 final notificationHourProvider = StateProvider<int>((ref) => 12);
 final notificationMinuteProvider = StateProvider<int>((ref) => 0);
 
-// Providers to manage tap count and timing
 final tapCountProvider = StateProvider<int>((ref) => 0);
 final lastTapTimeProvider = StateProvider<DateTime?>((ref) => null);
 
 final settingsInitializerProvider = FutureProvider<void>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   final notificationService = ref.read(notificationServiceProvider);
-
-  // Load font size
   final fontSize = prefs.getInt('font_size') ?? 20;
   ref.read(fontSizeProvider.notifier).state = fontSize;
-
-  // Load dark mode
   final isDarkMode = prefs.getBool('dark_mode') ?? false;
   ref.read(isDarkModeProvider.notifier).state = isDarkMode;
-
-  // Load notifications enabled state
   bool isEnabled = prefs.getBool('notifications_enabled') ?? false;
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
-
-  // Load scheduled notification time (hour/minute)
   final hour = prefs.getInt('daily_notification_hour') ?? 12;
   final minute = prefs.getInt('daily_notification_minute') ?? 0;
   ref.read(notificationHourProvider.notifier).state = hour;
   ref.read(notificationMinuteProvider.notifier).state = minute;
-
-  // Configure notifications based on state
   if (isEnabled) {
     bool hasPermission = await notificationService.hasNotificationPermission();
     if (hasPermission) {
       await notificationService.scheduleDailyHadithNotification();
     } else {
-      // If permission is revoked after initial approval, disable notifications
       await prefs.setBool('notifications_enabled', false);
       ref.read(notificationsEnabledProvider.notifier).state = false;
       await notificationService.cancelNotifications();
@@ -80,22 +80,19 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  // Handle tapping the title to trigger login screen after 5 taps
   void _handleTitleTap(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final lastTapTime = ref.read(lastTapTimeProvider);
     final tapCount = ref.read(tapCountProvider.notifier);
-
     if (lastTapTime == null ||
         now.difference(lastTapTime) > const Duration(seconds: 2)) {
       tapCount.state = 1;
     } else {
       tapCount.state++;
     }
-
     ref.read(lastTapTimeProvider.notifier).state = now;
-    final AuthChecker _authChecker =  AuthChecker();
-    if (tapCount.state >= 5&&!_authChecker.isUserAuthenticated()) {
+    final AuthChecker _authChecker = AuthChecker();
+    if (tapCount.state >= 5 && !_authChecker.isUserAuthenticated()) {
       ref.read(isLoadingProvider.notifier).state = false;
       tapCount.state = 0;
       Navigator.of(context).push(
@@ -104,12 +101,10 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  // Show logout confirmation dialog
   Future<void> _showLogoutConfirmationDialog(
     BuildContext context,
     WidgetRef ref,
   ) async {
-    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -117,53 +112,44 @@ class SettingsScreen extends ConsumerWidget {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             backgroundColor: const Color.fromRGBO(255, 255, 255, 0.9),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(
               'تأكيد تسجيل الخروج',
               style: GoogleFonts.cairo(
-                color: Colors.brown.shade800,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+                  color: Colors.brown.shade800,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20),
             ),
             content: Text(
               'هل أنت متأكد أنك تريد تسجيل الخروج؟',
-              style:ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-                        fontWeight: FontWeight.w900,
-                color: Colors.brown.shade600,
-                fontSize: 16,
-              ),
+              style: ArabicTextStyle(
+                  arabicFont: ArabicFont.avenirArabic,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.brown.shade600,
+                  fontSize: 16),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'إلغاء',
-                  style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
+                child: Text('إلغاء',
+                    style: ArabicTextStyle(
+                        arabicFont: ArabicFont.avenirArabic,
                         fontWeight: FontWeight.w900,
-                    color: Colors.brown.shade400,
-                    fontSize: 16,
-                  ),
-                ),
+                        color: Colors.brown.shade400,
+                        fontSize: 16)),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   _logout(context, ref);
                 },
-                child: Text(
-                  'تسجيل الخروج',
-                  style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-                    color: Colors.redAccent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Text('تسجيل الخروج',
+                    style: ArabicTextStyle(
+                        arabicFont: ArabicFont.avenirArabic,
+                        color: Colors.redAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -172,28 +158,22 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // Handle logout
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final supabase = ref.watch(supabaseProvider);
     try {
       await supabase.auth.signOut();
-      showSingleSnackBar(
-        context,
-        message: 'تم تسجيل الخروج بنجاح!',
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      );
+      showSingleSnackBar(context,
+          message: 'تم تسجيل الخروج بنجاح!',
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2));
       ref.read(navigationProvider.notifier).changeTab(0);
     } catch (e) {
-      showSingleSnackBar(
-        context,
-        message:
-            e.toString().contains('network')
-                ? 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة'
-                : 'حدث خطأ أثناء تسجيل الخروج: $e',
-        backgroundColor: Colors.redAccent,
-        duration: const Duration(seconds: 3),
-      );
+      showSingleSnackBar(context,
+          message: e.toString().contains('network')
+              ? 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة'
+              : 'حدث خطأ أثناء تسجيل الخروج: $e',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3));
     }
   }
 
@@ -203,7 +183,6 @@ class SettingsScreen extends ConsumerWidget {
     await prefs.setInt('font_size', newSize);
   }
 
-  // Toggle dark mode and persist in SharedPreferences
   Future<void> _toggleDarkMode(bool value, WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
     ref.read(isDarkModeProvider.notifier).state = value;
@@ -211,13 +190,9 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _toggleNotifications(
-    bool value,
-    WidgetRef ref,
-    BuildContext context,
-  ) async {
+      bool value, WidgetRef ref, BuildContext context) async {
     final notificationService = ref.read(notificationServiceProvider);
     final prefs = await SharedPreferences.getInstance();
-
     if (value) {
       try {
         bool hasPermission =
@@ -228,63 +203,43 @@ class SettingsScreen extends ConsumerWidget {
           if (!hasPermission && (!kIsWeb && !Platform.isWindows)) {
             ref.read(notificationsEnabledProvider.notifier).state = false;
             await prefs.setBool('notifications_enabled', false);
-            showSingleSnackBar(
-              context,
-              message:
-                  'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
-              backgroundColor: Colors.redAccent,
-              duration: const Duration(seconds: 3),
-            );
+            showSingleSnackBar(context,
+                message:
+                    'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 3));
             return;
           }
         }
-
-        // Update UI state and preferences early so the switch updates immediately
         ref.read(notificationsEnabledProvider.notifier).state = true;
         await prefs.setBool('notifications_enabled', true);
-
-        // Schedule notification (may perform async work)
         await notificationService.scheduleDailyHadithNotification();
-
-        showSingleSnackBar(
-          context,
-          message: 'تم تفعيل الإشعارات اليومية',
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        );
+        showSingleSnackBar(context,
+            message: 'تم تفعيل الإشعارات اليومية',
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2));
       } catch (e) {
-        // Revert UI state on error
         ref.read(notificationsEnabledProvider.notifier).state = false;
         await prefs.setBool('notifications_enabled', false);
-        showSingleSnackBar(
-          context,
-          message: 'فشل تفعيل الإشعارات: $e',
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        );
+        showSingleSnackBar(context,
+            message: 'فشل تفعيل الإشعارات: $e',
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 3));
       }
     } else {
       try {
-        // Update UI state and prefs first to avoid blocking the UI
         ref.read(notificationsEnabledProvider.notifier).state = false;
         await prefs.setBool('notifications_enabled', false);
-
         await notificationService.cancelNotifications();
-
-        showSingleSnackBar(
-          context,
-          message: 'تم إلغاء الإشعارات اليومية',
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        );
+        showSingleSnackBar(context,
+            message: 'تم إلغاء الإشعارات اليومية',
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2));
       } catch (e) {
-        // If cancel failed, inform the user and keep state consistent
-        showSingleSnackBar(
-          context,
-          message: 'فشل إلغاء الإشعارات: $e',
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        );
+        showSingleSnackBar(context,
+            message: 'فشل إلغاء الإشعارات: $e',
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 3));
       }
     }
   }
@@ -292,298 +247,203 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(settingsInitializerProvider);
-    final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width;
-    final screenHeight = screenSize.height;
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final contentWidth = _getMaxContentWidth(screenWidth);
+
     final fontSize = ref.watch(fontSizeProvider);
     final isDarkMode = ref.watch(isDarkModeProvider);
     final isNotificationsEnabled = ref.watch(notificationsEnabledProvider);
     final authState = ref.watch(authStateProvider);
-    final double padding = screenWidth * 0.04;
-
-    final double titleFontSize = isLandscape ? screenWidth * 0.03 : screenWidth * 0.09;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(padding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Center(
+          child: SizedBox(
+            width: contentWidth,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth > 800 ? 0 : 20,
+                vertical: 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(
-                    child: GestureDetector(
-                      onTap: () => _handleTitleTap(context, ref),
-                      child: Text(
-                        'الاعدادات',
-                        style: GoogleFonts.cairo(
-                          fontWeight: FontWeight.bold,
-                          fontSize: titleFontSize,
-                          color: const Color(0xfffcead0),
-                          shadows: [
-                            Shadow(
-                              blurRadius: 4,
-                              color: Colors.black.withOpacity(0.3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: () => _handleTitleTap(context, ref),
+                          child: Text(
+                            'الاعدادات',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              fontSize: _getTitleFontSize(screenWidth),
+                              color: const Color(0xfffcead0),
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 4,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                      TextApp.backButton(ref),
+                    ],
                   ),
-                  TextApp.backButton(ref),
+                  const SizedBox(height: 24),
+                  buildSettingCard(context,
+                      label: 'حجم الخط',
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove, color: Color(0xff977c55)),
+                            onPressed: fontSize > 10 ? () => _updateFontSize(fontSize - 1, ref) : null,
+                          ),
+                          Text(fontSize.toStringAsFixed(0)),
+                          IconButton(
+                            icon: const Icon(Icons.add, color: Color(0xff977c55)),
+                            onPressed: fontSize < 30 ? () => _updateFontSize(fontSize + 1, ref) : null,
+                          ),
+                        ],
+                      )),
+                  buildSettingCard(context,
+                      label: 'القراءة الليلية',
+                      child: Switch.adaptive(
+                        value: isDarkMode,
+                        onChanged: (value) => _toggleDarkMode(value, ref),
+                        activeColor: const Color(0xff977c55),
+                        inactiveTrackColor: Colors.grey[300],
+                      )),
+                  buildSettingCard(context,
+                      label: 'الإشعارات اليومية',
+                      child: Switch.adaptive(
+                        value: isNotificationsEnabled,
+                        onChanged: (value) =>
+                            _toggleNotifications(value, ref, context),
+                        activeColor: const Color(0xff977c55),
+                        inactiveTrackColor: Colors.grey[300],
+                      )),
+                  buildSettingCard(context,
+                      label: 'وقت الإشعار اليومي',
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final hour = ref.watch(notificationHourProvider);
+                              final minute = ref.watch(notificationMinuteProvider);
+                              final timeText = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+                              return Text(timeText);
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay(
+                                    hour: ref.read(notificationHourProvider),
+                                    minute: ref.read(notificationMinuteProvider)),
+                              );
+                              if (picked != null) {
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setInt('daily_notification_hour', picked.hour);
+                                await prefs.setInt('daily_notification_minute', picked.minute);
+                                ref.read(notificationHourProvider.notifier).state = picked.hour;
+                                ref.read(notificationMinuteProvider.notifier).state = picked.minute;
+                                final notificationService = ref.read(notificationServiceProvider);
+                                await notificationService.scheduleDailyHadithNotification();
+                                showSingleSnackBar(context,
+                                    message: 'تم حفظ وقت الإشعار: ${picked.format(context)}',
+                                    backgroundColor: Colors.green,
+                                    duration: const Duration(seconds: 2));
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff977c55)),
+                            child: const Text('اختر وقت'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final notificationService = ref.read(notificationServiceProvider);
+                             await notificationService.sendImmediateNotificationTest();
+                              showSingleSnackBar(context,
+                                  message: 'تم إرسال إشعار تجريبي',
+                                  backgroundColor: Colors.green,
+                                  duration: const Duration(seconds: 2));
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+                            child: const Text('إرسال تجريبي'),
+                          ),
+                        ],
+                      )),
+                  authState.when(
+                    data: (isAuthenticated) {
+                      if (isAuthenticated) {
+                        return Column(
+                          children: [
+                            const SizedBox(height: 8),
+                            buildClickableSettingCard(context,
+                                label: 'إضافة حديث',
+                                icon: const Icon(Icons.add, color: Color(0xff977c55), size: 20),
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddHadithScreen()))),
+                            buildClickableSettingCard(context,
+                                label: 'حذف حديث',
+                                icon: const Icon(Icons.delete, color: Color(0xff977c55), size: 20),
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RemoveHadithScreen()))),
+                            buildClickableSettingCard(context,
+                                label: 'تعديل حديث',
+                                icon: const Icon(Icons.edit, color: Color(0xff977c55), size: 20),
+                                onTap: () {
+                              ref.watch(DataProvider).when(
+                                    data: (hadiths) {
+                                      if (hadiths.isNotEmpty) {
+                                        ref.read(selectedEditFieldProvider.notifier).state = '';
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => const EditOptionsScreen()));
+                                      } else {
+                                        showSingleSnackBar(context,
+                                            message: 'لا يوجد أحاديث للتعديل',
+                                            backgroundColor: Colors.redAccent,
+                                            duration: const Duration(seconds: 2));
+                                      }
+                                    },
+                                    loading: () {
+                                      showSingleSnackBar(context,
+                                          message: 'لا يوجد أحاديث للتعديل',
+                                          backgroundColor: Colors.redAccent,
+                                          duration: const Duration(seconds: 2));
+                                    },
+                                    error: (error, stackTrace) {
+                                      showSingleSnackBar(context,
+                                          message: 'لا يوجد أحاديث للتعديل',
+                                          backgroundColor: Colors.redAccent,
+                                          duration: const Duration(seconds: 2));
+                                    },
+                                  );
+                            }),
+                            buildClickableSettingCard(context,
+                                label: 'تسجيل الخروج',
+                                icon: const Icon(Icons.logout, color: Color(0xff977c55), size: 20),
+                                onTap: () => _showLogoutConfirmationDialog(context, ref)),
+                          ],
+                        );
+                      } else {
+                        return const SizedBox.shrink();
+                      }
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Center(child: Text('')),
+                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
-              SizedBox(height: screenHeight * 0.02),
-              buildSettingCard(
-                context,
-                label: 'حجم الخط',
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.remove,
-                        color: Color(0xff977c55),
-                      ),
-                      onPressed: fontSize > 10
-                          ? () => _updateFontSize(fontSize - 1, ref)
-                          : null,
-                    ),
-                    Text(
-                      fontSize.toStringAsFixed(0),
-                      style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.brown.shade800,
-                        fontSize: screenWidth * 0.045,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.add,
-                        color: Color(0xff977c55),
-                      ),
-                      onPressed: fontSize < 30
-                          ? () => _updateFontSize(fontSize + 1, ref)
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.02),
-              buildSettingCard(
-                context,
-                label: 'القراءة الليلية',
-                child: Switch.adaptive(
-                  value: isDarkMode,
-                  onChanged: (value) => _toggleDarkMode(value, ref),
-                  activeColor: const Color(0xff977c55),
-                  inactiveTrackColor: Colors.grey[300],
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.02),
-              buildSettingCard(
-                context,
-                label: 'الإشعارات اليومية',
-                child: Switch.adaptive(
-                  value: isNotificationsEnabled,
-                  onChanged: (value) => _toggleNotifications(value, ref, context),
-                  activeColor: const Color(0xff977c55),
-                  inactiveTrackColor: Colors.grey[300],
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.015),
-              // Notification time picker and test button
-              buildSettingCard(
-                context,
-                label: 'وقت الإشعار اليومي',
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final hour = ref.watch(notificationHourProvider);
-                        final minute = ref.watch(notificationMinuteProvider);
-                        final timeText = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-                        return Text(
-                          timeText,
-                          style: ArabicTextStyle(
-                                    arabicFont: ArabicFont.avenirArabic,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.brown.shade800,
-                                fontSize: screenWidth * 0.045,
-                              ),
-                        );
-                      },
-                    ),
-                    SizedBox(width: screenWidth * 0.04),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(hour: ref.read(notificationHourProvider), minute: ref.read(notificationMinuteProvider)),
-                        );
-                        if (picked != null) {
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setInt('daily_notification_hour', picked.hour);
-                          await prefs.setInt('daily_notification_minute', picked.minute);
-                          ref.read(notificationHourProvider.notifier).state = picked.hour;
-                          ref.read(notificationMinuteProvider.notifier).state = picked.minute;
-
-                          // Reschedule notifications
-                          final notificationService = ref.read(notificationServiceProvider);
-                          await notificationService.scheduleDailyHadithNotification();
-
-                          showSingleSnackBar(
-                            context,
-                            message: 'تم حفظ وقت الإشعار: ${picked.format(context)}',
-                            backgroundColor: Colors.green,
-                            duration: const Duration(seconds: 2),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff977c55),
-                      ),
-                      child: const Text('اختر وقت'),
-                    ),
-                    SizedBox(width: screenWidth * 0.03),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final notificationService = ref.read(notificationServiceProvider);
-                        await notificationService.sendImmediateNotificationTest();
-                        showSingleSnackBar(
-                          context,
-                          message: 'تم إرسال إشعار تجريبي',
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 2),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueGrey,
-                      ),
-                      child: const Text('إرسال تجريبي'),
-                    ),
-                  ],
-                ),
-              ),
-              authState.when(
-                data: (isAuthenticated) {
-                  if (isAuthenticated) {
-                    return Column(
-                      children: [
-                        SizedBox(height: screenHeight * 0.02),
-                        buildClickableSettingCard(
-                          context,
-                          label: 'إضافة حديث',
-                          icon: const Icon(
-                            Icons.add,
-                            color: Color(0xff977c55),
-                            size: 20,
-                          ),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AddHadithScreen(),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: screenHeight * 0.02),
-                        buildClickableSettingCard(
-                          context,
-                          label: 'حذف حديث',
-                          icon: const Icon(
-                            Icons.delete,
-                            color: Color(0xff977c55),
-                            size: 20,
-                          ),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RemoveHadithScreen(),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: screenHeight * 0.02),
-                        buildClickableSettingCard(
-                          context,
-                          label: 'تعديل حديث',
-                          icon: const Icon(
-                            Icons.edit,
-                            color: Color(0xff977c55),
-                            size: 20,
-                          ),
-                          onTap: () {
-                            ref.watch(DataProvider).when(
-                              data: (hadiths) {
-                                if (hadiths.isNotEmpty) {
-                                  ref
-                                      .read(selectedEditFieldProvider.notifier)
-                                      .state = '';
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const EditOptionsScreen(),
-                                    ),
-                                  );
-                                } else {
-                                  showSingleSnackBar(
-                                    context,
-                                    message: 'لا يوجد أحاديث للتعديل',
-                                    backgroundColor: Colors.redAccent,
-                                    duration: const Duration(seconds: 2),
-                                  );
-                                }
-                              },
-                              loading: () {
-                                showSingleSnackBar(
-                                  context,
-                                  message: 'لا يوجد أحاديث للتعديل',
-                                  backgroundColor: Colors.redAccent,
-                                  duration: const Duration(seconds: 2),
-                                );
-                              },
-                              error: (error, stackTrace) {
-                                showSingleSnackBar(
-                                  context,
-                                  message: 'لا يوجد أحاديث للتعديل',
-                                  backgroundColor: Colors.redAccent,
-                                  duration: const Duration(seconds: 2),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        SizedBox(height: screenHeight * 0.02),
-                        buildClickableSettingCard(
-                          context,
-                          label: 'تسجيل الخروج',
-                          icon: const Icon(
-                            Icons.logout,
-                            color: Color(0xff977c55),
-                            size: 20,
-                          ),
-                          onTap: () => _showLogoutConfirmationDialog(context, ref),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, stackTrace) => Center(child: Text('')),
-                //error: (error, stackTrace) => Center(child: Text('خطأ: $error')),
-              ),
-              SizedBox(height: screenHeight * 0.02),
-            ],
+            ),
           ),
         ),
       ),

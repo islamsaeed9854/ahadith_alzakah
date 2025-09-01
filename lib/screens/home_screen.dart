@@ -53,7 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     debugPrint(
       'HomeScreen rendered with currentIndex: $currentIndex, innerBooksScreenPr: $innerBooksScreenPr',
     );
-
+    debugPrint('Screen size: ${MediaQuery.of(context).size.width}w x ${MediaQuery.of(context).size.height}h');
    
     if (currentIndex != 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

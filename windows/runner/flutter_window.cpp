@@ -42,7 +42,8 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   // Register native MethodChannel for Windows toast
-  RegisterToastMethodChannel(flutter_controller_.get());
+  // Disabled: revert to Dart-only notifications. Keep code present for future use.
+  // RegisterToastMethodChannel(flutter_controller_.get());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -57,56 +58,56 @@ bool FlutterWindow::OnCreate() {
   return true;
 }
 
-static void RegisterToastMethodChannel(flutter::FlutterViewController* controller) {
-  // Obtain the BinaryMessenger from the engine
-  auto messenger = controller->engine()->messenger();
-  using flutter::MethodChannel;
-  using flutter::EncodableValue;
-  g_toast_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      messenger, "ahadith_alzakah/windows_toast",
-      &flutter::StandardMethodCodec::GetInstance());
-
-  g_toast_channel->SetMethodCallHandler([](const flutter::MethodCall<flutter::EncodableValue>& call, std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-    if (call.method_name() == "showToast") {
-      OutputDebugStringA("[flutter_window] showToast method called\n");
-      const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
-      if (!args) {
-        OutputDebugStringA("[flutter_window] showToast: bad args - not a map\n");
-        result->Error("bad_args", "Expected map args");
-        return;
-      }
-      // Helper to extract string value from EncodableMap safely
-      auto extract = [&](const std::string& key) -> std::string {
-        auto it = args->find(flutter::EncodableValue(key));
-        if (it == args->end()) return std::string();
-        if (auto p = std::get_if<std::string>(&it->second)) return *p;
-        return std::string();
-      };
-
-      std::string titleUtf8 = extract("title");
-      std::string bodyUtf8 = extract("body");
-      std::string launchUtf8 = extract("launch");
-
-      // Convert utf8 to wstring
-      std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-      std::wstring wtitle = conv.from_bytes(titleUtf8);
-      std::wstring wbody = conv.from_bytes(bodyUtf8);
-      std::wstring wlaunch = conv.from_bytes(launchUtf8);
-
-  // Pass the AppUserModelID used in main.cpp so activation maps back to the app.
-  std::wstring appId = L"com.example.ahadith_alzakah";
-  bool ok = toast_helper::ShowToast(wtitle, wbody, wlaunch, appId);
-      if (ok) {
-        OutputDebugStringW(L"[flutter_window] toast_helper::ShowToast returned true\n");
-      } else {
-        OutputDebugStringW(L"[flutter_window] toast_helper::ShowToast returned false\n");
-      }
-      result->Success(flutter::EncodableValue(ok));
-      return;
-    }
-    result->NotImplemented();
-  });
-}
+// static void RegisterToastMethodChannel(flutter::FlutterViewController* controller) {
+//   // Obtain the BinaryMessenger from the engine
+//   auto messenger = controller->engine()->messenger();
+//   using flutter::MethodChannel;
+//   using flutter::EncodableValue;
+//   g_toast_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+//       messenger, "ahadith_alzakah/windows_toast",
+//       &flutter::StandardMethodCodec::GetInstance());
+//
+//   g_toast_channel->SetMethodCallHandler([](const flutter::MethodCall<flutter::EncodableValue>& call, std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+//     if (call.method_name() == "showToast") {
+//       OutputDebugStringA("[flutter_window] showToast method called\n");
+//       const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+//       if (!args) {
+//         OutputDebugStringA("[flutter_window] showToast: bad args - not a map\n");
+//         result->Error("bad_args", "Expected map args");
+//         return;
+//       }
+//       // Helper to extract string value from EncodableMap safely
+//       auto extract = [&](const std::string& key) -> std::string {
+//         auto it = args->find(flutter::EncodableValue(key));
+//         if (it == args->end()) return std::string();
+//         if (auto p = std::get_if<std::string>(&it->second)) return *p;
+//         return std::string();
+//       };
+//
+//       std::string titleUtf8 = extract("title");
+//       std::string bodyUtf8 = extract("body");
+//       std::string launchUtf8 = extract("launch");
+//
+//       // Convert utf8 to wstring
+//       std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+//       std::wstring wtitle = conv.from_bytes(titleUtf8);
+//       std::wstring wbody = conv.from_bytes(bodyUtf8);
+//       std::wstring wlaunch = conv.from_bytes(launchUtf8);
+//
+//   // Pass the AppUserModelID used in main.cpp so activation maps back to the app.
+//   std::wstring appId = L"com.example.ahadith_alzakah";
+//   bool ok = toast_helper::ShowToast(wtitle, wbody, wlaunch, appId);
+//       if (ok) {
+//         OutputDebugStringW(L"[flutter_window] toast_helper::ShowToast returned true\n");
+//       } else {
+//         OutputDebugStringW(L"[flutter_window] toast_helper::ShowToast returned false\n");
+//       }
+//       result->Success(flutter::EncodableValue(ok));
+//       return;
+//     }
+//     result->NotImplemented();
+//   });
+//}
 
 void FlutterWindow::OnDestroy() {
   if (flutter_controller_) {

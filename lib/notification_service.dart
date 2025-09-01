@@ -6,7 +6,6 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,11 +48,10 @@ class NotificationService {
 
   NotificationService(this.ref);
 
-  static const MethodChannel _windowsToastChannel = MethodChannel('ahadith_alzakah/windows_toast');
-
   Future<void> init() async {
     if (!kIsWeb && Platform.isWindows) {
       // Windows initialization is handled in main.dart
+      await _createWindowsStartupTask();
     } else {
       // Initialize Awesome Notifications
       await AwesomeNotifications().initialize('resource://drawable/ic_launcher', [
@@ -121,10 +119,16 @@ class NotificationService {
         final prefs = await SharedPreferences.getInstance();
         final hour = prefs.getInt('daily_notification_hour') ?? 12;
         final minute = prefs.getInt('daily_notification_minute') ?? 0;
+        // Use in-app timer and Dart-based notifications only (no native runner or scheduled task).
         await _scheduleWindowsDailyNotification(hadith, hour, minute);
-        // Create a Windows Scheduled Task so the OS will launch the app at the time
+        // Also create a Windows Scheduled Task so the OS can launch the app at the scheduled time
+        // (useful when the app is closed). This is best-effort and may fail in environments
+        // without sufficient privileges.
         await _createWindowsScheduledTask(hour, minute);
       } else {
+        final prefs = await SharedPreferences.getInstance();
+        final hour = prefs.getInt('daily_notification_hour') ?? 12;
+        final minute = prefs.getInt('daily_notification_minute') ?? 0;
         await AwesomeNotifications().createNotification(
           content: NotificationContent(
             id: 100,
@@ -138,8 +142,8 @@ class NotificationService {
             payload: {'hadith': hadithJson}, // Add hadith data to payload
           ),
           schedule: NotificationCalendar(
-            hour: 12,
-            minute: 0,
+            hour: hour,
+            minute: minute,
             second: 0,
             repeats: true,
             preciseAlarm: true,
@@ -150,28 +154,35 @@ class NotificationService {
     }
   }
 
-  Future<void> _createWindowsScheduledTask(int hour, int minute) async {
+  Future<void> _createWindowsStartupTask() async {
     try {
-      final taskName = 'AhadithAlZakah_DailyHadith';
+      final taskName = 'AhadithAlZakah_Startup';
       final exe = Platform.resolvedExecutable;
-      // Use resolved executable and pass a flag so the app knows to show hadith
-      final tr = '"$exe" --show-daily-hadith';
-      final time = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+      final tr = '"$exe" --startup';
+      debugPrint('Creating startup task with command: $tr');
 
-      await Process.run('schtasks', [
+      final result = await Process.run('schtasks', [
         '/Create',
         '/SC',
-        'DAILY',
+        'ONLOGON',
         '/TN',
         taskName,
         '/TR',
         tr,
-        '/ST',
-        time,
         '/F',
       ]);
+
+      if (result.exitCode == 0) {
+        debugPrint('Startup task created successfully for $taskName');
+      } else {
+        debugPrint('Failed to create startup task. Exit code: ${result.exitCode}, Output: ${result.stdout}, Error: ${result.stderr}');
+        throw Exception('Task creation failed: ${result.stderr}');
+      }
     } catch (e) {
-      // ignore; creation may fail in debug or without permission
+      debugPrint('Error creating startup task: $e');
+      if (e.toString().contains('Access is denied')) {
+        debugPrint('Access denied, please run as Administrator or create task manually with: schtasks /create /sc onlogon /tn AhadithAlZakah_Startup /tr "$e --startup" /f');
+      }
     }
   }
 
@@ -184,12 +195,47 @@ class NotificationService {
     }
   }
 
+  Future<void> _createWindowsScheduledTask(int hour, int minute) async {
+    try {
+      final taskName = 'AhadithAlZakah_DailyHadith';
+      final exe = Platform.resolvedExecutable;
+      // Use resolved executable and pass a scheduler-only flag so native runner
+      // can create a Windows toast (without opening UI). The toast's launch
+      // argument will use the "activate" flag which opens the app when clicked.
+      final tr = '"$exe" --show-daily-hadith-scheduler';
+      final time = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+      final result = await Process.run('schtasks', [
+        '/Create',
+        '/SC',
+        'DAILY',
+        '/TN',
+        taskName,
+        '/TR',
+        tr,
+        '/ST',
+        time,
+        '/F',
+      ]);
+
+      if (result.exitCode == 0) {
+        debugPrint('Daily hadith task created successfully for $taskName at $time');
+      } else {
+        debugPrint('Failed to create daily hadith task. Exit code: ${result.exitCode}, Output: ${result.stdout}, Error: ${result.stderr}');
+        throw Exception('Task creation failed: ${result.stderr}');
+      }
+    } catch (e) {
+      debugPrint('Error creating daily hadith task: $e');
+      // ignore; creation may fail in debug or without permission
+    }
+  }
+
   Future<void> _scheduleWindowsDailyNotification(Hadith hadith, int hour, int minute) async {
     // Cancel existing timers
     _windowsTimer?.cancel();
     _windowsDailyTimer?.cancel();
 
-    // Precompute JSON for the hadith so timer callbacks can reference it
+    // Precompute JSON for the hadith so timer callbacks can reference it (not used for native launch args)
     final hadithJson = json.encode(hadith.toJson());
 
     final enabled = await areNotificationsEnabled();
@@ -203,21 +249,10 @@ class NotificationService {
     // One-shot timer to show first notification at the next occurrence
     _windowsTimer = Timer(initialDelay, () async {
       try {
-        // Prefer native Windows Toast with activation args so clicking it
-        // launches the app with arguments.
-        final launchArgs = '--show-daily-hadith --hadith=' + Uri.encodeComponent(hadithJson);
-        try {
-          await _windowsToastChannel.invokeMethod('showToast', {
-            'title': 'حديث اليوم',
-            'body': _formatHadith(hadith),
-            'launch': launchArgs,
-          });
-        } catch (e) {
-          // Fallback to local notification if native toast fails
-          await _showLocalNotification(hadith);
-        }
-      } catch (e) {
-        // ignore errors to avoid crashing the app
+        // Show Dart-based local notification for Windows.
+        await _showLocalNotification(hadith);
+      } catch (e, s) {
+        debugPrint('Failed to show initial scheduled Windows notification: $e\n$s');
       }
 
       // schedule daily repeating timer (every 24 hours) after the first firing
@@ -225,45 +260,36 @@ class NotificationService {
         try {
           final freshHadith = await _getDailyHadith();
           if (freshHadith != null) {
-            final freshJson = json.encode(freshHadith.toJson());
-            final launchArgs = '--show-daily-hadith --hadith=' + Uri.encodeComponent(freshJson);
-            try {
-              await _windowsToastChannel.invokeMethod('showToast', {
-                'title': 'حديث اليوم',
-                'body': _formatHadith(freshHadith),
-                'launch': launchArgs,
-              });
-            } catch (e) {
-              await _showLocalNotification(freshHadith);
-            }
+            // Show Dart-based local notification for Windows.
+            await _showLocalNotification(freshHadith);
           }
-        } catch (e) {
-          // ignore
+        } catch (e, s) {
+          debugPrint('Failed to show periodic Windows notification: $e\n$s');
         }
       });
     });
   }
 
-  // دالة منفصلة لعرض الإشعار المحلي مع تحسين onClick handler
+  // Separate function to show a local notification with an improved onClick handler
   Future<void> _showLocalNotification(Hadith hadith) async {
     try {
       LocalNotification notification = LocalNotification(
         title: 'حديث اليوم',
         body: _formatHadith(hadith),
       );
-      
+
       notification.onClick = () async {
-        // فتح النافذة ثم الانتظار لثانية قصيرة قبل التنقل
+        // Show the window then wait briefly before navigating
         await windowManager.show();
         await windowManager.focus();
 
-        // تأخير قصير لضمان أن واجهة Flutter جاهزة لاستقبال التنقل
+        // A short delay to ensure the Flutter UI is ready to receive navigation
         await Future.delayed(const Duration(milliseconds: 500));
 
-        // استدعاء التنقل إلى الحديث
+        // Call the navigation handler for the hadith
         _handleHadithNavigation(hadith);
       };
-      
+
       notification.show();
     } catch (e) {
       debugPrint('Error showing local notification: $e');
@@ -278,7 +304,7 @@ class NotificationService {
     }
     return scheduled;
   }
-  
+
   void _handleHadithNavigation(Hadith hadith) {
     try {
       if (navigatorKey.currentState != null && navigatorKey.currentContext != null) {
@@ -288,16 +314,16 @@ class NotificationService {
         container.read(selectedHadithProvider.notifier).state = null;
         container.read(innerBooksScreenProvider.notifier).state = null;
         container.read(navigationProvider.notifier).changeTab(1);
-        
+
         debugPrint('Navigating to HomeScreen with hadith details');
-        
+
         navigatorKey.currentState!.pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (_) => const HomeScreen(showHadithDetails: true),
           ),
           (Route<dynamic> route) => false,
         );
-        
+
         debugPrint('Navigation completed successfully');
       } else {
         debugPrint('Navigator not ready for navigation');
@@ -321,7 +347,7 @@ class NotificationService {
                 json.decode(savedHadithJson) as Map<String, dynamic>;
             return Hadith.fromJson(hadithMap);
           } catch (e) {
-            print('Error decoding saved Hadith: $e');
+            debugPrint('Error decoding saved Hadith: $e');
           }
         }
       }
@@ -335,25 +361,19 @@ class NotificationService {
   Future<Hadith?> _generateNewDailyHadith() async {
     try {
       final dataManager = ref.read(DataProvider.notifier);
-      final hadithAsyncValue = ref.read(DataProvider);
+      var hadithAsyncValue = ref.read(DataProvider);
 
-      List<Hadith> allHadiths = [];
-      hadithAsyncValue.when(
-        data: (hadiths) => allHadiths = hadiths,
-        error: (error, stack) => allHadiths = [],
-        loading: () => allHadiths = [],
-      );
-      if (allHadiths.isEmpty) {
+      // If data is not yet available or is empty, trigger loading and get the new state.
+      if (!hadithAsyncValue.hasValue || (hadithAsyncValue.asData?.value.isEmpty ?? true)) {
         await dataManager.loadHadiths();
-        final updatedAsyncValue = ref.read(DataProvider);
-        updatedAsyncValue.when(
-          data: (hadiths) => allHadiths = hadiths,
-          error: (error, stack) => allHadiths = [],
-          loading: () => allHadiths = [],
-        );
+        hadithAsyncValue = ref.read(DataProvider);
       }
 
+      // Safely extract the data, providing an empty list as a fallback.
+      final allHadiths = hadithAsyncValue.asData?.value ?? [];
+
       if (allHadiths.isEmpty) {
+        debugPrint('Could not generate daily hadith because no hadiths are available.');
         return null;
       }
 
@@ -376,7 +396,7 @@ class NotificationService {
 
       return selectedHadith;
     } catch (e) {
-      print('Error generating daily hadith: $e');
+      debugPrint('Error generating daily hadith: $e');
       return null;
     }
   }
@@ -390,7 +410,7 @@ class NotificationService {
       final hadithJson = json.encode(hadith.toJson());
       await _secureStorage.write(key: _dailyHadithKey, value: hadithJson);
     } catch (e) {
-      print('Error saving daily hadith to secure storage: $e');
+      debugPrint('Error saving daily hadith to secure storage: $e');
     }
   }
 
@@ -420,7 +440,7 @@ class NotificationService {
       ref.read(dailyHadithProvider.notifier).clearDailyHadith();
       return await _generateNewDailyHadith();
     } catch (e) {
-      print('Error forcing new daily hadith: $e');
+      debugPrint('Error forcing new daily hadith: $e');
       return null;
     }
   }
@@ -438,67 +458,22 @@ class NotificationService {
     }
   }
 
-  /// Called when the app is launched by the OS scheduled task with the
-  /// --show-daily-hadith argument.
+  /// Called when the app is launched by the OS scheduled task.
   Future<void> handleLaunchFromScheduler([String? hadithData]) async {
-    debugPrint('handleLaunchFromScheduler called with data: ${hadithData != null ? 'yes' : 'no'}');
-    
-    Hadith? hadith;
-    
-    // جرب استخدام الـ hadith data من الـ launch arguments الأول
-    if (hadithData != null) {
-      try {
-        final hadithMap = json.decode(hadithData) as Map<String, dynamic>;
-        hadith = Hadith.fromJson(hadithMap);
-        debugPrint('Successfully parsed hadith from launch args');
-      } catch (e) {
-        debugPrint('Error parsing hadith from launch args: $e');
-      }
-    }
-    
-    // إذا فشل، استخدم الحديث اليومي المحفوظ
-    // If no hadithData provided, try to parse from Platform.executableArguments
-    if (hadith == null && hadithData == null && !kIsWeb && Platform.isWindows) {
-      try {
-        final args = Platform.executableArguments;
-        for (final a in args) {
-          if (a.startsWith('--hadith=')) {
-            final decoded = Uri.decodeComponent(a.substring(9));
-            final hadithMap = json.decode(decoded) as Map<String, dynamic>;
-            hadith = Hadith.fromJson(hadithMap);
-            debugPrint('Parsed hadith from Platform.executableArguments');
-            break;
-          }
-        }
-      } catch (e) {
-        debugPrint('Error parsing hadith from executableArguments: $e');
-      }
-    }
+    debugPrint('Scheduler launched app. Handling notification...');
 
-    if (hadith == null) {
-      hadith = await _getDailyHadith();
-      debugPrint('Using stored daily hadith');
-    }
-    
+    final hadith = await _getDailyHadith();
+
     if (hadith != null) {
-      // انتظار وقت كافي للتأكد من أن التطبيق جاهز
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // THE FIX: Bring the window to the foreground to ensure notifications work.
+      await windowManager.show();
+      await windowManager.focus();
+
+      // Show the notification now that the app is active.
+      await _showLocalNotification(hadith);
       
-      // التأكد من أن Navigator جاهز
-      int retryCount = 0;
-      while (retryCount < 10) {
-        if (navigatorKey.currentState != null && navigatorKey.currentContext != null) {
-          _handleHadithNavigation(hadith);
-          break;
-        }
-        await Future.delayed(const Duration(milliseconds: 300));
-        retryCount++;
-        debugPrint('Waiting for navigator... retry $retryCount');
-      }
-      
-      if (retryCount >= 10) {
-        debugPrint('Navigator not ready after maximum retries');
-      }
+      // Navigate to the hadith details screen inside the app.
+      _handleHadithNavigation(hadith);
     }
   }
 
@@ -539,10 +514,13 @@ class NotificationService {
     final enabled = await areNotificationsEnabled();
     final hasPermission = await hasNotificationPermission();
     final now = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    final hour = prefs.getInt('daily_notification_hour') ?? 12;
+    final minute = prefs.getInt('daily_notification_minute') ?? 0;
 
     if (requirePrefAndTime) {
-      // By default require that notifications are enabled and it's the scheduled time (hour:12 minute:0)
-      if (!enabled || !hasPermission || !(now.hour == 12 && now.minute == 0)) return;
+      // By default require that notifications are enabled and it's the scheduled time
+      if (!enabled || !hasPermission || !(now.hour == hour && now.minute == minute)) return;
     } else {
       if (!hasPermission) return;
     }
@@ -582,7 +560,7 @@ class NotificationService {
       await _secureStorage.delete(key: _dailyHadithKey);
       ref.read(dailyHadithProvider.notifier).clearDailyHadith();
     } catch (e) {
-      print('Error clearing daily hadith data: $e');
+      debugPrint('Error clearing daily hadith data: $e');
     }
   }
 
@@ -596,7 +574,7 @@ class NotificationService {
 
       return hasHadith;
     } catch (e) {
-      print('Error checking today hadith: $e');
+      debugPrint('Error checking today hadith: $e');
       return false;
     }
   }
@@ -606,7 +584,7 @@ class NotificationService {
       final date = await _secureStorage.read(key: _lastHadithDateKey);
       return date;
     } catch (e) {
-      print('Error getting last hadith date: $e');
+      debugPrint('Error getting last hadith date: $e');
       return null;
     }
   }

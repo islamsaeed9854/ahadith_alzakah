@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,8 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:local_notifier/local_notifier.dart';
+import 'package:win32/win32.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/home_screen.dart';
 import 'core/theme.dart';
 import 'providers/theme_provider.dart';
@@ -19,6 +22,7 @@ import 'notification_service.dart';
 import 'core/single_instance.dart';
 import 'core/secure_supabase_storage.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui' as ui; // Add prefix for dart:ui
 
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
@@ -182,6 +186,20 @@ void main(List<String> args) async {
     });
   }
 
+  // Check if this is the first run and request admin privileges
+  if (Platform.isWindows) {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstRun = prefs.getBool('isFirstRun') ?? true;
+
+    if (isFirstRun) {
+      if (!await _requestAdminPrivileges()) {
+        debugPrint('main: Admin privileges denied, exiting');
+        exit(0); // Exit if admin privileges are not granted
+      }
+      await prefs.setBool('isFirstRun', false); // Mark as not first run after success
+    }
+  }
+
   if (Platform.isWindows) {
     debugPrint('main: Setting up local notifier');
     await localNotifier.setup(
@@ -189,9 +207,9 @@ void main(List<String> args) async {
       shortcutPolicy: ShortcutPolicy.requireCreate,
     );
     debugPrint('main: Initializing window manager');
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(800, 900),
-      minimumSize: Size(550, 750),
+    WindowOptions windowOptions = WindowOptions(
+      size: const ui.Size(800, 900),
+      minimumSize: const ui.Size(550, 750),
       center: true,
       title: 'موسوعة أحاديث الزكاة',
     );
@@ -339,4 +357,34 @@ class _MyAppState extends ConsumerState<MyApp>
       windowManager.destroy();
     }
   }
+}
+
+Future<bool> _requestAdminPrivileges() async {
+  if (!Platform.isWindows) return true; // No need for non-Windows platforms
+
+  // Check if already running as admin
+  final isElevated = await Process.run('net', ['session']).then((result) {
+    return result.exitCode == 0;
+  }).catchError((_) => false);
+
+  if (isElevated) return true;
+
+  // Request elevation using ShellExecute
+  final exePath = Platform.resolvedExecutable;
+  final result = ShellExecute(
+    0, // Use 0 instead of nullptr
+    TEXT('runas'), // Request elevation
+    TEXT(exePath),
+    TEXT(''), // No additional arguments
+    nullptr, // Use 0 instead of nullptr
+    SW_SHOWNORMAL,
+  );
+
+  if (result <= 32) {
+    debugPrint('Failed to request admin privileges. Error code: $result');
+    return false; // User declined or error occurred
+  }
+
+  // If successful, the app will restart with admin rights
+  return true;
 }

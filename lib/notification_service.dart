@@ -50,8 +50,14 @@ class NotificationService {
 
   Future<void> init() async {
     if (!kIsWeb && Platform.isWindows) {
-      // Windows initialization is handled in main.dart
-      await _createWindowsStartupTask();
+      try {
+        await _createWindowsStartupTask();
+        await _createWindowsScheduledTask(12, 0); // Default to 12:00 if not set
+      } catch (e) {
+        if (e.toString().contains('Access is denied')) {
+          _showAdminPermissionDialog();
+        }
+      }
     } else {
       // Initialize Awesome Notifications
       await AwesomeNotifications().initialize('resource://drawable/ic_launcher', [
@@ -122,8 +128,6 @@ class NotificationService {
         // Use in-app timer and Dart-based notifications only (no native runner or scheduled task).
         await _scheduleWindowsDailyNotification(hadith, hour, minute);
         // Also create a Windows Scheduled Task so the OS can launch the app at the scheduled time
-        // (useful when the app is closed). This is best-effort and may fail in environments
-        // without sufficient privileges.
         await _createWindowsScheduledTask(hour, minute);
       } else {
         final prefs = await SharedPreferences.getInstance();
@@ -176,22 +180,13 @@ class NotificationService {
         debugPrint('Startup task created successfully for $taskName');
       } else {
         debugPrint('Failed to create startup task. Exit code: ${result.exitCode}, Output: ${result.stdout}, Error: ${result.stderr}');
+        if (result.stderr.toString().contains('Access is denied')) {
+          _showAdminPermissionDialog();
+        }
         throw Exception('Task creation failed: ${result.stderr}');
       }
     } catch (e) {
       debugPrint('Error creating startup task: $e');
-      if (e.toString().contains('Access is denied')) {
-        debugPrint('Access denied, please run as Administrator or create task manually with: schtasks /create /sc onlogon /tn AhadithAlZakah_Startup /tr "$e --startup" /f');
-      }
-    }
-  }
-
-  Future<void> _deleteWindowsScheduledTask() async {
-    try {
-      final taskName = 'AhadithAlZakah_DailyHadith';
-      await Process.run('schtasks', ['/Delete', '/TN', taskName, '/F']);
-    } catch (e) {
-      // ignore
     }
   }
 
@@ -199,11 +194,9 @@ class NotificationService {
     try {
       final taskName = 'AhadithAlZakah_DailyHadith';
       final exe = Platform.resolvedExecutable;
-      // Use resolved executable and pass a scheduler-only flag so native runner
-      // can create a Windows toast (without opening UI). The toast's launch
-      // argument will use the "activate" flag which opens the app when clicked.
       final tr = '"$exe" --show-daily-hadith-scheduler';
       final time = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+      debugPrint('Creating daily task with command: $tr at $time');
 
       final result = await Process.run('schtasks', [
         '/Create',
@@ -222,11 +215,22 @@ class NotificationService {
         debugPrint('Daily hadith task created successfully for $taskName at $time');
       } else {
         debugPrint('Failed to create daily hadith task. Exit code: ${result.exitCode}, Output: ${result.stdout}, Error: ${result.stderr}');
+        if (result.stderr.toString().contains('Access is denied')) {
+          _showAdminPermissionDialog();
+        }
         throw Exception('Task creation failed: ${result.stderr}');
       }
     } catch (e) {
       debugPrint('Error creating daily hadith task: $e');
-      // ignore; creation may fail in debug or without permission
+    }
+  }
+
+  Future<void> _deleteWindowsScheduledTask() async {
+    try {
+      final taskName = 'AhadithAlZakah_DailyHadith';
+      await Process.run('schtasks', ['/Delete', '/TN', taskName, '/F']);
+    } catch (e) {
+      // ignore
     }
   }
 
@@ -251,8 +255,8 @@ class NotificationService {
       try {
         // Show Dart-based local notification for Windows.
         await _showLocalNotification(hadith);
-      } catch (e, s) {
-        debugPrint('Failed to show initial scheduled Windows notification: $e\n$s');
+      } catch (e) {
+        // ignore errors to avoid crashing the app
       }
 
       // schedule daily repeating timer (every 24 hours) after the first firing
@@ -263,8 +267,8 @@ class NotificationService {
             // Show Dart-based local notification for Windows.
             await _showLocalNotification(freshHadith);
           }
-        } catch (e, s) {
-          debugPrint('Failed to show periodic Windows notification: $e\n$s');
+        } catch (e) {
+          // ignore
         }
       });
     });
@@ -347,7 +351,7 @@ class NotificationService {
                 json.decode(savedHadithJson) as Map<String, dynamic>;
             return Hadith.fromJson(hadithMap);
           } catch (e) {
-            debugPrint('Error decoding saved Hadith: $e');
+            print('Error decoding saved Hadith: $e');
           }
         }
       }
@@ -361,19 +365,25 @@ class NotificationService {
   Future<Hadith?> _generateNewDailyHadith() async {
     try {
       final dataManager = ref.read(DataProvider.notifier);
-      var hadithAsyncValue = ref.read(DataProvider);
+      final hadithAsyncValue = ref.read(DataProvider);
 
-      // If data is not yet available or is empty, trigger loading and get the new state.
-      if (!hadithAsyncValue.hasValue || (hadithAsyncValue.asData?.value.isEmpty ?? true)) {
+      List<Hadith> allHadiths = [];
+      hadithAsyncValue.when(
+        data: (hadiths) => allHadiths = hadiths,
+        error: (error, stack) => allHadiths = [],
+        loading: () => allHadiths = [],
+      );
+      if (allHadiths.isEmpty) {
         await dataManager.loadHadiths();
-        hadithAsyncValue = ref.read(DataProvider);
+        final updatedAsyncValue = ref.read(DataProvider);
+        updatedAsyncValue.when(
+          data: (hadiths) => allHadiths = hadiths,
+          error: (error, stack) => allHadiths = [],
+          loading: () => allHadiths = [],
+        );
       }
 
-      // Safely extract the data, providing an empty list as a fallback.
-      final allHadiths = hadithAsyncValue.asData?.value ?? [];
-
       if (allHadiths.isEmpty) {
-        debugPrint('Could not generate daily hadith because no hadiths are available.');
         return null;
       }
 
@@ -396,7 +406,7 @@ class NotificationService {
 
       return selectedHadith;
     } catch (e) {
-      debugPrint('Error generating daily hadith: $e');
+      print('Error generating daily hadith: $e');
       return null;
     }
   }
@@ -410,7 +420,7 @@ class NotificationService {
       final hadithJson = json.encode(hadith.toJson());
       await _secureStorage.write(key: _dailyHadithKey, value: hadithJson);
     } catch (e) {
-      debugPrint('Error saving daily hadith to secure storage: $e');
+      print('Error saving daily hadith to secure storage: $e');
     }
   }
 
@@ -440,7 +450,7 @@ class NotificationService {
       ref.read(dailyHadithProvider.notifier).clearDailyHadith();
       return await _generateNewDailyHadith();
     } catch (e) {
-      debugPrint('Error forcing new daily hadith: $e');
+      print('Error forcing new daily hadith: $e');
       return null;
     }
   }
@@ -560,7 +570,7 @@ class NotificationService {
       await _secureStorage.delete(key: _dailyHadithKey);
       ref.read(dailyHadithProvider.notifier).clearDailyHadith();
     } catch (e) {
-      debugPrint('Error clearing daily hadith data: $e');
+      print('Error clearing daily hadith data: $e');
     }
   }
 
@@ -574,7 +584,7 @@ class NotificationService {
 
       return hasHadith;
     } catch (e) {
-      debugPrint('Error checking today hadith: $e');
+      print('Error checking today hadith: $e');
       return false;
     }
   }
@@ -584,7 +594,7 @@ class NotificationService {
       final date = await _secureStorage.read(key: _lastHadithDateKey);
       return date;
     } catch (e) {
-      debugPrint('Error getting last hadith date: $e');
+      print('Error getting last hadith date: $e');
       return null;
     }
   }
@@ -593,5 +603,25 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool('notifications_enabled') ?? false;
     return enabled;
+  }
+
+  void _showAdminPermissionDialog() {
+    if (navigatorKey.currentState != null && navigatorKey.currentContext != null) {
+      showDialog(
+        context: navigatorKey.currentContext!,
+        builder: (context) => AlertDialog(
+          title: const Text('إذن إداري مطلوب'),
+          content: const Text('يرجى تشغيل التطبيق كمسؤول (Administrator) لتمكين التشغيل التلقائي وإشعارات الحديث اليومي. انقر بزر الفأرة الأيمن على التطبيق واختر "Run as Administrator".'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('حسنًا'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

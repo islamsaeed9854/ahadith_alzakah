@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:arabic_font/arabic_font.dart';
 
-// دالة مساعدة لتحديد حجم خط عنوان البطاقة
-double _getCardLabelFontSize(double screenWidth) {
-  if (screenWidth > 1200) return 22.0; // كبير جدًا
-  if (screenWidth > 600) return 20.0;  // متوسط
-  return 19.0; // صغير
-}
+// ======================= Responsive Breakpoints =======================
+const double kMediumScreenBreakpoint = 600.0;
+const double kLargeScreenBreakpoint = 1200.0;
+const double kExtraLargeScreenBreakpoint = 1800.0;
 
-// دالة مساعدة لتحديد حجم خط المحتوى داخل البطاقة (مثل الأرقام)
-double _getCardContentFontSize(double screenWidth) {
-  if (screenWidth > 1200) return 20.0;
-  if (screenWidth > 600) return 19.0;
-  return 18.0;
-}
+// ======================= Responsive Helper Functions =======================
 
+/// A generic helper function to determine font sizes based on screen size.
+double _getResponsiveFontSize(double screenWidth, {
+  required double small,
+  required double medium,
+  required double large,
+  double? extraLarge,
+}) {
+  if (screenWidth > kExtraLargeScreenBreakpoint) return extraLarge ?? large * 1.1;
+  if (screenWidth > kLargeScreenBreakpoint) return large;
+  if (screenWidth > kMediumScreenBreakpoint) return medium;
+  return small;
+}
+// ========================================================================
 
 Widget buildSettingCard(
   BuildContext context, {
@@ -24,7 +30,7 @@ Widget buildSettingCard(
   final screenWidth = MediaQuery.of(context).size.width;
 
   return Container(
-    // استخدام هوامش رأسية ثابتة لمظهر متناسق
+    // Using fixed vertical margins for a consistent look
     margin: const EdgeInsets.symmetric(vertical: 8.0),
     padding: const EdgeInsets.symmetric(
       horizontal: 24.0,
@@ -53,18 +59,18 @@ Widget buildSettingCard(
               arabicFont: ArabicFont.avenirArabic,
               fontWeight: FontWeight.w900,
               color: Colors.brown.shade800,
-              // استخدام دالة مساعدة لحجم الخط
-              fontSize: _getCardLabelFontSize(screenWidth),
+              // Using helper function for font size
+              fontSize: _getResponsiveFontSize(screenWidth, small: 19.0, medium: 20.0, large: 22.0, extraLarge: 24.0),
             ),
           ),
         ),
-        // تعديل الـ child لضمان أن النصوص داخل البطاقة تأخذ نفس النمط
+        // Modifying the child to ensure that texts inside the card take on the same style
         DefaultTextStyle(
           style: ArabicTextStyle(
             arabicFont: ArabicFont.avenirArabic,
             fontWeight: FontWeight.w900,
             color: Colors.brown.shade800,
-            fontSize: _getCardContentFontSize(screenWidth),
+            fontSize: _getResponsiveFontSize(screenWidth, small: 18.0, medium: 19.0, large: 20.0, extraLarge: 22.0),
           ),
           child: child,
         ),

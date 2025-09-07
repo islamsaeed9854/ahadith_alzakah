@@ -15,22 +15,45 @@ import 'package:arabic_font/arabic_font.dart';
 import '../core/hadith_text_parser.dart';
 import '../core/utils.dart';
 
-// ======================= Helper Functions for UI and Logic =======================
+// ======================= Responsive Breakpoints =======================
+const double kMediumScreenBreakpoint = 600.0;
+const double kLargeScreenBreakpoint = 1200.0;
+const double kExtraLargeScreenBreakpoint = 1800.0;
 
-// Determines the maximum width for the content area.
+// ======================= Responsive Helper Functions =======================
+
+/// Determines the maximum width for the main content area based on screen size.
+/// On large screens, it creates a centered view (70% content, 15% margins).
 double _getMaxContentWidth(double screenWidth) {
-  if (screenWidth > 950) return 900; // For large screens
-  return screenWidth; // For small and medium screens
+  if (screenWidth > kLargeScreenBreakpoint) {
+    return screenWidth * 0.70; // 70% for large and extra-large screens
+  }
+  if (screenWidth > kMediumScreenBreakpoint) {
+    // A fixed max-width for medium screens looks better than a percentage.
+    return 900;
+  }
+  return screenWidth; // Full width for small screens
 }
 
-// Determines the font size for headers (Bab and Fasl).
+/// Determines the font size for headers (Bab and Fasl) based on screen size.
 double _getHeaderFontSize(double screenWidth, {bool isSubHeader = false}) {
-  if (screenWidth > 900) return isSubHeader ? 16.0 : 18.0;
+  double baseSize = isSubHeader ? 15.0 : 17.0;
+  if (screenWidth > kExtraLargeScreenBreakpoint) return baseSize * 1.4;
+  if (screenWidth > kLargeScreenBreakpoint) return baseSize * 1.3;
+  if (screenWidth > kMediumScreenBreakpoint) return baseSize * 1.15;
   if (screenWidth > 600) return isSubHeader ? 14.0 : 16.0;
   return isSubHeader ? 13.0 : 15.0;
 }
 
-// Cleans text by removing special markers before copying.
+/// Determines the font size for main body text based on screen size and user preference.
+double _getBodyFontSize(double screenWidth, double baseFontSize) {
+  if (screenWidth > kExtraLargeScreenBreakpoint) return baseFontSize * 1.3;
+  if (screenWidth > kLargeScreenBreakpoint) return baseFontSize * 1.2;
+  if (screenWidth > kMediumScreenBreakpoint) return baseFontSize * 1.1;
+  return baseFontSize;
+}
+
+/// Cleans text by removing special markers before copying.
 String _cleanTextForCopying(String rawText) {
   return rawText
       .replaceAll('O', '')
@@ -43,7 +66,7 @@ String _cleanTextForCopying(String rawText) {
 class HadithDetails extends ConsumerWidget {
   const HadithDetails({super.key});
 
-  // Sets the status bar style based on the current theme (dark/light).
+  /// Sets the status bar style based on the current theme (dark/light).
   void _setStatusBarStyle(bool isDarkMode) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -56,10 +79,9 @@ class HadithDetails extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(settingsInitializerProvider);
     final screenWidth = MediaQuery.of(context).size.width;
-    final contentWidth = _getMaxContentWidth(screenWidth);
     final theme = ref.watch(themeProvider);
     final isDark = theme.brightness == Brightness.dark;
-    final fontSize = ref.watch(fontSizeProvider);
+    final baseFontSize = ref.watch(fontSizeProvider);
     final navNotifier = ref.read(navigationProvider.notifier);
     final selectedHadith = ref.watch(selectedHadithProvider);
     final dailyHadith = ref.watch(dailyHadithProvider);
@@ -72,6 +94,10 @@ class HadithDetails extends ConsumerWidget {
     final hadithToDisplay =
         showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
     final allHadithsAsyncValue = ref.watch(DataProvider);
+
+    // Responsive font sizes
+    final bodyFontSize = _getBodyFontSize(screenWidth, baseFontSize.toDouble());
+    final tabBarFontSize = bodyFontSize * 0.8;
 
     return allHadithsAsyncValue.when(
       loading: () => Scaffold(
@@ -127,7 +153,6 @@ class HadithDetails extends ConsumerWidget {
           }
         });
 
-
         return PopScope(
           canPop: false,
           onPopInvoked: (didPop) {
@@ -148,8 +173,9 @@ class HadithDetails extends ConsumerWidget {
                   backgroundColor: backgroundColor,
                   body: SafeArea(
                     child: Center(
-                      child: SizedBox(
-                        width: contentWidth,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                            maxWidth: _getMaxContentWidth(screenWidth)),
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
@@ -170,11 +196,12 @@ class HadithDetails extends ConsumerWidget {
                                     Expanded(
                                       flex: 9,
                                       child: _buildHadithMainText(context,
-                                          hadith.text, isDark, fontSize),
+                                          hadith.text, isDark, bodyFontSize),
                                     ),
                                     Expanded(
                                       flex: 2,
-                                      child: _buildTabBar(isDark, fontSize),
+                                      child:
+                                          _buildTabBar(isDark, tabBarFontSize),
                                     ),
                                     Expanded(
                                       flex: 9,
@@ -183,14 +210,17 @@ class HadithDetails extends ConsumerWidget {
                                           TabContent(
                                             text: hadith.summary,
                                             isDark: isDark,
+                                            screenWidth: screenWidth,
                                           ),
                                           TabContent(
                                             text: hadith.reference,
                                             isDark: isDark,
+                                            screenWidth: screenWidth,
                                           ),
                                           TabContent(
                                             text: hadith.analysis,
                                             isDark: isDark,
+                                            screenWidth: screenWidth,
                                           ),
                                         ],
                                       ),
@@ -199,37 +229,47 @@ class HadithDetails extends ConsumerWidget {
                                 );
                               },
                             ),
-                             // Navigation Buttons for Desktop
-                            Positioned.fill(
-                              child: Align(
-                                alignment: Alignment.center,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // Next Button (on the left for RTL)
-                                    IconButton(
-                                      icon: Icon(Icons.arrow_back_ios, color: isDark ? Colors.white54 : Colors.black54),
-                                      onPressed: () {
-                                        pageController.nextPage(
-                                          duration: const Duration(milliseconds: 300),
-                                          curve: Curves.easeInOut,
-                                        );
-                                      },
-                                    ),
-                                    // Previous Button (on the right for RTL)
-                                    IconButton(
-                                      icon: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white54 : Colors.black54),
-                                      onPressed: () {
-                                        pageController.previousPage(
-                                          duration: const Duration(milliseconds: 300),
-                                          curve: Curves.easeInOut,
-                                        );
-                                      },
-                                    ),
-                                  ],
+                            // Navigation Buttons for Desktop/Large Tablets
+                             if (screenWidth > kMediumScreenBreakpoint)
+                              Positioned.fill(
+                                child: Align(
+                                  alignment: Alignment.center,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Next Button (on the left for RTL)
+                                      IconButton(
+                                        icon: Icon(Icons.arrow_back_ios,
+                                            color: isDark
+                                                ? Colors.white54
+                                                : Colors.black54),
+                                        onPressed: () {
+                                          pageController.nextPage(
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                          );
+                                        },
+                                      ),
+                                      // Previous Button (on the right for RTL)
+                                      IconButton(
+                                        icon: Icon(Icons.arrow_forward_ios,
+                                            color: isDark
+                                                ? Colors.white54
+                                                : Colors.black54),
+                                        onPressed: () {
+                                          pageController.previousPage(
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -285,35 +325,42 @@ class HadithDetails extends ConsumerWidget {
           ),
           PopupMenuButton<String>(
             color: isDark ? const Color(0xFF2d2d2d) : Colors.white,
-            icon: Icon(Icons.content_copy, color: isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight, size: 26),
+            icon: Icon(Icons.content_copy,
+                color:
+                    isDark ? AppTheme.arrowBackdark : AppTheme.arrowBackLight,
+                size: 26),
             onSelected: (value) {
-                final String textToCopy;
-                final String message;
-                if (value == 'copy_text') {
-                    textToCopy = hadith.text;
-                    message = 'تم نسخ نص الحديث بنجاح!';
-                } else {
-                    textToCopy = hadith.summary;
-                    message = 'تم نسخ الخلاصة بنجاح!';
-                }
-                final String cleanedText = _cleanTextForCopying(textToCopy);
-                Clipboard.setData(ClipboardData(text: cleanedText));
-                showSingleSnackBar(
-                  context,
-                  message: message,
-                  backgroundColor: Colors.green.shade600,
-                  duration: const Duration(seconds: 2),
-                );
+              final String textToCopy;
+              final String message;
+              if (value == 'copy_text') {
+                textToCopy = hadith.text;
+                message = 'تم نسخ نص الحديث بنجاح!';
+              } else {
+                textToCopy = hadith.summary;
+                message = 'تم نسخ الخلاصة بنجاح!';
+              }
+              final String cleanedText = _cleanTextForCopying(textToCopy);
+              Clipboard.setData(ClipboardData(text: cleanedText));
+              showSingleSnackBar(
+                context,
+                message: message,
+                backgroundColor: Colors.green.shade600,
+                duration: const Duration(seconds: 2),
+              );
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                    value: 'copy_text',
-                    child: Text('نسخ نص الحديث', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                ),
-                PopupMenuItem<String>(
-                    value: 'copy_summary',
-                    child: Text('نسخ الخلاصة', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                ),
+              PopupMenuItem<String>(
+                value: 'copy_text',
+                child: Text('نسخ نص الحديث',
+                    style:
+                        TextStyle(color: isDark ? Colors.white : Colors.black)),
+              ),
+              PopupMenuItem<String>(
+                value: 'copy_summary',
+                child: Text('نسخ الخلاصة',
+                    style:
+                        TextStyle(color: isDark ? Colors.white : Colors.black)),
+              ),
             ],
           ),
           IconButton(
@@ -335,7 +382,7 @@ class HadithDetails extends ConsumerWidget {
   }
 
   Widget _buildHadithMainText(
-      BuildContext context, String text, bool isDark, int fontSize) {
+      BuildContext context, String text, bool isDark, double fontSize) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: ScrollConfiguration(
@@ -346,8 +393,8 @@ class HadithDetails extends ConsumerWidget {
           child: RichText(
             textAlign: TextAlign.justify,
             text: TextSpan(
-              children: parseHadithText(
-                  text.trim(), isDark, fontSize.toDouble()),
+              children:
+                  parseHadithText(text.trim(), isDark, fontSize),
             ),
           ),
         ),
@@ -355,18 +402,18 @@ class HadithDetails extends ConsumerWidget {
     );
   }
 
-  Widget _buildTabBar(bool isDark, int fontSize) {
+  Widget _buildTabBar(bool isDark, double fontSize) {
     return TabBar(
       indicatorColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
       labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
       unselectedLabelColor: const Color(0xff977c55),
       labelStyle: GoogleFonts.notoKufiArabic(
-        fontSize: fontSize.toDouble() * 0.8,
+        fontSize: fontSize,
         fontWeight: FontWeight.bold,
       ),
       unselectedLabelStyle: TextStyle(
         fontFamily: 'AvenirArabic',
-        fontSize: fontSize.toDouble() * 0.8,
+        fontSize: fontSize,
       ),
       tabs: const [
         Tab(text: 'الخلاصة'),
@@ -398,16 +445,20 @@ class HadithDetails extends ConsumerWidget {
 class TabContent extends ConsumerWidget {
   final String text;
   final bool isDark;
+  final double screenWidth;
 
   const TabContent({
     Key? key,
     required this.text,
     required this.isDark,
+    required this.screenWidth,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fontSize = ref.watch(fontSizeProvider);
+    final baseFontSize = ref.watch(fontSizeProvider);
+    final bodyFontSize = _getBodyFontSize(screenWidth, baseFontSize.toDouble());
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
       child: ScrollConfiguration(
@@ -419,7 +470,7 @@ class TabContent extends ConsumerWidget {
             textAlign: TextAlign.justify,
             text: TextSpan(
               children: parseHadithText(
-                  text.trim(), isDark, fontSize.toDouble()),
+                  text.trim(), isDark, bodyFontSize),
             ),
           ),
         ),
@@ -427,4 +478,3 @@ class TabContent extends ConsumerWidget {
     );
   }
 }
-

@@ -1,3 +1,5 @@
+// lib/main.dart
+
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
@@ -23,6 +25,8 @@ import 'core/single_instance.dart';
 import 'core/secure_supabase_storage.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui; // Add prefix for dart:ui
+import 'screens/settings_screen.dart';
+import 'dart:async';
 
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
@@ -34,50 +38,15 @@ const supabaseAnonKey = String.fromEnvironment(
   defaultValue: 'ANON_KEY_NOT_FOUND',
 );
 
+final initializationProvider = FutureProvider<void>((ref) async {
+  await _initializeApp();
+  await ref.read(settingsInitializerProvider.future);
+});
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-/// Standalone entry point for scheduler tasks.
-/// This runs a minimal app instance to show a notification and then exits.
-@pragma('vm:entry-point')
-void notificationMain() async {
-  // Required initialization for background tasks.
-  WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('notificationMain: Starting background task initialization');
-  
-  // Setup local notifications for Windows.
-  if (Platform.isWindows) {
-    debugPrint('notificationMain: Setting up local notifier for Windows');
-    await localNotifier.setup(
-      appName: 'أحاديث الزكاة',
-      shortcutPolicy: ShortcutPolicy.requireCreate,
-    );
-  }
-  
-  // Initialize providers in a new, separate scope.
-  final container = ProviderContainer();
-  debugPrint('notificationMain: Initializing Supabase');
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-    authOptions: FlutterAuthClientOptions(
-      localStorage: SecureSupabaseStorage(),
-    ),
-  );
-  
-  final notificationService = container.read(notificationServiceProvider);
-  debugPrint('notificationMain: Handling launch from scheduler');
-  await notificationService.handleLaunchFromScheduler();
-  
-  // Instead of exiting, keep the app running in the background on Windows
-  if (Platform.isWindows) {
-    debugPrint('notificationMain: Keeping app running in background');
-    await windowManager.hide(); // Hide the window instead of exiting
-    await windowManager.setSkipTaskbar(true); // Remove from taskbar
-  } else {
-    debugPrint('notificationMain: Exiting after scheduler task');
-    exit(0); // Exit only on non-Windows platforms
-  }
-}
+final StreamController<ReceivedAction> receivedActionStream =
+    StreamController<ReceivedAction>.broadcast();
 
 class NotificationController {
   @pragma('vm:entry-point')
@@ -85,45 +54,13 @@ class NotificationController {
     ReceivedAction receivedAction,
   ) async {
     debugPrint('Notification action received at ${DateTime.now()}');
+    receivedActionStream.add(receivedAction);
 
-    // When a notification is clicked, bring the main app to the front.
     if (Platform.isWindows) {
-      final message = json.encode({'args': ['--show-window-from-notification']});
+      final message = json.encode({
+        'args': ['--show-window-from-notification']
+      });
       await SingleInstance.sendMessage(message);
-    }
-
-    // A delay to allow the main instance to respond.
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (navigatorKey.currentState != null &&
-        navigatorKey.currentContext != null) {
-      final container = ProviderScope.containerOf(navigatorKey.currentContext!);
-      if (receivedAction.payload?.containsKey('hadith') == true) {
-        try {
-          final hadithJson = receivedAction.payload!['hadith']!;
-          final hadithMap = json.decode(hadithJson) as Map<String, dynamic>;
-          final hadith = Hadith.fromJson(hadithMap);
-          container.read(dailyHadithProvider.notifier).setDailyHadith(hadith);
-          container.read(showDailyHadithProvider.notifier).state = true;
-          container.read(selectedHadithProvider.notifier).state = null;
-          debugPrint('Set daily hadith from notification payload');
-        } catch (e) {
-          debugPrint('Error parsing hadith from notification: $e');
-        }
-      }
-      container.read(innerBooksScreenProvider.notifier).state = null;
-      container.read(navigationProvider.notifier).changeTab(1);
-      debugPrint('Set navigationProvider to index 1');
-
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const HomeScreen(showHadithDetails: true),
-        ),
-        (Route<dynamic> route) => false,
-      );
-      debugPrint('Navigated to HomeScreen with showHadithDetails: true');
     }
   }
 }
@@ -149,34 +86,40 @@ ReceivedAction? _initialAction;
 void main(List<String> args) async {
   debugPrint('main: Application started with args: $args');
   WidgetsFlutterBinding.ensureInitialized();
-  
-  bool hideOnStartup = Platform.isWindows && args.contains('--startup');
-  debugPrint('main: hideOnStartup set to $hideOnStartup');
 
-  if (Platform.isWindows && args.contains('--show-daily-hadith-scheduler')) {
-    debugPrint('main: Detected scheduler launch, running notificationMain');
-    notificationMain();
-    return;
-  }
+  bool hideOnStartup = args.contains('--startup');
+  
+  bool showDailyHadith = args.contains('--show-daily-hadith');
+
+  debugPrint(
+      'main: hideOnStartup: $hideOnStartup, showDailyHadith: $showDailyHadith');
 
   if (Platform.isWindows) {
     debugPrint('main: Initializing SingleInstance server');
     final becamePrimary = await SingleInstance.startServer();
     if (!becamePrimary) {
-      debugPrint('main: Another instance is primary, sending message and exiting');
+      debugPrint(
+          'main: Another instance is primary, sending message and exiting');
       final message = json.encode({'args': args});
       await SingleInstance.sendMessage(message);
       return;
     }
     debugPrint('main: Became primary instance, setting up message listener');
+    
     SingleInstance.messages.listen((msg) async {
       try {
-        final Map<String, dynamic> data = json.decode(msg) as Map<String, dynamic>;
+        final Map<String, dynamic> data =
+            json.decode(msg) as Map<String, dynamic>;
         if (data.containsKey('args')) {
           final List<dynamic> receivedArgs = data['args'] as List<dynamic>;
-          if (receivedArgs.contains('--show-window-from-notification')) {
-            debugPrint('main: Received show-window-from-notification command');
+         
+          if (receivedArgs.isEmpty ||
+              receivedArgs.contains('--show-window-from-notification')) {
+            debugPrint(
+                'main: Received command to show window from another instance');
             await windowManager.show();
+            await windowManager
+                .setSkipTaskbar(false); 
             await windowManager.focus();
           }
         }
@@ -186,7 +129,6 @@ void main(List<String> args) async {
     });
   }
 
-  // Check if this is the first run and request admin privileges
   if (Platform.isWindows) {
     final prefs = await SharedPreferences.getInstance();
     final isFirstRun = prefs.getBool('isFirstRun') ?? true;
@@ -194,9 +136,9 @@ void main(List<String> args) async {
     if (isFirstRun) {
       if (!await _requestAdminPrivileges()) {
         debugPrint('main: Admin privileges denied, exiting');
-        exit(0); // Exit if admin privileges are not granted
+        exit(0);
       }
-      await prefs.setBool('isFirstRun', false); // Mark as not first run after success
+      await prefs.setBool('isFirstRun', false);
     }
   }
 
@@ -215,12 +157,13 @@ void main(List<String> args) async {
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       debugPrint('main: Window ready to show, hideOnStartup is $hideOnStartup');
-      if (!hideOnStartup) {
+      
+      if (!hideOnStartup && !showDailyHadith) {
         await windowManager.show();
         await windowManager.focus();
       } else {
-        await windowManager.hide(); // Hide on startup
-        await windowManager.setSkipTaskbar(true); // Remove from taskbar
+        await windowManager.hide();
+        await windowManager.setSkipTaskbar(true);
       }
     });
     await windowManager.ensureInitialized();
@@ -232,8 +175,7 @@ void main(List<String> args) async {
   debugPrint('main: Supabase initialized');
 
   if (!Platform.isWindows) {
-    _initialAction =
-        await AwesomeNotifications().getInitialNotificationAction(
+    _initialAction = await AwesomeNotifications().getInitialNotificationAction(
       removeFromActionEvents: false,
     );
   }
@@ -245,7 +187,24 @@ void main(List<String> args) async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  runApp(const ProviderScope(child: MyApp()));
+  final container = ProviderContainer();
+
+ 
+  if (showDailyHadith && Platform.isWindows) {
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final notificationService = container.read(notificationServiceProvider);
+      await notificationService.init();
+     
+      await Future.delayed(const Duration(seconds: 1));
+      final hadith = await notificationService.getDailyHadith();
+      if (hadith != null) {
+        await notificationService.sendImmediateNotificationTest();
+      }
+    });
+  }
+
+  runApp(ProviderScope(parent: container, child: const MyApp()));
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -257,6 +216,8 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp>
     with WindowListener, TrayListener {
+  late StreamSubscription<ReceivedAction> _actionStreamSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -268,11 +229,43 @@ class _MyAppState extends ConsumerState<MyApp>
     ref.read(notificationServiceProvider).init();
     debugPrint('MyAppState: Notification service initialized');
 
-    if (_initialAction != null) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        NotificationController.onActionReceivedMethod(_initialAction!);
+    _actionStreamSubscription =
+        receivedActionStream.stream.listen((receivedAction) {
+      _handleNotificationNavigation(receivedAction);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_initialAction != null) {
+        _handleNotificationNavigation(_initialAction!);
         _initialAction = null;
-      });
+      }
+    });
+  }
+
+  void _handleNotificationNavigation(ReceivedAction receivedAction) {
+    if (mounted &&
+        receivedAction.payload != null &&
+        receivedAction.payload!.containsKey('hadith')) {
+      try {
+        final hadithJson = receivedAction.payload!['hadith']!;
+        final hadithMap = json.decode(hadithJson) as Map<String, dynamic>;
+        final hadith = Hadith.fromJson(hadithMap);
+
+      
+        windowManager.show();
+        windowManager.focus();
+
+        ref.read(dailyHadithProvider.notifier).setDailyHadith(hadith);
+        ref.read(showDailyHadithProvider.notifier).state = true;
+        ref.read(selectedHadithProvider.notifier).state = null;
+        ref.read(innerBooksScreenProvider.notifier).state = null;
+        ref.read(navigationProvider.notifier).changeTab(1);
+
+        debugPrint(
+            'Successfully handled notification navigation to Hadith Details.');
+      } catch (e) {
+        debugPrint('Error parsing hadith payload during navigation: $e');
+      }
     }
   }
 
@@ -300,6 +293,7 @@ class _MyAppState extends ConsumerState<MyApp>
 
   @override
   void dispose() {
+    _actionStreamSubscription.cancel();
     if (Platform.isWindows) {
       trayManager.removeListener(this);
       windowManager.removeListener(this);
@@ -360,31 +354,28 @@ class _MyAppState extends ConsumerState<MyApp>
 }
 
 Future<bool> _requestAdminPrivileges() async {
-  if (!Platform.isWindows) return true; // No need for non-Windows platforms
+  if (!Platform.isWindows) return true;
 
-  // Check if already running as admin
   final isElevated = await Process.run('net', ['session']).then((result) {
     return result.exitCode == 0;
   }).catchError((_) => false);
 
   if (isElevated) return true;
 
-  // Request elevation using ShellExecute
   final exePath = Platform.resolvedExecutable;
   final result = ShellExecute(
-    0, // Use 0 instead of nullptr
-    TEXT('runas'), // Request elevation
+    0,
+    TEXT('runas'),
     TEXT(exePath),
-    TEXT(''), // No additional arguments
-    nullptr, // Use 0 instead of nullptr
+    TEXT(''),
+    nullptr,
     SW_SHOWNORMAL,
   );
 
   if (result <= 32) {
     debugPrint('Failed to request admin privileges. Error code: $result');
-    return false; // User declined or error occurred
+    return false;
   }
 
-  // If successful, the app will restart with admin rights
   return true;
 }

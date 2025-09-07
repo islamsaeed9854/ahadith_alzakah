@@ -4,7 +4,7 @@ import 'package:arabic_font/arabic_font.dart';
 class ChapterCard extends StatelessWidget {
   final String title;
   final String text;
-  final double screenWidth; //  تم التغيير من isLandscape إلى screenWidth
+  final double screenWidth; 
   final VoidCallback? onTap;
   final bool isExpanded;
 
@@ -12,25 +12,25 @@ class ChapterCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.text,
-    required this.screenWidth, // مطلوب الآن
+    required this.screenWidth, 
     this.onTap,
     this.isExpanded = false,
   });
 
-  // دالة مساعدة لتحديد حجم خط العنوان بناءً على عرض الشاشة
+  
   double _getTitleFontSize(double width) {
-    if (width > 1800) return 22.0; // كبير جدًا
-    if (width > 1200) return 20.0; // كبير
-    if (width > 600) return 19.0;  // متوسط
-    return 18.0; // صغير
+    if (width > 1800) return 22.0; 
+    if (width > 1200) return 20.0; 
+    if (width > 600) return 19.0; 
+    return 18.0; 
   }
 
-  // دالة مساعدة لتحديد حجم خط النص بناءً على عرض الشاشة
+  
   double _getTextFontSize(double width) {
-    if (width > 1800) return 17.0; // كبير جدًا
-    if (width > 1200) return 16.0; // كبير
-    if (width > 600) return 15.0;  // متوسط
-    return 14.0; // صغير
+    if (width > 1800) return 17.0; 
+    if (width > 1200) return 16.0; 
+    if (width > 600) return 15.0;  
+    return 14.0; 
   }
 
   @override
@@ -43,7 +43,7 @@ class ChapterCard extends StatelessWidget {
           cursor: SystemMouseCursors.click,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            // تم إزالة الهامش الأفقي ليتم التحكم به من الشاشة الرئيسية
+            
             margin: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
               color: const Color.fromRGBO(255, 255, 255, .8),
@@ -74,7 +74,7 @@ class ChapterCard extends StatelessWidget {
                           title,
                           style: ArabicTextStyle(
                             arabicFont: ArabicFont.cairo,
-                            fontSize: _getTitleFontSize(screenWidth), // حجم خط متجاوب
+                            fontSize: _getTitleFontSize(screenWidth), 
                             fontWeight: FontWeight.bold,
                             color: const Color(0xffe6a345),
                           ),
@@ -87,7 +87,7 @@ class ChapterCard extends StatelessWidget {
                           style: ArabicTextStyle(
                             arabicFont: ArabicFont.avenirArabic,
                             fontWeight: FontWeight.w900,
-                            fontSize: _getTextFontSize(screenWidth), // حجم خط متجاوب
+                            fontSize: _getTextFontSize(screenWidth), 
                             color: Colors.black87,
                           ),
                           maxLines: 2,

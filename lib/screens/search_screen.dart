@@ -10,27 +10,33 @@ import 'chapters_screen.dart';
 import '../widgets/search_card.dart';
 import '../providers/search_providers.dart';
 
+// ======================= Responsive Breakpoints =======================
+const double kMediumScreenBreakpoint = 700.0;
+const double kLargeScreenBreakpoint = 1200.0;
+const double kExtraLargeScreenBreakpoint = 1800.0;
+// ========================================================================
 
-// ====== دوال مساعدة للتصميم المتجاوب ======
 
-// تحديد عرض المحتوى الرئيسي بناءً على عرض الشاشة
+
 double _getMaxContentWidth(double screenWidth) {
-  if (screenWidth > 1200) return 800; // Large Desktop
-  if (screenWidth > 700) return 650;  // Medium / Tablet
+  if (screenWidth > kLargeScreenBreakpoint) return screenWidth * 0.7; // Large Desktop (70%)
+  if (screenWidth > kMediumScreenBreakpoint) return 800;  // Medium / Tablet
   return screenWidth; // Small / Mobile (full width)
 }
 
-// دالة مساعدة لتحديد حجم الخط بناءً على عرض الشاشة
+
 double _getResponsiveFontSize(double screenWidth, {
-  double small = 16,
-  double medium = 17,
-  double large = 18,
+  required double small,
+  required double medium,
+  required double large,
+  double? extraLarge,
 }) {
-  if (screenWidth > 1200) return large;
-  if (screenWidth > 700) return medium;
+  if (screenWidth > kExtraLargeScreenBreakpoint) return extraLarge ?? large * 1.1;
+  if (screenWidth > kLargeScreenBreakpoint) return large;
+  if (screenWidth > kMediumScreenBreakpoint) return medium;
   return small;
 }
-// ===========================================
+
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -41,7 +47,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _hasInitiatedSearch = false; // متغير لتتبع حالة البحث
+  bool _hasInitiatedSearch = false; 
 
   @override
   void initState() {
@@ -50,7 +56,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _onScroll() {
-    // تحميل المزيد من النتائج عند الوصول لأسفل القائمة
+  
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       final filteredResults = ref.read(filteredResultsProvider);
@@ -76,19 +82,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     
     FocusScope.of(context).unfocus();
 
-    // تحديث الحالة عند بدء البحث
+  
     if (!_hasInitiatedSearch) {
       setState(() {
         _hasInitiatedSearch = true;
       });
     }
 
-    // ================== >> الإضافة المطلوبة << ==================
-    // التحقق مما إذا كانت القائمة تحتوي على عناصر والتمرير للأعلى
+ 
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0.0);
     }
-    // ==========================================================
+  
 
     ref.read(filterSearchProvider)(controller.text, context);
   }
@@ -108,16 +113,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Container(
                 width: contentWidth,
                 padding: EdgeInsets.symmetric(
-                  // إضافة هوامش أفقية فقط على الشاشات الصغيرة
-                  horizontal: screenWidth < 700 ? 20 : 0,
+               
+                  horizontal: screenWidth < kMediumScreenBreakpoint ? 20 : 0,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // ====== قسم عناصر التحكم بالبحث ======
+                   
                     _buildSearchControls(screenWidth),
                     const SizedBox(height: 16),
-                    // ====== قسم نتائج البحث ======
+                
                     Expanded(
                       child: _buildResultsColumn(screenWidth),
                     ),
@@ -131,7 +136,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  // ويدجت لعرض عناصر التحكم في البحث
+  
   Widget _buildSearchControls(double screenWidth) {
     final searchState = ref.watch(searchStateProvider);
     final controller = ref.watch(searchControllerProvider);
@@ -140,18 +145,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
               Text(
                 'البحث',
                 style: GoogleFonts.cairo(
                   fontWeight: FontWeight.bold,
-                  fontSize: _getResponsiveFontSize(screenWidth, small: 30, medium: 34, large: 38),
+                  fontSize: _getResponsiveFontSize(screenWidth, small: 30, medium: 34, large: 38, extraLarge: 42),
                   color: const Color(0xfffcead0),
                 ),
               ),
-              TextApp.backButton(ref),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextApp.backButton(ref)
+              ),
             ],
           ),
         ),
@@ -211,7 +219,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
   
-  // ويدجت لعرض عمود النتائج
+ 
   Widget _buildResultsColumn(double screenWidth) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +240,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  // ويدجت لعرض قائمة النتائج الفعلية
+  
   Widget _buildResultsList(double screenWidth) {
     final searchState = ref.watch(searchStateProvider);
     final filteredResults = ref.watch(filteredResultsProvider);
@@ -254,14 +262,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    // استخدام المتغير المحلي هنا
+  
     if (!_hasInitiatedSearch) {
       return Center(
         child: Text(
           'أدخل كلمة للبحث عنها في الموسوعة',
           style: GoogleFonts.cairo(
               color: Colors.white70,
-              fontSize: _getResponsiveFontSize(screenWidth)),
+              fontSize: _getResponsiveFontSize(screenWidth, small: 16, medium: 17, large: 18)),
         ),
       );
     }
@@ -272,7 +280,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           'لم يتم العثور على نتائج',
           style: GoogleFonts.cairo(
               color: Colors.white70,
-              fontSize: _getResponsiveFontSize(screenWidth)),
+              fontSize: _getResponsiveFontSize(screenWidth, small: 16, medium: 17, large: 18)),
         ),
       );
     }
@@ -341,3 +349,4 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 }
+

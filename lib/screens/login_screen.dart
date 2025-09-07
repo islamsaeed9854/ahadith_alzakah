@@ -8,7 +8,36 @@ import '../providers/navigation_provider.dart';
 import '../providers/login_providers.dart';
 import '../core/utils.dart';
 import '../widgets/login_text_field.dart';
-import 'package:arabic_font/arabic_font.dart';
+
+// ======================= Responsive Breakpoints =======================
+const double kMediumScreenBreakpoint = 600.0;
+const double kLargeScreenBreakpoint = 1200.0;
+const double kExtraLargeScreenBreakpoint = 1800.0;
+// ========================================================================
+
+// ====== Helper Functions for Responsive Design ======
+
+/// Determines the max width of the content area.
+double _getMaxContentWidth(double screenWidth) {
+  if (screenWidth > kLargeScreenBreakpoint) return screenWidth * 0.4; // 40% for extra-large screens
+  if (screenWidth > kMediumScreenBreakpoint) return 500; // Fixed width for tablets and desktops
+  return screenWidth; // Full width for mobile
+}
+
+/// A generic helper function to determine font sizes based on screen size.
+double _getResponsiveFontSize(double screenWidth, {
+  required double small,
+  required double medium,
+  required double large,
+  double? extraLarge,
+}) {
+  if (screenWidth > kExtraLargeScreenBreakpoint) return extraLarge ?? large * 1.1;
+  if (screenWidth > kLargeScreenBreakpoint) return large;
+  if (screenWidth > kMediumScreenBreakpoint) return medium;
+  return small;
+}
+// ======================================================
+
 final supabaseProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
@@ -23,7 +52,7 @@ class LoginScreen extends ConsumerWidget {
     return emailRegex.hasMatch(email);
   }
 
-  Future<void> _login(BuildContext context, WidgetRef ref) async {    // Remove focus from fields to hide keyboard
+  Future<void> _login(BuildContext context, WidgetRef ref) async {
     FocusScope.of(context).unfocus();
 
     final loginFormState = ref.read(loginFormProvider);
@@ -90,9 +119,7 @@ class LoginScreen extends ConsumerWidget {
       String errorMessage;
       if (e.toString().contains('Invalid login credentials')) {
         errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-      } else if (e.toString().contains('network')) {
-        errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة';
-      } else if (e.toString().contains('Failed host lookup')) {
+      } else if (e.toString().contains('network') || e.toString().contains('Failed host lookup')) {
         errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة';
       } else {
         errorMessage = 'حدث خطأ غير متوقع: $e';
@@ -111,74 +138,25 @@ class LoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isSmallScreen = screenWidth < 400;
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-
-    final navNotifier = ref.read(navigationProvider.notifier);
+    final contentWidth = _getMaxContentWidth(screenWidth);
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             Positioned.fill(child: TextApp.appBackgroundWidget),
-            SingleChildScrollView(
-              padding: EdgeInsets.only(
-                top: screenHeight * 0.2,
-                bottom: keyboardHeight > 0 ? keyboardHeight + screenHeight * 0.1 : screenHeight * 0.1,
-                left: isSmallScreen ? screenWidth * 0.05 : isLandscape ? screenWidth * 0.25 : screenWidth * 0.1,
-                right: isSmallScreen ? screenWidth * 0.05 :isLandscape ? screenWidth * 0.25 : screenWidth * 0.1,
-              ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: screenHeight - keyboardHeight,
+            Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth >= kMediumScreenBreakpoint ? 0 : 20,
+                  vertical: 20,
                 ),
-                child: IntrinsicHeight(
-                  child: isLandscape
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: _buildLoginForm(
-                                context,
-                                ref,
-                                screenWidth,
-                                screenHeight,
-                                isSmallScreen,
-                                isLandscape: true,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            _buildLoginForm(
-                              context,
-                              ref,
-                              screenWidth,
-                              screenHeight,
-                              isSmallScreen,
-                              isLandscape: false,
-                            ),
-                          ],
-                        ),
+                child: SizedBox(
+                  width: contentWidth,
+                  child: _buildLoginForm(context, ref, screenWidth),
                 ),
-              ),
-            ),
-            Positioned(
-              top: screenHeight * 0.1,
-              left: screenWidth * 0.05,
-              child: GestureDetector(
-                onTap: () {
-                  navNotifier.changeTab(3);
-                  Navigator.of(context, rootNavigator: true).pop();
-                },
-                child: TextApp.backButtonLoginAddRemovePages(context),
               ),
             ),
           ],
@@ -191,100 +169,96 @@ class LoginScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     double screenWidth,
-    double screenHeight,
-    bool isSmallScreen, {
-    required bool isLandscape,
-  }) {
+  ) {
     final loginFormState = ref.watch(loginFormProvider);
     final isLoading = ref.watch(isLoadingProvider);
+    final navNotifier = ref.read(navigationProvider.notifier);
 
-    return Container(
-      padding: EdgeInsets.all(
-        isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.08,
-      ),
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(253, 245, 236, 0.0),
-        borderRadius: BorderRadius.circular(isSmallScreen ? 15 : 20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromRGBO(0, 0, 0, 0.1),
-            blurRadius: isSmallScreen ? 5 : 10,
-            spreadRadius: isSmallScreen ? 1 : 3,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'تسجيل دخول',
-            style: GoogleFonts.cairo(
-              color: AppTheme.arrowBackdark,
-              fontSize: isLandscape ? 36 : 29,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-         SizedBox(height:isLandscape ? screenWidth * 0.02: screenWidth * 0.08),
-          buildTextField(
-            'البريد الالكترونى',
-            controller: loginFormState.emailController,
-            focusNode: loginFormState.emailFocusNode,
-            isFocused: loginFormState.emailFocused,
-            isPassword: false,
-          ),
-           SizedBox(height:isLandscape ? screenWidth * 0.02: screenWidth * 0.05),
-          buildTextField(
-            'كلمة السر',
-            controller: loginFormState.passwordController,
-            focusNode: loginFormState.passwordFocusNode,
-            isFocused: loginFormState.passwordFocused,
-            isPassword: true,
-          ),
-          SizedBox(height:isLandscape ? screenWidth * 0.02: screenWidth * 0.08),
-          SizedBox(
-            width: isLandscape ? screenWidth * 0.2 : screenWidth * 0.3,
-            height: isLandscape ? screenHeight * 0.15 : screenHeight * 0.05,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF977c55),
-                foregroundColor: const Color(0xFF977c55),
-                overlayColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(isSmallScreen ? 30 : 33),
-                ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // Centered Title
+            Text(
+              'تسجيل دخول',
+              style: GoogleFonts.cairo(
+                color: AppTheme.arrowBackdark,
+                fontSize: _getResponsiveFontSize(screenWidth, small: 29, medium: 32, large: 36),
+                fontWeight: FontWeight.bold,
               ),
-              onPressed: isLoading ? null : () => _login(context, ref),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(
-                      "تسجيل دخول",
-                      style: ArabicTextStyle(
-                            arabicFont: ArabicFont.avenirArabic,
-
-                        fontWeight: FontWeight.bold,
-                        fontSize: isLandscape ? screenWidth * 0.02 : screenWidth * 0.03,
-                        color: const Color(0xfffcead0),
-                        shadows: [
-                          Shadow(
-                            blurRadius: screenWidth * 0.09,
-                            color: const Color(0xfffcead0),
-                          ),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
             ),
+            // Back button aligned to the left of the content area
+            Align(
+              alignment: Alignment.centerLeft,
+              // Using the original back button from constants without modification
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_forward,
+                  color: AppTheme.secodaryColor,
+                  size: 30,
+                ),
+                onPressed: () {
+                  // This is the correct logic for this specific button
+                  navNotifier.changeTab(3);
+                  Navigator.of(context, rootNavigator: true).pop();
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: screenWidth > kMediumScreenBreakpoint ? 40 : 30),
+        buildTextField(
+          'البريد الالكتروني',
+          controller: loginFormState.emailController,
+          focusNode: loginFormState.emailFocusNode,
+          isFocused: loginFormState.emailFocused,
+          isPassword: false,
+        ),
+        const SizedBox(height: 20),
+        buildTextField(
+          'كلمة السر',
+          controller: loginFormState.passwordController,
+          focusNode: loginFormState.passwordFocusNode,
+          isFocused: loginFormState.passwordFocused,
+          isPassword: true,
+        ),
+        SizedBox(height: screenWidth > kMediumScreenBreakpoint ? 40 : 30),
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF977c55),
+              foregroundColor: const Color(0xfffcead0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(33),
+              ),
+            ),
+            onPressed: isLoading ? null : () => _login(context, ref),
+            child: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : Text(
+                    "تسجيل دخول",
+                    style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.bold,
+                        fontSize: _getResponsiveFontSize(screenWidth, small: 18, medium: 19, large: 20),
+                        color: const Color(0xfffcead0),
+                    ),
+                  ),
           ),
-          SizedBox(height: screenWidth * 0.05),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
+

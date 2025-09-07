@@ -20,16 +20,30 @@ import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
 
-// ====== دوال مساعدة للتصميم المتجاوب ======
+// ======================= Responsive Breakpoints =======================
+const double kMediumScreenBreakpoint = 600.0;
+const double kLargeScreenBreakpoint = 1200.0;
+const double kExtraLargeScreenBreakpoint = 1800.0;
+// ========================================================================
+
+
+
 double _getMaxContentWidth(double screenWidth) {
-  if (screenWidth > 800) return 700; // للشاشات الكبيرة جدًا
-  return screenWidth; // للشاشات الصغيرة والمتوسطة
+  if (screenWidth > kLargeScreenBreakpoint) return screenWidth * 0.7; 
+  if (screenWidth > 800) return 700; 
+  return screenWidth; 
 }
 
-double _getTitleFontSize(double screenWidth) {
-  if (screenWidth > 1200) return 42.0;
-  if (screenWidth > 600) return 38.0;
-  return 34.0;
+double _getResponsiveFontSize(double screenWidth, {
+  required double small,
+  required double medium,
+  required double large,
+  double? extraLarge,
+}) {
+  if (screenWidth > kExtraLargeScreenBreakpoint) return extraLarge ?? large * 1.1;
+  if (screenWidth > kLargeScreenBreakpoint) return large;
+  if (screenWidth > kMediumScreenBreakpoint) return medium;
+  return small;
 }
 // ===========================================
 
@@ -270,17 +284,18 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: GestureDetector(
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        GestureDetector(
                           onTap: () => _handleTitleTap(context, ref),
                           child: Text(
                             'الاعدادات',
                             style: GoogleFonts.cairo(
                               fontWeight: FontWeight.bold,
-                              fontSize: _getTitleFontSize(screenWidth),
+                              fontSize: _getResponsiveFontSize(screenWidth, small: 34.0, medium: 38.0, large: 42.0),
                               color: const Color(0xfffcead0),
                               shadows: [
                                 Shadow(
@@ -291,11 +306,13 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      ),
-                      TextApp.backButton(ref),
-                    ],
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextApp.backButton(ref)
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
                   buildSettingCard(context,
                       label: 'حجم الخط',
                       child: Row(
@@ -450,3 +467,4 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+

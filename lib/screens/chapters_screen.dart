@@ -13,9 +13,7 @@ import '../core/methods.dart';
 final expandedSectionProvider = StateProvider<int?>((ref) => null);
 final selectedHadithProvider = StateProvider<Hadith?>((ref) => null);
 
-// ====== دوال مساعدة للتصميم المتجاوب ======
 
-// تحديد عرض المحتوى الرئيسي بناءً على عرض الشاشة
 double getContentWidth(double screenWidth) {
   if (screenWidth > 1800) return 1100; // Extra Large
   if (screenWidth > 1200) return 950;  // Large
@@ -23,7 +21,7 @@ double getContentWidth(double screenWidth) {
   return screenWidth * 0.9; // Small screens (90% of width)
 }
 
-// تحديد حجم الخط للعناوين الرئيسية
+
 double getTitleFontSize(double screenWidth) {
   if (screenWidth > 1800) return 32.0;
   if (screenWidth > 1200) return 30.0;
@@ -31,7 +29,7 @@ double getTitleFontSize(double screenWidth) {
   return 25.0;
 }
 
-// تحديد الهامش الأفقي لقائمة الأحاديث المنسدلة
+
 double getDetailsHorizontalMargin(double screenWidth) {
   if (screenWidth > 600) return 40.0;
   return 20.0;
@@ -87,7 +85,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final double screenWidth = constraints.maxWidth;
-          // استخدام الدوال المساعدة للحصول على القيم المتجاوبة
+         
           final double contentWidth = getContentWidth(screenWidth);
           final double titleFontSize = getTitleFontSize(screenWidth);
           final double detailsMargin = getDetailsHorizontalMargin(screenWidth);
@@ -152,7 +150,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                       controller: _scrollController,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        // توسيط المحتوى وتحديد عرضه
+                     
                         child: Center(
                           child: SizedBox(
                             width: contentWidth,
@@ -170,7 +168,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.cairo(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: titleFontSize, // حجم خط متجاوب
+                                          fontSize: titleFontSize, 
                                           color: const Color(0xfffcead0),
                                           shadows: [
                                             const Shadow(
@@ -200,7 +198,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: titleFontSize, // حجم خط متجاوب
+                                    fontSize: titleFontSize, 
                                     color: const Color(0xfffcead0),
                                     shadows: [
                                       const Shadow(
@@ -227,7 +225,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                                           child: ChapterCard(
                                             title: 'الفصل ${Methods.numberToArabicText(section['section_number'] as int)}',
                                             text: section['section_title'] as String,
-                                            screenWidth: screenWidth, // تمرير عرض الشاشة
+                                            screenWidth: screenWidth, 
                                             isExpanded: isExpanded,
                                             onTap: () {
                                               if (isExpanded) {
@@ -244,8 +242,8 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                                             duration: const Duration(milliseconds: 300),
                                             margin: EdgeInsets.only(
                                               bottom: 16,
-                                              right: detailsMargin, // هامش متجاوب
-                                              left: detailsMargin, // هامش متجاوب
+                                              right: detailsMargin, 
+                                              left: detailsMargin,
                                             ),
                                             decoration: BoxDecoration(
                                               color: const Color.fromRGBO(255, 255, 255, 0.9),

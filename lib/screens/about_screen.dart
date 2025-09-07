@@ -4,19 +4,36 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
 import 'package:arabic_font/arabic_font.dart';
 
+// ======================= Responsive Breakpoints =======================
+const double kMediumScreenBreakpoint = 600.0;
+const double kLargeScreenBreakpoint = 1200.0;
+const double kExtraLargeScreenBreakpoint = 1800.0;
+
 // ======================= Responsive Helper Functions =======================
 
-// Determines the maximum width for the content on large screens
+/// Determines the maximum width for the main content area based on screen size.
+/// On large screens, it creates a centered view (70% content, 15% margins).
 double _getMaxContentWidth(double screenWidth) {
-  if (screenWidth > 900) return 850; // For large desktop screens
-  return screenWidth; // For smaller screens
+  if (screenWidth > kLargeScreenBreakpoint) {
+    return screenWidth * 0.70; // 70% for large and extra-large screens
+  }
+  if (screenWidth > kMediumScreenBreakpoint) {
+    return 850; // A fixed max-width for medium screens looks better.
+  }
+  return screenWidth; // Full width for small screens
 }
 
-// Determines the font size for the main title "عن التطبيق"
-double _getMainTitleFontSize(double screenWidth) {
-  if (screenWidth > 1200) return 42.0;
-  if (screenWidth > 600) return 38.0;
-  return 34.0;
+/// A generic helper function to determine font sizes based on screen size.
+double _getResponsiveFontSize(double screenWidth, {
+  required double small,
+  required double medium,
+  required double large,
+  double? extraLarge,
+}) {
+  if (screenWidth > kExtraLargeScreenBreakpoint) return extraLarge ?? large * 1.1;
+  if (screenWidth > kLargeScreenBreakpoint) return large;
+  if (screenWidth > kMediumScreenBreakpoint) return medium;
+  return small;
 }
 // ========================================================================
 
@@ -32,63 +49,78 @@ class AboutScreen extends ConsumerWidget {
       body: Stack(
         children: [
           TextApp.appBackgroundWidget,
-          Center(
-            child: SizedBox(
-              width: contentWidth,
-              child: SingleChildScrollView(
-                child: SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      // Apply horizontal padding only on smaller screens
-                      horizontal: screenWidth >= 900 ? 0 : 20,
-                      vertical: 16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'عن التطبيق',
-                                style: GoogleFonts.cairo(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: _getMainTitleFontSize(screenWidth),
-                                  color: const Color(0xfffcead0),
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 4,
-                                      color: Colors.black.withOpacity(0.3),
-                                    ),
-                                  ],
+          SafeArea(
+            child: Center(
+              child: Container(
+                constraints: BoxConstraints(maxWidth: contentWidth),
+                child: Column(
+                  children: [
+                    // Header with centered title and left-aligned button
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth < kMediumScreenBreakpoint ? 20 : 0,
+                        vertical: 16,
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Centered Title
+                          Text(
+                            'عن التطبيق',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              fontSize: _getResponsiveFontSize(screenWidth, small: 34.0, medium: 38.0, large: 42.0, extraLarge: 46.0),
+                              color: const Color(0xfffcead0),
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 4,
+                                  color: Colors.black.withOpacity(0.3),
                                 ),
-                              ),
+                              ],
                             ),
-                            TextApp.backButton(ref),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        // The 'const' keyword has been removed from here to fix the error
-                        InfoSection(
-                          title: 'تعريف الموسوعة',
-                          content: TextApp.encyclopediaDefinition,
-                        ),
-                        InfoSection(
-                          title: 'منهج التخريج',
-                          content: TextApp.Ta58reegText,
-                        ),
-                        InfoSection(
-                          title: 'منهج الدراسة',
-                          content: TextApp.studyMethodology,
-                        ),
-                        InfoSection(
-                          title: 'تواصل معنا',
-                          content: TextApp.contactInfo,
-                        ),
-                      ],
+                          ),
+                          // Back Button aligned to the left of the content area
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextApp.backButton(ref),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    // Scrollable Content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth < kMediumScreenBreakpoint ? 20 : 0,
+                            vertical: 16,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                               InfoSection(
+                                title: 'تعريف الموسوعة',
+                                content: TextApp.encyclopediaDefinition,
+                              ),
+                               InfoSection(
+                                title: 'منهج التخريج',
+                                content: TextApp.Ta58reegText,
+                              ),
+                               InfoSection(
+                                title: 'منهج الدراسة',
+                                content: TextApp.studyMethodology,
+                              ),
+                               InfoSection(
+                                title: 'تواصل معنا',
+                                content: TextApp.contactInfo,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -101,26 +133,10 @@ class AboutScreen extends ConsumerWidget {
 
 // ======================= Info Section Widget =======================
 
-// Determines the font size for the section title (e.g., "تعريف الموسوعة")
-double _getSectionTitleFontSize(double screenWidth) {
-  if (screenWidth > 1200) return 30.0;
-  if (screenWidth > 600) return 28.0;
-  return 26.0;
-}
-
-// Determines the font size for the content inside the card
-double _getSectionContentFontSize(double screenWidth) {
-  if (screenWidth > 1200) return 20.0;
-  if (screenWidth > 600) return 19.0;
-  return 18.0;
-}
-// ========================================================================
-
 class InfoSection extends StatelessWidget {
   final String title;
   final String content;
 
-  // Constructor is not const anymore
   const InfoSection({super.key, required this.title, required this.content});
 
   @override
@@ -128,7 +144,6 @@ class InfoSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Padding(
-      // Using a fixed bottom margin for consistent spacing
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +152,7 @@ class InfoSection extends StatelessWidget {
             title,
             style: GoogleFonts.cairo(
               color: const Color(0xfffcead0),
-              fontSize: _getSectionTitleFontSize(screenWidth),
+              fontSize: _getResponsiveFontSize(screenWidth, small: 26.0, medium: 28.0, large: 30.0, extraLarge: 32.0),
               fontWeight: FontWeight.bold,
               shadows: [
                 Shadow(blurRadius: 4, color: Colors.black.withOpacity(0.3)),
@@ -158,7 +173,6 @@ class InfoSection extends StatelessWidget {
                 ),
               ],
             ),
-            // Using fixed padding for a clean look
             padding: const EdgeInsets.all(16.0),
             child: Text(
               content,
@@ -166,7 +180,7 @@ class InfoSection extends StatelessWidget {
                 arabicFont: ArabicFont.avenirArabic,
                 fontWeight: FontWeight.w900,
                 color: Colors.brown.shade800,
-                fontSize: _getSectionContentFontSize(screenWidth),
+                fontSize: _getResponsiveFontSize(screenWidth, small: 18.0, medium: 19.0, large: 20.0, extraLarge: 21.0),
                 height: 1.7, // Improved line height for readability
               ),
             ),
@@ -176,3 +190,4 @@ class InfoSection extends StatelessWidget {
     );
   }
 }
+

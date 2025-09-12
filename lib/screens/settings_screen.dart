@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:developer';
 import 'package:ahadith_alzakah/screens/login_screen.dart';
 import 'package:ahadith_alzakah/screens/remove_hadith.dart';
 import 'package:flutter/foundation.dart';

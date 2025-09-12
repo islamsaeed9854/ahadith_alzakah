@@ -20,17 +20,18 @@ dependencies:
   archive: ^4.0.7
   
   # desktop-specific packages
-  local_notifier: 
+  local_notifier:
   tray_manager: 
   window_manager: 
   path_provider: 
-  win32: 
+  win32:
+  system_tray:
   
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-    
+  msix: ^3.16.12
 
   flutter_lints: ^5.0.0
   logger: ^2.5.0
@@ -56,3 +57,15 @@ flutter_launcher_icons:
   adaptive_icon_background: "#FFFFFF" 
   adaptive_icon_foreground: "assets/logo.png"
   remove_alpha_ios: true
+msix_config:
+  display_name: موسوعة الزكاة
+  publisher_display_name: Islam Saeed
+  identity_name: IslamSaeed.5510813C742D0
+  publisher: CN=58C2FEF5-20C8-4652-9478-669C11E84A8F
+  msix_version: 1.0.0.1
+  architecture: x64
+  logo_path: assets/logo.png
+  certificate_path: D:\flutter_projects\ahadith_alzakah\signing\certificate.pfx
+  certificate_password: CER9854CER
+  timestamp_server: http://timestamp.sectigo.com
+  capabilities: 'internetClient,backgroundTasks'

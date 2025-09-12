@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/hadith.dart';
 import '../data_sync_service/auth_checker.dart';
 import '../data_sync_service/data_uploader.dart';
-import '../data_sync_service/version_uploader.dart';
 import '../local_storage_service/local_json_handler.dart';
 import '../local_storage_service/local_version_handler.dart';
 import 'data_grouper.dart';

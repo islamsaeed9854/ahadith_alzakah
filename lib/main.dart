@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
-import 'screens/home_screen.dart';
 import 'core/theme.dart';
-import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'providers/notification_service_provider.dart';
 import 'core/single_instance.dart';
@@ -15,8 +13,6 @@ import 'core/secure_supabase_storage.dart';
 import 'dart:ui' as ui;
 import 'screens/settings_screen.dart';
 import 'dart:async';
-import 'notification_service.dart';
-import 'package:path_provider/path_provider.dart';
 
 // Hardcoded Supabase credentials for MSIX build fallback
 const String fallbackSupabaseUrl = 'https://iccvwmacddhakaypawvn.supabase.co';
@@ -33,6 +29,7 @@ const supabaseAnonKey = String.fromEnvironment(
   defaultValue: fallbackSupabaseAnonKey,
 );
 
+// Global flag to track Supabase initialization
 bool _supabaseInitialized = false;
 
 final initializationProvider = FutureProvider<void>((ref) async {
@@ -41,34 +38,31 @@ final initializationProvider = FutureProvider<void>((ref) async {
 });
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-ProviderContainer? _globalContainer;
-
-// دالة لكتابة الأخطاء في ملف
-Future<void> _logErrorToFile(String error, String stackTrace) async {
-  try {
-    final directory = await getApplicationDocumentsDirectory();
-    final logFile = File('${directory.path}/notification_error_log.txt');
-    final timestamp = DateTime.now().toIso8601String();
-    final logContent =
-        '[$timestamp]\nError: $error\nStackTrace: $stackTrace\n\n';
-    await logFile.writeAsString(logContent, mode: FileMode.append);
-  } catch (e) {
-    debugPrint("Failed to write to log file: $e");
-  }
-}
 
 Future<void> _initializeApp() async {
-  if (_supabaseInitialized) return;
+  if (_supabaseInitialized) {
+    debugPrint('Supabase already initialized, skipping...');
+    return;
+  }
+
   try {
+    debugPrint('Starting Supabase initialization...');
+
     String urlToUse = supabaseUrl;
     String keyToUse = supabaseAnonKey;
 
     if (urlToUse == 'URL_NOT_FOUND' || urlToUse.isEmpty) {
+      debugPrint('Using fallback Supabase URL');
       urlToUse = fallbackSupabaseUrl;
     }
+
     if (keyToUse == 'ANON_KEY_NOT_FOUND' || keyToUse.isEmpty) {
+      debugPrint('Using fallback Supabase Key');
       keyToUse = fallbackSupabaseAnonKey;
     }
+
+    debugPrint('Supabase URL: ${urlToUse.substring(0, 20)}...');
+    debugPrint('Supabase Key: ${keyToUse.substring(0, 10)}...');
 
     await Supabase.initialize(
       url: urlToUse,
@@ -78,129 +72,88 @@ Future<void> _initializeApp() async {
         autoRefreshToken: true,
       ),
     );
+
     _supabaseInitialized = true;
     debugPrint('Supabase initialized successfully');
-  } catch (e) {
+  } catch (e, stackTrace) {
     debugPrint('Error initializing Supabase: $e');
+    debugPrint('Stack trace: $stackTrace');
     _supabaseInitialized = false;
   }
 }
 
+ProviderContainer? _globalContainer;
+
 void main(List<String> args) async {
+  debugPrint('main: Application started with args: $args');
+
   WidgetsFlutterBinding.ensureInitialized();
 
-  bool showDailyHadith = args.contains('--show-daily-hadith');
-  debugPrint('App started with args: $args');
-
-  // --- Start of Single Instance Logic (Corrected Version) ---
-  if (!showDailyHadith) {
-    bool isPrimary = await SingleInstance.startServer();
-    if (!isPrimary) {
-      debugPrint('Secondary instance detected. Sending message to primary...');
-      bool sent = await SingleInstance.sendMessage(json.encode({'args': ['--show-window']}));
-      if (sent) {
-        debugPrint('Message sent successfully. Exiting secondary instance.');
-        exit(0);
-      } else {
-        debugPrint('Failed to send message. The primary instance may have crashed. Trying to become the new primary...');
-        // The stale lock file should have been deleted by the failed `sendMessage` call.
-        // We can now attempt to start this instance as the primary one.
-        isPrimary = await SingleInstance.startServer();
-        if (!isPrimary) {
-          // This should rarely happen, but as a fallback, we exit.
-          debugPrint('Could not become the primary instance. Another instance may have just started. Exiting.');
-          exit(1);
-        }
-      }
-    }
-  }
-  debugPrint('This is the primary instance.');
-  
-  SingleInstance.messages.listen((msg) async {
-    final Map<String, dynamic> data = json.decode(msg);
-    final List<dynamic> receivedArgs = data['args'];
-    if (receivedArgs.contains('--show-window')) {
-      await _showMainWindow();
-    }
-  });
-  // --- End of Single Instance Logic ---
-
-
-  if (showDailyHadith) {
-    try {
-      debugPrint("Launched by scheduler to show daily hadith.");
-      await _initializeApp();
-      _globalContainer = ProviderContainer();
-      final notificationService =
-          _globalContainer!.read(notificationServiceProvider);
-      await notificationService.init();
-      await notificationService.showImmediateNotification();
-      debugPrint("Scheduled notification process completed successfully.");
-    } catch (e, st) {
-      debugPrint("ERROR during scheduled notification task: $e");
-      await _logErrorToFile(e.toString(), st.toString());
-    } finally {
+  // Single Instance Logic
+  if (Platform.isWindows) {
+    final becamePrimary = await SingleInstance.startServer((message) async {
+      debugPrint('Received message from secondary instance: $message');
+      await windowManager.show();
+      await windowManager.setSkipTaskbar(false);
+      await windowManager.setAlwaysOnTop(true);
+      await windowManager.focus();
       await Future.delayed(const Duration(seconds: 2));
+      await windowManager.setAlwaysOnTop(false);
+    });
+
+    if (!becamePrimary) {
+      debugPrint('Another instance is primary, sending message and exiting');
+      await SingleInstance.sendMessage(json.encode({'args': args}));
       exit(0);
     }
-  } else {
-    await _initializeMainApp();
   }
-}
 
-Future<void> _initializeMainApp() async {
-  debugPrint('Initializing main app');
-  
-  await windowManager.ensureInitialized();
-  
-  WindowOptions windowOptions = const WindowOptions(
-    size: ui.Size(800, 900),
-    minimumSize: ui.Size(550, 750),
-    center: true,
-    title: 'موسوعة أحاديث الزكاة',
-    alwaysOnTop: false,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
-  );
+  // Window Manager Initialization
+  if (Platform.isWindows) {
+    try {
+      debugPrint('main: Initializing window manager');
+      await windowManager.ensureInitialized();
 
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    debugPrint('Window is ready to show');
-    await _showMainWindow();
-  });
+      WindowOptions windowOptions = WindowOptions(
+        size: const ui.Size(800, 900),
+        minimumSize: const ui.Size(550, 750),
+        center: true,
+        title: 'موسوعة أحاديث الزكاة',
+      );
 
-  windowManager.setPreventClose(true);
+      await windowManager.waitUntilReadyToShow(windowOptions, () async {
+        if (!args.contains('--startup')) {
+          await windowManager.show();
+          await windowManager.focus();
+        } else {
+          await windowManager.hide();
+        }
+      });
+      windowManager.setPreventClose(true);
+    } catch (e) {
+      debugPrint('main: Error initializing Windows components: $e');
+    }
+  }
 
-  await _initializeApp();
+  // Supabase Initialization with retries
+  int retryCount = 0;
+  const maxRetries = 3;
+  while (!_supabaseInitialized && retryCount < maxRetries) {
+    await _initializeApp();
+    if (_supabaseInitialized) break;
+    retryCount++;
+    await Future.delayed(Duration(seconds: retryCount * 2));
+  }
   if (!_supabaseInitialized) {
-    debugPrint('Failed to initialize Supabase. App might not function correctly.');
+    debugPrint('main: Failed to initialize Supabase after $maxRetries attempts');
   }
 
   _globalContainer = ProviderContainer();
 
-  runApp(
-    UncontrolledProviderScope(
-      container: _globalContainer!,
-      child: const MyApp(),
-    ),
-  );
-}
-
-Future<void> _showMainWindow() async {
-  try {
-    debugPrint('Attempting to show main window...');
-    await windowManager.setSkipTaskbar(false);
-    await windowManager.show();
-    await windowManager.focus();
-    await windowManager.setAlwaysOnTop(true);
-    
-    Future.delayed(const Duration(seconds: 1), () {
-      windowManager.setAlwaysOnTop(false);
-    });
-    
-    debugPrint('Main window shown successfully');
-  } catch (e) {
-    debugPrint('Error showing main window: $e');
-  }
+  runApp(ProviderScope(
+    parent: _globalContainer,
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -210,51 +163,24 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp>
-    with WindowListener, TrayListener {
-  bool _isAppReady = false;
-
+class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener {
   @override
   void initState() {
     super.initState();
-    debugPrint('MyApp initState called');
-    
-    windowManager.addListener(this);
-    trayManager.addListener(this);
-    
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _initializeComponents();
+    if (Platform.isWindows) {
+      windowManager.addListener(this);
+      trayManager.addListener(this);
+      _initTray();
+    }
+    // Initialize notification service
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+       await ref.read(notificationServiceProvider).init();
     });
   }
 
-  Future<void> _initializeComponents() async {
+  void _initTray() async {
     try {
-      debugPrint('Initializing app components...');
-      
-      await _initTray();
-      
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(notificationServiceProvider).init();
-        }
-      });
-      
-      setState(() {
-        _isAppReady = true;
-      });
-      
-      debugPrint('App components initialized successfully');
-    } catch (e) {
-      debugPrint('Error initializing app components: $e');
-    }
-  }
-
-  Future<void> _initTray() async {
-    try {
-      debugPrint('Initializing system tray...');
-      
       await trayManager.setIcon('assets/app_icon.ico');
-      
       Menu menu = Menu(
         items: [
           MenuItem(key: 'show_window', label: 'فتح التطبيق'),
@@ -262,29 +188,25 @@ class _MyAppState extends ConsumerState<MyApp>
           MenuItem(key: 'exit_app', label: 'خروج'),
         ],
       );
-      
       await trayManager.setContextMenu(menu);
       await trayManager.setToolTip('موسوعة أحاديث الزكاة');
-      
-      debugPrint('System tray initialized successfully');
     } catch (e) {
-      debugPrint('Error initializing system tray: $e');
+      debugPrint('MyAppState: Error initializing tray: $e');
     }
   }
 
   @override
   void dispose() {
-    debugPrint('MyApp dispose called');
-    windowManager.removeListener(this);
-    trayManager.removeListener(this);
-    SingleInstance.stopServer(); // Cleanly stop the server and delete the lock file.
+    if (Platform.isWindows) {
+      windowManager.removeListener(this);
+      trayManager.removeListener(this);
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('MyApp build called, isAppReady: $_isAppReady');
-    
+    final isSupabaseConnected = ref.watch(supabaseConnectionProvider);
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'موسوعة أحاديث الزكاة',
@@ -292,57 +214,62 @@ class _MyAppState extends ConsumerState<MyApp>
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
-      home: _isAppReady ? const SplashScreen() : const _LoadingScreen(),
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child!,
+            if (!isSupabaseConnected)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).padding.top + 8,
+                        bottom: 8,
+                        left: 8,
+                        right: 8),
+                    color: Colors.red.withOpacity(0.9),
+                    child: const Text(
+                      'لا يوجد اتصال بقاعدة البيانات. بعض الميزات قد لا تعمل.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+      home: const SplashScreen(),
     );
   }
 
   @override
   void onWindowClose() {
-    debugPrint('Window close event received - hiding to tray');
-    windowManager.hide();
-    windowManager.setSkipTaskbar(true);
+    if (Platform.isWindows) {
+      windowManager.hide();
+    }
   }
-
   @override
   void onTrayIconMouseDown() {
-    _showMainWindow();
+     if (Platform.isWindows) {
+      trayManager.popUpContextMenu();
+    }
   }
-
-  @override
-  void onTrayIconRightMouseDown() {
-    trayManager.popUpContextMenu();
-  }
-
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
-    debugPrint('Tray menu item clicked: ${menuItem.key}');
-    
     if (menuItem.key == 'show_window') {
-      _showMainWindow();
+      windowManager.show();
+      windowManager.focus();
     } else if (menuItem.key == 'exit_app') {
-      debugPrint('Exit app from tray menu');
       windowManager.destroy();
     }
   }
 }
 
-// شاشة تحميل مؤقتة
-class _LoadingScreen extends StatelessWidget {
-  const _LoadingScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('جاري تحميل التطبيق...'),
-          ],
-        ),
-      ),
-    );
-  }
-}
+final supabaseConnectionProvider = StateProvider<bool>((ref) {
+  return _supabaseInitialized;
+});

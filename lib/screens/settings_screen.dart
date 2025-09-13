@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:ahadith_alzakah/screens/login_screen.dart';
 import 'package:ahadith_alzakah/screens/remove_hadith.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,13 +17,10 @@ import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
 
-// ======================= Responsive Breakpoints =======================
+// ... (Responsive breakpoints and helpers remain the same)
 const double kMediumScreenBreakpoint = 600.0;
 const double kLargeScreenBreakpoint = 1200.0;
 const double kExtraLargeScreenBreakpoint = 1800.0;
-// ========================================================================
-
-
 
 double _getMaxContentWidth(double screenWidth) {
   if (screenWidth > kLargeScreenBreakpoint) return screenWidth * 0.7; 
@@ -44,7 +39,7 @@ double _getResponsiveFontSize(double screenWidth, {
   if (screenWidth > kMediumScreenBreakpoint) return medium;
   return small;
 }
-// ===========================================
+
 
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
@@ -53,47 +48,60 @@ final authStateProvider = StreamProvider<bool>((ref) {
   });
 });
 
-final notificationsEnabledProvider = StateProvider<bool>((ref) {
-  return false;
-});
+final notificationsEnabledProvider = StateProvider<bool>((ref) => false);
 
 final notificationHourProvider = StateProvider<int>((ref) => 12);
 final notificationMinuteProvider = StateProvider<int>((ref) => 0);
 
-final tapCountProvider = StateProvider<int>((ref) => 0);
-final lastTapTimeProvider = StateProvider<DateTime?>((ref) => null);
-
 final settingsInitializerProvider = FutureProvider<void>((ref) async {
   final prefs = await SharedPreferences.getInstance();
-  final notificationService = ref.read(notificationServiceProvider);
   final fontSize = prefs.getInt('font_size') ?? 20;
   ref.read(fontSizeProvider.notifier).state = fontSize;
   final isDarkMode = prefs.getBool('dark_mode') ?? false;
   ref.read(isDarkModeProvider.notifier).state = isDarkMode;
+  
   bool isEnabled = prefs.getBool('notifications_enabled') ?? false;
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
+  
   final hour = prefs.getInt('daily_notification_hour') ?? 12;
   final minute = prefs.getInt('daily_notification_minute') ?? 0;
   ref.read(notificationHourProvider.notifier).state = hour;
   ref.read(notificationMinuteProvider.notifier).state = minute;
+  
+  // Schedule notifications on init if enabled
   if (isEnabled) {
-    bool hasPermission = await notificationService.hasNotificationPermission();
-    if (hasPermission) {
-      await notificationService.scheduleDailyHadithNotification();
-    } else {
-      await prefs.setBool('notifications_enabled', false);
-      ref.read(notificationsEnabledProvider.notifier).state = false;
-      await notificationService.cancelNotifications();
-    }
-  } else {
-    await notificationService.cancelNotifications();
+    final notificationService = ref.read(notificationServiceProvider);
+    await notificationService.scheduleDailyHadithNotification();
   }
 });
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  void _handleTitleTap(BuildContext context, WidgetRef ref) {
+  Future<void> _toggleNotifications(bool value, WidgetRef ref, BuildContext context) async {
+    final notificationService = ref.read(notificationServiceProvider);
+    final prefs = await SharedPreferences.getInstance();
+    
+    ref.read(notificationsEnabledProvider.notifier).state = value;
+    await prefs.setBool('notifications_enabled', value);
+
+    if (value) {
+      await notificationService.scheduleDailyHadithNotification();
+      showSingleSnackBar(context,
+          message: 'تم تفعيل الإشعارات اليومية',
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2));
+    } else {
+      await notificationService.cancelNotifications();
+      showSingleSnackBar(context,
+          message: 'تم إلغاء الإشعارات اليومية',
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2));
+    }
+  }
+
+  // Other methods (_handleTitleTap, _showLogoutConfirmationDialog, _logout, _updateFontSize, _toggleDarkMode) remain the same
+    void _handleTitleTap(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final lastTapTime = ref.read(lastTapTimeProvider);
     final tapCount = ref.read(tapCountProvider.notifier);
@@ -202,61 +210,6 @@ class SettingsScreen extends ConsumerWidget {
     await prefs.setBool('dark_mode', value);
   }
 
-  Future<void> _toggleNotifications(
-      bool value, WidgetRef ref, BuildContext context) async {
-    final notificationService = ref.read(notificationServiceProvider);
-    final prefs = await SharedPreferences.getInstance();
-    if (value) {
-      try {
-        bool hasPermission =
-            await notificationService.hasNotificationPermission();
-        if (!hasPermission) {
-          hasPermission =
-              await notificationService.requestNotificationPermission();
-          if (!hasPermission && (!kIsWeb && !Platform.isWindows)) {
-            ref.read(notificationsEnabledProvider.notifier).state = false;
-            await prefs.setBool('notifications_enabled', false);
-            showSingleSnackBar(context,
-                message:
-                    'يرجى تفعيل أذونات الإشعارات من إعدادات الهاتف لتلقي الإشعارات اليومية',
-                backgroundColor: Colors.redAccent,
-                duration: const Duration(seconds: 3));
-            return;
-          }
-        }
-        ref.read(notificationsEnabledProvider.notifier).state = true;
-        await prefs.setBool('notifications_enabled', true);
-        await notificationService.scheduleDailyHadithNotification();
-        showSingleSnackBar(context,
-            message: 'تم تفعيل الإشعارات اليومية',
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2));
-      } catch (e) {
-        ref.read(notificationsEnabledProvider.notifier).state = false;
-        await prefs.setBool('notifications_enabled', false);
-        showSingleSnackBar(context,
-            message: 'فشل تفعيل الإشعارات: $e',
-            backgroundColor: Colors.redAccent,
-            duration: const Duration(seconds: 3));
-      }
-    } else {
-      try {
-        ref.read(notificationsEnabledProvider.notifier).state = false;
-        await prefs.setBool('notifications_enabled', false);
-        await notificationService.cancelNotifications();
-        showSingleSnackBar(context,
-            message: 'تم إلغاء الإشعارات اليومية',
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2));
-      } catch (e) {
-        showSingleSnackBar(context,
-            message: 'فشل إلغاء الإشعارات: $e',
-            backgroundColor: Colors.redAccent,
-            duration: const Duration(seconds: 3));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(settingsInitializerProvider);
@@ -296,12 +249,6 @@ class SettingsScreen extends ConsumerWidget {
                               fontWeight: FontWeight.bold,
                               fontSize: _getResponsiveFontSize(screenWidth, small: 34.0, medium: 38.0, large: 42.0),
                               color: const Color(0xfffcead0),
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 4,
-                                  color: Colors.black.withOpacity(0.3),
-                                ),
-                              ],
                             ),
                           ),
                         ),
@@ -340,8 +287,7 @@ class SettingsScreen extends ConsumerWidget {
                       label: 'الإشعارات اليومية',
                       child: Switch.adaptive(
                         value: isNotificationsEnabled,
-                        onChanged: (value) =>
-                            _toggleNotifications(value, ref, context),
+                        onChanged: (value) => _toggleNotifications(value, ref, context),
                         activeColor: const Color(0xff977c55),
                         inactiveTrackColor: Colors.grey[300],
                       )),
@@ -373,8 +319,13 @@ class SettingsScreen extends ConsumerWidget {
                                 await prefs.setInt('daily_notification_minute', picked.minute);
                                 ref.read(notificationHourProvider.notifier).state = picked.hour;
                                 ref.read(notificationMinuteProvider.notifier).state = picked.minute;
-                                final notificationService = ref.read(notificationServiceProvider);
-                                await notificationService.scheduleDailyHadithNotification();
+                                
+                                // إعادة جدولة المهمة بالوقت الجديد إذا كانت الإشعارات مفعلة
+                                if(ref.read(notificationsEnabledProvider)) {
+                                  final notificationService = ref.read(notificationServiceProvider);
+                                  await notificationService.scheduleDailyHadithNotification();
+                                }
+
                                 showSingleSnackBar(context,
                                     message: 'تم حفظ وقت الإشعار: ${picked.format(context)}',
                                     backgroundColor: Colors.green,
@@ -429,18 +380,8 @@ class SettingsScreen extends ConsumerWidget {
                                             duration: const Duration(seconds: 2));
                                       }
                                     },
-                                    loading: () {
-                                      showSingleSnackBar(context,
-                                          message: 'لا يوجد أحاديث للتعديل',
-                                          backgroundColor: Colors.redAccent,
-                                          duration: const Duration(seconds: 2));
-                                    },
-                                    error: (error, stackTrace) {
-                                      showSingleSnackBar(context,
-                                          message: 'لا يوجد أحاديث للتعديل',
-                                          backgroundColor: Colors.redAccent,
-                                          duration: const Duration(seconds: 2));
-                                    },
+                                    loading: () {},
+                                    error: (error, stackTrace) {},
                                   );
                             }),
                             buildClickableSettingCard(context,
@@ -454,7 +395,7 @@ class SettingsScreen extends ConsumerWidget {
                       }
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) => Center(child: Text('')),
+                    error: (error, stackTrace) => const Center(child: Text('')),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -466,4 +407,3 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
-

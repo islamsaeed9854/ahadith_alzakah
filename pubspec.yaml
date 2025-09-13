@@ -18,12 +18,14 @@ dependencies:
   awesome_notifications: 
   number_to_word_arabic: ^0.0.8
   archive: ^4.0.7
+  windows_notification:
+    git:
+      url: https://github.com/mrtnetwork/flutter_windows_notification.git
   
   # desktop-specific packages
   local_notifier:
   tray_manager: 
   window_manager: 
-  path_provider: 
   win32:
   system_tray:
   

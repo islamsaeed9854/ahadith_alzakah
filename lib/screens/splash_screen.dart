@@ -4,14 +4,15 @@ import '../core/constants.dart';
 import '../screens/home_screen.dart';
 
 class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
+  final bool showHadithOnLaunch;
+  const SplashScreen({super.key, this.showHadithOnLaunch = false});
 
   @override
   Widget build(BuildContext context) {
     Future.delayed(const Duration(seconds: 4), () {
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => HomeScreen(showHadithDetails: showHadithOnLaunch)));
     });
 
     return Scaffold(

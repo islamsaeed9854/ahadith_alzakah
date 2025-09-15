@@ -1,5 +1,5 @@
-import 'dart:convert'; 
-import 'dart:math';  
+import 'dart:convert';
+import 'dart:math';
 import 'package:cron/cron.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +36,7 @@ class NotificationService {
   final _secureStorage = const FlutterSecureStorage(wOptions: WindowsOptions());
   static const String _lastHadithDateKey = 'daily_hadith_last_date';
   static const String _dailyHadithKey = 'daily_hadith_data';
+  static const String _notificationLaunchArg = 'ahadith-alzakah://notification-clicked';
   bool _useSecureStorage = true;
   late final WindowsNotification _winNotifyPlugin;
   final Cron _cron = Cron();
@@ -50,9 +51,14 @@ class NotificationService {
   /// Initializes the notification service and schedules notifications if enabled.
   Future<void> init() async {
     try {
+      // The callback receives an object of type NotificationCallBackDetails
       _winNotifyPlugin.initNotificationCallBack((event) {
         debugPrint('Notification action received from callback: ${event.toString()}');
-        _handleNotificationClick();
+        
+        // FIX: Check the 'argrument' property (with the typo) of the event object.
+        if (event.argrument == _notificationLaunchArg) {
+          handleNotificationClick();
+        }
       });
       await _checkAndScheduleNotifications();
       debugPrint('Notification service initialized');
@@ -105,7 +111,7 @@ class NotificationService {
   }
 
   /// Handles the click event on a notification.
-  Future<void> _handleNotificationClick() async {
+  Future<void> handleNotificationClick() async {
     try {
       debugPrint('Handling notification click...');
       await _bringAppToForeground();
@@ -167,13 +173,17 @@ class NotificationService {
   void _showWindowsNotification(Hadith hadith) {
     try {
       final id = "daily_hadith_${DateTime.now().millisecondsSinceEpoch}";
+      
+      // FIX: Use the 'fromPluginTemplate' constructor and pass 'launch' as a named argument.
       final message = NotificationMessage.fromPluginTemplate(
         id,
         "حديث اليوم",
         _formatHadithForNotification(hadith),
+        launch: _notificationLaunchArg, // Pass launch argument here
       );
+
       _winNotifyPlugin.showNotificationPluginTemplate(message);
-      debugPrint('✓ Notification ID $id sent');
+      debugPrint('✓ Notification ID $id sent with launch arg: "${message.launch}"');
     } catch (e) {
       debugPrint('✗ Notification error: $e');
     }

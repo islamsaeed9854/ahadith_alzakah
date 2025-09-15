@@ -83,11 +83,19 @@ Future<void> _initializeApp() async {
 }
 
 ProviderContainer? _globalContainer;
+const String _notificationLaunchArg = 'ahadith-alzakah://notification-clicked';
 
 void main(List<String> args) async {
   debugPrint('main: Application started with args: $args');
 
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // A flag to indicate if the app was launched from a notification click.
+  bool showHadithOnLaunch = args.contains(_notificationLaunchArg);
+  if (showHadithOnLaunch) {
+    debugPrint('App launched from a notification click.');
+  }
+
 
   // Single Instance Logic
   if (Platform.isWindows) {
@@ -99,6 +107,18 @@ void main(List<String> args) async {
       await windowManager.focus();
       await Future.delayed(const Duration(seconds: 2));
       await windowManager.setAlwaysOnTop(false);
+
+      // Handle notification click from secondary instance
+      try {
+        final decodedMessage = json.decode(message);
+        final messageArgs = (decodedMessage['args'] as List?)?.cast<String>() ?? [];
+        if (messageArgs.contains(_notificationLaunchArg)) {
+          debugPrint('Secondary instance passed notification click. Handling navigation.');
+          _globalContainer?.read(notificationServiceProvider).handleNotificationClick();
+        }
+      } catch (e) {
+        debugPrint('Error processing message from secondary instance: $e');
+      }
     });
 
     if (!becamePrimary) {
@@ -152,12 +172,13 @@ void main(List<String> args) async {
 
   runApp(ProviderScope(
     parent: _globalContainer,
-    child: const MyApp(),
+    child: MyApp(showHadithOnLaunch: showHadithOnLaunch),
   ));
 }
 
 class MyApp extends ConsumerStatefulWidget {
-  const MyApp({super.key});
+  final bool showHadithOnLaunch;
+  const MyApp({super.key, this.showHadithOnLaunch = false});
 
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
@@ -243,7 +264,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
           ],
         );
       },
-      home: const SplashScreen(),
+      home: SplashScreen(showHadithOnLaunch: widget.showHadithOnLaunch),
     );
   }
 

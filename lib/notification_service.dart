@@ -44,7 +44,7 @@ class NotificationService {
 
   NotificationService(this.ref) {
     _winNotifyPlugin = WindowsNotification(
-      applicationId: "com.alsakher.ahadith_alzakah",
+      applicationId: "موسوعة أحاديث الزكاة",
     );
   }
 

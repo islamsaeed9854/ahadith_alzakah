@@ -13,7 +13,9 @@ import 'core/secure_supabase_storage.dart';
 import 'dart:ui' as ui;
 import 'screens/settings_screen.dart';
 import 'dart:async';
-
+import 'core/startup_manager.dart';
+import 'core/startup_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // Hardcoded Supabase credentials for MSIX build fallback
 const String fallbackSupabaseUrl = 'https://iccvwmacddhakaypawvn.supabase.co';
 const String fallbackSupabaseAnonKey =
@@ -90,12 +92,17 @@ void main(List<String> args) async {
 
   WidgetsFlutterBinding.ensureInitialized();
   
-  // A flag to indicate if the app was launched from a notification click.
+  // Check if launched with startup argument
+  bool isStartupLaunch = args.contains('--startup') || args.contains('--silent-start');
   bool showHadithOnLaunch = args.contains(_notificationLaunchArg);
+  
+  if (isStartupLaunch) {
+    debugPrint('App launched on system startup - starting in background mode');
+  }
+  
   if (showHadithOnLaunch) {
     debugPrint('App launched from a notification click.');
   }
-
 
   // Single Instance Logic
   if (Platform.isWindows) {
@@ -135,21 +142,41 @@ void main(List<String> args) async {
       await windowManager.ensureInitialized();
 
       WindowOptions windowOptions = WindowOptions(
-        size: const ui.Size(800, 900),
-        minimumSize: const ui.Size(550, 750),
-        center: true,
-        title: 'موسوعة أحاديث الزكاة',
-      );
+  size: const ui.Size(800, 700),
+  minimumSize: const ui.Size(550, 750),
+  center: true,
+  title: 'موسوعة أحاديث الزكاة',
+  skipTaskbar: isStartupLaunch, 
+  titleBarStyle: TitleBarStyle.normal, 
+  backgroundColor: Colors.white, 
+  alwaysOnTop: false,
+  fullScreen: false,
+
+);
 
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
-        if (!args.contains('--startup')) {
-          await windowManager.show();
-          await windowManager.focus();
-        } else {
-          await windowManager.hide();
-        }
-      });
+  if (isStartupLaunch) {
+    // Start hidden for system startup
+    await windowManager.hide();
+    await windowManager.setSkipTaskbar(true);
+    debugPrint('App started in background mode');
+  } else if (!showHadithOnLaunch) {
+    // Normal launch - show window
+    await windowManager.show();
+    await windowManager.setSkipTaskbar(false); 
+    await windowManager.focus();
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+  } else {
+    // Notification launch - will be handled by notification service
+    await windowManager.hide();
+  }
+});
       windowManager.setPreventClose(true);
+      
+      // Enable auto-startup only on first installation
+      if (!isStartupLaunch) {
+        await _enableAutoStartupFirstTime();
+      }
     } catch (e) {
       debugPrint('main: Error initializing Windows components: $e');
     }
@@ -172,13 +199,22 @@ void main(List<String> args) async {
 
   runApp(ProviderScope(
     parent: _globalContainer,
-    child: MyApp(showHadithOnLaunch: showHadithOnLaunch),
+    child: MyApp(
+      showHadithOnLaunch: showHadithOnLaunch,
+      isStartupLaunch: isStartupLaunch,
+    ),
   ));
 }
 
 class MyApp extends ConsumerStatefulWidget {
   final bool showHadithOnLaunch;
-  const MyApp({super.key, this.showHadithOnLaunch = false});
+  final bool isStartupLaunch;
+  
+  const MyApp({
+    super.key, 
+    this.showHadithOnLaunch = false,
+    this.isStartupLaunch = false,
+  });
 
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
@@ -202,19 +238,12 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
   void _initTray() async {
     try {
       await trayManager.setIcon('assets/app_icon.ico');
-      Menu menu = Menu(
-        items: [
-          MenuItem(key: 'show_window', label: 'فتح التطبيق'),
-          MenuItem.separator(),
-          MenuItem(key: 'exit_app', label: 'خروج'),
-        ],
-      );
-      await trayManager.setContextMenu(menu);
       await trayManager.setToolTip('موسوعة أحاديث الزكاة');
     } catch (e) {
       debugPrint('MyAppState: Error initializing tray: $e');
     }
   }
+
 
   @override
   void dispose() {
@@ -264,7 +293,10 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
           ],
         );
       },
-      home: SplashScreen(showHadithOnLaunch: widget.showHadithOnLaunch),
+      home: SplashScreen(
+        showHadithOnLaunch: widget.showHadithOnLaunch,
+        isStartupLaunch: widget.isStartupLaunch,
+      ),
     );
   }
 
@@ -274,23 +306,70 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
       windowManager.hide();
     }
   }
+  
   @override
   void onTrayIconMouseDown() {
-     if (Platform.isWindows) {
-      trayManager.popUpContextMenu();
+    debugPrint('Tray icon clicked!');
+    if (Platform.isWindows) {
+      _showWindow();
     }
   }
+  
   @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
-    if (menuItem.key == 'show_window') {
-      windowManager.show();
-      windowManager.focus();
-    } else if (menuItem.key == 'exit_app') {
-      windowManager.destroy();
+  void onTrayIconRightMouseDown() {
+    debugPrint('Tray icon right clicked!');
+    if (Platform.isWindows) {
+      _showWindow();
     }
   }
+  
+  Future<void> _showWindow() async {
+  try {
+    await windowManager.show();
+    await windowManager.setSkipTaskbar(false);
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+    if (await windowManager.isMinimized()) {
+      await windowManager.restore();
+    }
+    await windowManager.focus();
+    debugPrint('Window shown successfully');
+  } catch (e) {
+    debugPrint('Error showing window: $e');
+  }
+}
 }
 
 final supabaseConnectionProvider = StateProvider<bool>((ref) {
   return _supabaseInitialized;
 });
+
+
+Future<void> _enableAutoStartupFirstTime() async {
+  if (!Platform.isWindows) return;
+  
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    const String firstRunKey = 'app_first_run_completed';
+    
+    bool isFirstRun = !(prefs.getBool(firstRunKey) ?? false);
+    
+    if (isFirstRun) {
+      debugPrint('First run detected - enabling auto-startup');
+      bool success = await StartupManager.enableAutoStartup();
+      
+      if (success) {
+        debugPrint('Auto-startup enabled successfully on first run');
+        await prefs.setBool('auto_startup_enabled', true);
+      } else {
+        debugPrint('Failed to enable auto-startup on first run');
+        await prefs.setBool('auto_startup_enabled', false);
+      }
+      
+      await prefs.setBool(firstRunKey, true);
+    } else {
+      debugPrint('Not first run - respecting user auto-startup preference');
+    }
+  } catch (e) {
+    debugPrint('Error in _enableAutoStartupFirstTime: $e');
+  }
+}

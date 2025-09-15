@@ -19,14 +19,12 @@ dependencies:
   number_to_word_arabic: ^0.0.8
   archive: ^4.0.7
   windows_notification: ^1.3.0
-  
-  # desktop-specific packages
   local_notifier:
   tray_manager: 
   window_manager: 
-  win32:
   system_tray:
   cron: ^0.6.2
+  win32: ^5.14.0
   
 
 dev_dependencies:
@@ -50,6 +48,7 @@ flutter:
     - assets/logo.png
     - assets/ic_launcher.png
     - assets/app_icon.ico
+    - assets/app_icon.png
 
 flutter_launcher_icons:
   android: "ic_launcher"
@@ -59,9 +58,9 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/logo.png"
   remove_alpha_ios: true
 msix_config:
-  display_name: موسوعة الزكاة
+  display_name: موسوعة أحاديث الزكاة
   publisher_display_name: Islam Saeed
-  identity_name: IslamSaeed.5510813C742D0
+  identity_name:
   publisher: CN=58C2FEF5-20C8-4652-9478-669C11E84A8F
   msix_version: 1.0.0.1
   architecture: x64
@@ -70,3 +69,5 @@ msix_config:
   certificate_password: CER9854CER
   timestamp_server: http://timestamp.sectigo.com
   capabilities: 'internetClient,backgroundTasks'
+  execution_alias: موسوعة أحاديث الزكاة
+  app_description: موسوعة شاملة لأحاديث الزكاة مع إشعارات يومية

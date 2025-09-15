@@ -16,8 +16,9 @@ import '../widgets/setting_card.dart';
 import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
+import '../core/startup_manager.dart';
+import 'dart:io';
 
-// ... (Responsive breakpoints and helpers remain the same)
 const double kMediumScreenBreakpoint = 600.0;
 const double kLargeScreenBreakpoint = 1200.0;
 const double kExtraLargeScreenBreakpoint = 1800.0;
@@ -40,7 +41,6 @@ double _getResponsiveFontSize(double screenWidth, {
   return small;
 }
 
-
 final authStateProvider = StreamProvider<bool>((ref) {
   final supabase = ref.watch(supabaseProvider);
   return supabase.auth.onAuthStateChange.map((event) {
@@ -49,6 +49,7 @@ final authStateProvider = StreamProvider<bool>((ref) {
 });
 
 final notificationsEnabledProvider = StateProvider<bool>((ref) => false);
+final autoStartupEnabledProvider = StateProvider<bool>((ref) => false);
 
 final notificationHourProvider = StateProvider<int>((ref) => 12);
 final notificationMinuteProvider = StateProvider<int>((ref) => 0);
@@ -62,6 +63,12 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
   
   bool isEnabled = prefs.getBool('notifications_enabled') ?? false;
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
+  
+  // Check auto-startup status
+  if (Platform.isWindows) {
+    final isAutoStartupEnabled = await StartupManager.isAutoStartupEnabled();
+    ref.read(autoStartupEnabledProvider.notifier).state = isAutoStartupEnabled;
+  }
   
   final hour = prefs.getInt('daily_notification_hour') ?? 12;
   final minute = prefs.getInt('daily_notification_minute') ?? 0;
@@ -100,8 +107,47 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  // Other methods (_handleTitleTap, _showLogoutConfirmationDialog, _logout, _updateFontSize, _toggleDarkMode) remain the same
-    void _handleTitleTap(BuildContext context, WidgetRef ref) {
+  Future<void> _toggleAutoStartup(bool value, WidgetRef ref, BuildContext context) async {
+    if (!Platform.isWindows) {
+      showSingleSnackBar(context,
+          message: 'البدء التلقائي متاح فقط على نظام Windows',
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3));
+      return;
+    }
+
+    try {
+      bool success;
+      if (value) {
+        success = await StartupManager.enableAutoStartup();
+      } else {
+        success = await StartupManager.disableAutoStartup();
+      }
+
+      if (success) {
+        ref.read(autoStartupEnabledProvider.notifier).state = value;
+        showSingleSnackBar(context,
+            message: value 
+                ? 'تم تفعيل البدء التلقائي مع النظام' 
+                : 'تم إلغاء البدء التلقائي مع النظام',
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2));
+      } else {
+        showSingleSnackBar(context,
+            message: 'فشل في ${value ? "تفعيل" : "إلغاء"} البدء التلقائي',
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 3));
+      }
+    } catch (e) {
+      showSingleSnackBar(context,
+          message: 'حدث خطأ في إعداد البدء التلقائي: $e',
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3));
+    }
+  }
+
+  
+  void _handleTitleTap(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final lastTapTime = ref.read(lastTapTimeProvider);
     final tapCount = ref.read(tapCountProvider.notifier);
@@ -219,6 +265,7 @@ class SettingsScreen extends ConsumerWidget {
     final fontSize = ref.watch(fontSizeProvider);
     final isDarkMode = ref.watch(isDarkModeProvider);
     final isNotificationsEnabled = ref.watch(notificationsEnabledProvider);
+    final isAutoStartupEnabled = ref.watch(autoStartupEnabledProvider);
     final authState = ref.watch(authStateProvider);
 
     return Scaffold(
@@ -283,6 +330,15 @@ class SettingsScreen extends ConsumerWidget {
                         activeColor: const Color(0xff977c55),
                         inactiveTrackColor: Colors.grey[300],
                       )),
+                  if (Platform.isWindows)
+                    buildSettingCard(context,
+                        label: 'البدء التلقائي مع النظام',
+                        child: Switch.adaptive(
+                          value: isAutoStartupEnabled,
+                          onChanged: (value) => _toggleAutoStartup(value, ref, context),
+                          activeColor: const Color(0xff977c55),
+                          inactiveTrackColor: Colors.grey[300],
+                        )),
                   buildSettingCard(context,
                       label: 'الإشعارات اليومية',
                       child: Switch.adaptive(
@@ -320,7 +376,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ref.read(notificationHourProvider.notifier).state = picked.hour;
                                 ref.read(notificationMinuteProvider.notifier).state = picked.minute;
                                 
-                                // إعادة جدولة المهمة بالوقت الجديد إذا كانت الإشعارات مفعلة
+                           
                                 if(ref.read(notificationsEnabledProvider)) {
                                   final notificationService = ref.read(notificationServiceProvider);
                                   await notificationService.scheduleDailyHadithNotification();

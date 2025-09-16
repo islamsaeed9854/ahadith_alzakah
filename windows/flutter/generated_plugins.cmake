@@ -4,10 +4,8 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
-  awesome_notifications
   connectivity_plus
   flutter_secure_storage_windows
-  local_notifier
   screen_retriever
   system_tray
   tray_manager

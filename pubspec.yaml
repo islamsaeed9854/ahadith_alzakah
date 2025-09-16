@@ -15,11 +15,9 @@ dependencies:
   supabase_flutter: ^2.9.0
   flutter_secure_storage: ^9.2.4
   connectivity_plus: ^6.1.4
-  awesome_notifications: 
   number_to_word_arabic: ^0.0.8
   archive: ^4.0.7
   windows_notification: ^1.3.0
-  local_notifier:
   tray_manager: 
   window_manager: 
   system_tray:
@@ -60,7 +58,7 @@ flutter_launcher_icons:
 msix_config:
   display_name: موسوعة أحاديث الزكاة
   publisher_display_name: Islam Saeed
-  identity_name:
+  identity_name: IslamSaeed.5510813C742D0
   publisher: CN=58C2FEF5-20C8-4652-9478-669C11E84A8F
   msix_version: 1.0.0.1
   architecture: x64

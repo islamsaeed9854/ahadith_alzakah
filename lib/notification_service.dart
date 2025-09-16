@@ -44,10 +44,10 @@ class NotificationService {
 
   NotificationService(this.ref) {
     _winNotifyPlugin = WindowsNotification(
-      applicationId: "موسوعة أحاديث الزكاة",
+      applicationId: "IslamSaeed.5510813C742D0_1ks8sqzt2prk8",
     );
   }
-
+  
   /// Initializes the notification service and schedules notifications if enabled.
   Future<void> init() async {
     try {

@@ -245,7 +245,7 @@ class HadithDetails extends ConsumerWidget {
                                                 ? Colors.white54
                                                 : Colors.black54),
                                         onPressed: () {
-                                          pageController.nextPage(
+                                          pageController.previousPage(
                                             duration: const Duration(
                                                 milliseconds: 300),
                                             curve: Curves.easeInOut,
@@ -259,7 +259,7 @@ class HadithDetails extends ConsumerWidget {
                                                 ? Colors.white54
                                                 : Colors.black54),
                                         onPressed: () {
-                                          pageController.previousPage(
+                                          pageController.nextPage(
                                             duration: const Duration(
                                                 milliseconds: 300),
                                             curve: Curves.easeInOut,

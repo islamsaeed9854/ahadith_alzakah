@@ -61,7 +61,7 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
   final isDarkMode = prefs.getBool('dark_mode') ?? false;
   ref.read(isDarkModeProvider.notifier).state = isDarkMode;
   
-  bool isEnabled = prefs.getBool('notifications_enabled') ?? false;
+  bool isEnabled = prefs.getBool('notifications_enabled') ?? true;
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
   
   // Check auto-startup status

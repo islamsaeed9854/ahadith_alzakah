@@ -67,5 +67,7 @@ msix_config:
   certificate_password: CER9854CER
   timestamp_server: http://timestamp.sectigo.com
   capabilities: 'internetClient,backgroundTasks'
+  create_desktop_shortcut: true
+  create_start_menu_shortcut: true
   execution_alias: موسوعة أحاديث الزكاة
   app_description: موسوعة شاملة لأحاديث الزكاة مع إشعارات يومية

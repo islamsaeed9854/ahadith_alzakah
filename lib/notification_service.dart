@@ -71,7 +71,7 @@ class NotificationService {
   Future<void> _checkAndScheduleNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+      final notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
 
       if (notificationsEnabled) {
         await scheduleDailyHadithNotification();

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:riverpod/riverpod.dart';
 import 'dart:async';
 import 'dart:isolate';
-import 'package:async/async.dart'; // <--- التأكد من وجود هذا السطر
+import 'package:async/async.dart'; 
 import '../providers/data_manager_provider/data_manager/data_manager.dart';
 import '../data/models/hadith.dart';
 import '../core/utils.dart';

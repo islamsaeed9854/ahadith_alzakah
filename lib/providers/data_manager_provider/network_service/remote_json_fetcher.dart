@@ -7,7 +7,7 @@ import 'package:archive/archive.dart';
 class RemoteJsonFetcher {
   final Logger _logger = Logger();
 
-  // الروابط المضمنة مباشرة في الكود
+  
   static const String _dataZipUrl = 'https://iccvwmacddhakaypawvn.supabase.co/storage/v1/object/sign/compreesed.files/ahadith_alzakah_data/ahadith_zakah.zip?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYWM2OGIxNC02ZjE0LTQwMDAtOGIyOS1mNjUxMzYwZTcxYTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wcmVlc2VkLmZpbGVzL2FoYWRpdGhfYWx6YWthaF9kYXRhL2FoYWRpdGhfemFrYWguemlwIiwiaWF0IjoxNzU0NzQwNzI2LCJleHAiOjk2MDE3NTQ3MzExMjZ9.L_-WGzw50zhU-JOuKAKyEclU59r3VhPqOjOFguYuAV8';
 
   Uri _buildSafeUriWithTimestamp(String baseUrl) {
@@ -35,7 +35,7 @@ class RemoteJsonFetcher {
         
         final archive = ZipDecoder().decodeBytes(response.bodyBytes);
         
-        // البحث عن ملف JSON في الأرشيف
+       
         for (final file in archive.files) {
           if (file.isFile && file.name.endsWith('.json')) {
             final decompressedBytes = file.content as List<int>;

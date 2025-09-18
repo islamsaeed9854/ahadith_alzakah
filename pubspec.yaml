@@ -71,3 +71,7 @@ msix_config:
   create_start_menu_shortcut: true
   execution_alias: موسوعة أحاديث الزكاة
   app_description: موسوعة شاملة لأحاديث الزكاة مع إشعارات يومية
+  startup_task:
+    task_id: AhadithAlzakahStartupTask  
+    enabled: true                     
+    display_name: موسوعة أحاديث الزكاة

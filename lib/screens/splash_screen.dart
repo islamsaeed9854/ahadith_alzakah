@@ -31,6 +31,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
     
+    // If it's a startup launch, don't start the animation at all.
+    if (widget.isStartupLaunch) {
+      _initializeForStartup();
+      return;
+    }
+    
     _controller = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -55,57 +61,60 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _startAnimation();
   }
 
+  void _initializeForStartup() async {
+    debugPrint('Initializing for startup launch - ensuring window is hidden.');
+    
+    // Safeguard: Ensure the window is hidden from here as well.
+    if (Platform.isWindows) {
+      await windowManager.hide();
+    }
+    
+    // Complete initialization in the background.
+    await ref.read(initializationProvider.future);
+    
+    // Don't navigate to any screen, let it run in the background.
+    debugPrint('Startup initialization completed - app running in background');
+  }
+
   void _startAnimation() async {
     await _controller.forward();
     
-    // Wait for initialization to complete
+    // Wait for data initialization.
     await ref.read(initializationProvider.future);
     
-    // Additional delay like in the old version
+    // Additional wait for the splash screen.
     await Future.delayed(const Duration(seconds: 4));
     
+    // Navigate to the main screen.
     if (mounted) {
-      // If this is a startup launch, don't show the main window immediately
-      if (widget.isStartupLaunch) {
-        debugPrint('Startup launch - keeping window hidden');
-        if (Platform.isWindows) {
-          await windowManager.hide();
-          await windowManager.setSkipTaskbar(true);
-        }
-        // Still navigate to HomeScreen but window remains hidden
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              showHadithDetails: widget.showHadithOnLaunch,
-            ),
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(
+            showHadithDetails: widget.showHadithOnLaunch,
           ),
-        );
-      } else {
-        // Normal launch - show window and navigate
-        if (Platform.isWindows) {
-          await windowManager.show();
-          await windowManager.setSkipTaskbar(false);
-          await windowManager.focus();
-        }
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              showHadithDetails: widget.showHadithOnLaunch,
-            ),
-          ),
-        );
-      }
+        ),
+      );
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (!widget.isStartupLaunch) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // If it's a startup launch, show an empty screen.
+    if (widget.isStartupLaunch) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SizedBox.shrink(), // Completely empty screen
+      );
+    }
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -180,7 +189,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                       ),
                                     ),
                                     Text(
-                                      "ألزكاة",
+                                      "الزكاة",
                                       style: GoogleFonts.cairo(
                                         fontWeight: FontWeight.bold,
                                         fontSize: subFontSize,

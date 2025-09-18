@@ -6,7 +6,7 @@ import 'dart:math';
 class RemoteVersionFetcher {
   final Logger _logger = Logger();
 
-  // الرابط المضمن مباشرة في الكود
+  
   static const String _versionUrl = 'https://iccvwmacddhakaypawvn.supabase.co/storage/v1/object/sign/compreesed.files/ahadith_alzakah_data/version.json?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYWM2OGIxNC02ZjE0LTQwMDAtOGIyOS1mNjUxMzYwZTcxYTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wcmVlc2VkLmZpbGVzL2FoYWRpdGhfYWx6YWthaF9kYXRhL3ZlcnNpb24uanNvbiIsImlhdCI6MTc1NDc0MzUzNiwiZXhwIjo5NjAwMTc1NDczMzkzNn0.p0S7FWlEQ7dwq48Uo9spvs3AfglToqVWKFMnrjM2ZXQ';
 
   Uri _buildSafeUriWithTimestamp(String baseUrl) {

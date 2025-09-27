@@ -13,11 +13,11 @@ import 'core/secure_supabase_storage.dart';
 import 'dart:ui' as ui;
 import 'screens/settings_screen.dart';
 import 'dart:async';
-
+import 'notification_service.dart';
 
 const String fallbackSupabaseUrl = 'https://iccvwmacddhakaypawvn.supabase.co';
 const String fallbackSupabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljY3Z3bWFjZGRoYWtheXBhd3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyODYzMzUsImV4cCI6MjA2Njg2MjMzNX0.ucpKVV0Z57VdvDAdUVEvIC4X4F9NTjtiEa4NZev-nQ';
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljY3Z3bWFjZGRoYWtheXBhd3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyODYzMzUsImV4cCI6MjA2Njg2MjMzNX0.ucpKV7V0Z57VdvDAdUVEvIC4X4F9NTjtiEa4NZev-nQ';
 
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
@@ -82,7 +82,6 @@ void main(List<String> args) async {
 
   WidgetsFlutterBinding.ensureInitialized();
   
-
   bool isStartupLaunch = args.contains('run');
   bool showHadithOnLaunch = args.contains(_notificationLaunchArg);
   
@@ -97,9 +96,7 @@ void main(List<String> args) async {
   if (Platform.isWindows) {
     await windowManager.ensureInitialized();
     
-  
     if (isStartupLaunch) {
-  
       await windowManager.hide();
       await windowManager.setSkipTaskbar(true);
     }
@@ -232,7 +229,23 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
       _initTray();
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-       await ref.read(notificationServiceProvider).init();
+      await ref.read(notificationServiceProvider).init();
+      
+      // If app was launched from notification, prepare daily hadith
+      if (widget.showHadithOnLaunch) {
+        debugPrint('App launched from notification, preparing daily hadith...');
+        try {
+          final notificationService = ref.read(notificationServiceProvider);
+          final dailyHadith = await notificationService.getDailyHadith();
+          if (dailyHadith != null) {
+            ref.read(dailyHadithProvider.notifier).setDailyHadith(dailyHadith);
+            ref.read(showDailyHadithProvider.notifier).state = true;
+            debugPrint('Daily hadith prepared for launch');
+          }
+        } catch (e) {
+          debugPrint('Error preparing daily hadith for launch: $e');
+        }
+      }
     });
   }
 

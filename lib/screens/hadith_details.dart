@@ -1,4 +1,5 @@
 import 'package:ahadith_alzakah/core/theme.dart';
+import 'package:ahadith_alzakah/providers/notification_service_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,8 +64,15 @@ String _cleanTextForCopying(String rawText) {
 }
 // ========================================================================
 
-class HadithDetails extends ConsumerWidget {
+class HadithDetails extends ConsumerStatefulWidget {
   const HadithDetails({super.key});
+
+  @override
+  ConsumerState<HadithDetails> createState() => _HadithDetailsState();
+}
+
+class _HadithDetailsState extends ConsumerState<HadithDetails> {
+  bool _isDailyHadithInitialized = false;
 
   /// Sets the status bar style based on the current theme (dark/light).
   void _setStatusBarStyle(bool isDarkMode) {
@@ -75,8 +83,38 @@ class HadithDetails extends ConsumerWidget {
     ));
   }
 
+  Future<void> _initializeDailyHadith() async {
+    if (_isDailyHadithInitialized) return;
+
+    final showDaily = ref.read(showDailyHadithProvider);
+    final currentDailyHadith = ref.read(dailyHadithProvider);
+
+    // If we should show daily hadith but don't have one yet
+    if (showDaily && currentDailyHadith == null) {
+      debugPrint('Trying to get daily hadith for HadithDetails...');
+      try {
+        final notificationService = ref.read(notificationServiceProvider);
+        final dailyHadith = await notificationService.getDailyHadith();
+        
+        if (dailyHadith != null) {
+          debugPrint('Setting daily hadith: ${dailyHadith.number}');
+          ref.read(dailyHadithProvider.notifier).setDailyHadith(dailyHadith);
+          ref.read(selectedHadithProvider.notifier).state = null;
+        } else {
+          debugPrint('No daily hadith available');
+          ref.read(showDailyHadithProvider.notifier).state = false;
+        }
+      } catch (e) {
+        debugPrint('Error getting daily hadith: $e');
+        ref.read(showDailyHadithProvider.notifier).state = false;
+      }
+    }
+    
+    _isDailyHadithInitialized = true;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     ref.watch(settingsInitializerProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final theme = ref.watch(themeProvider);
@@ -91,9 +129,16 @@ class HadithDetails extends ConsumerWidget {
 
     _setStatusBarStyle(isDark);
 
-    final hadithToDisplay =
-        showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
     final allHadithsAsyncValue = ref.watch(DataProvider);
+
+    // Initialize daily hadith if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!allHadithsAsyncValue.isLoading && 
+          allHadithsAsyncValue.hasValue && 
+          allHadithsAsyncValue.value!.isNotEmpty) {
+        _initializeDailyHadith();
+      }
+    });
 
     // Responsive font sizes
     final bodyFontSize = _getBodyFontSize(screenWidth, baseFontSize.toDouble());
@@ -112,7 +157,8 @@ class HadithDetails extends ConsumerWidget {
               child: _buildErrorWidget(theme, 'لا توجد أحاديث لعرضها حاليًا',
                   Icons.error_outline))),
       data: (allHadiths) {
-        if (allHadiths.isEmpty || hadithToDisplay == null) {
+        // Only show "no hadiths" error if there are truly no hadiths in the entire app
+        if (allHadiths.isEmpty) {
           return Scaffold(
               backgroundColor: backgroundColor,
               appBar: AppBar(
@@ -128,13 +174,63 @@ class HadithDetails extends ConsumerWidget {
                         onPressed: () {
                           controller.state = '';
                           navNotifier.changeTab(0);
-                          ref.read(showDailyHadithProvider.notifier).state =
-                              false;
+                          ref.read(showDailyHadithProvider.notifier).state = false;
                           _setStatusBarStyle(false);
                         })
                   ]),
               body: Center(
-                  child: _buildErrorWidget(theme, 'لا توجد أحاديث لعرضها حاليًا',
+                  child: _buildErrorWidget(theme, 'لا توجد أحاديث في التطبيق',
+                      Icons.info_outline)));
+        }
+
+        final hadithToDisplay = showDaily ? dailyHadith : (selectedHadith ?? dailyHadith);
+        
+        // If we don't have a hadith to display, try to set the first available hadith
+        if (hadithToDisplay == null && allHadiths.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final firstHadith = allHadiths.first;
+            if (showDaily) {
+              ref.read(dailyHadithProvider.notifier).setDailyHadith(firstHadith);
+            } else {
+              ref.read(selectedHadithProvider.notifier).state = firstHadith;
+            }
+          });
+          
+          // Show loading while we set the first hadith
+          return Scaffold(
+            backgroundColor: backgroundColor,
+            body: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? Colors.white : AppTheme.primaryColor
+                )
+              )
+            )
+          );
+        }
+
+        if (hadithToDisplay == null) {
+          return Scaffold(
+              backgroundColor: backgroundColor,
+              appBar: AppBar(
+                  backgroundColor: backgroundColor,
+                  elevation: 0,
+                  actions: [
+                    IconButton(
+                        icon: Icon(Icons.arrow_forward,
+                            color: isDark
+                                ? AppTheme.arrowBackdark
+                                : AppTheme.arrowBackLight,
+                            size: 30),
+                        onPressed: () {
+                          controller.state = '';
+                          navNotifier.changeTab(0);
+                          ref.read(showDailyHadithProvider.notifier).state = false;
+                          _setStatusBarStyle(false);
+                        })
+                  ]),
+              body: Center(
+                  child: _buildErrorWidget(theme, 'لا يوجد حديث محدد لعرضه',
                       Icons.info_outline)));
         }
 
@@ -146,9 +242,9 @@ class HadithDetails extends ConsumerWidget {
         final initialPage = currentIndex != -1 ? currentIndex : 0;
         final pageController = PageController(initialPage: initialPage);
 
-        // Ensure the selected hadith provider is initialized with the first displayed hadith.
+        // Ensure the selected hadith provider is initialized with the displayed hadith.
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (allHadiths.isNotEmpty && ref.read(selectedHadithProvider) == null) {
+          if (!showDaily && ref.read(selectedHadithProvider) == null && allHadiths.isNotEmpty) {
              ref.read(selectedHadithProvider.notifier).state = allHadiths[initialPage];
           }
         });
@@ -183,9 +279,11 @@ class HadithDetails extends ConsumerWidget {
                               controller: pageController,
                               itemCount: allHadiths.length,
                               onPageChanged: (index) {
-                                ref
-                                    .read(selectedHadithProvider.notifier)
-                                    .state = allHadiths[index];
+                                if (!showDaily) {
+                                  ref
+                                      .read(selectedHadithProvider.notifier)
+                                      .state = allHadiths[index];
+                                }
                               },
                               itemBuilder: (context, index) {
                                 final hadith = allHadiths[index];
@@ -403,25 +501,40 @@ class HadithDetails extends ConsumerWidget {
   }
 
   Widget _buildTabBar(bool isDark, double fontSize) {
-    return TabBar(
-      indicatorColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-      labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
-      unselectedLabelColor: const Color(0xff977c55),
-      labelStyle: GoogleFonts.notoKufiArabic(
-        fontSize: fontSize,
-        fontWeight: FontWeight.bold,
+  return TabBar(
+    indicatorColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+    labelColor: isDark ? AppTheme.primaryColor : AppTheme.redBlackColer,
+    unselectedLabelColor: const Color(0xff977c55),
+    labelStyle: GoogleFonts.notoKufiArabic(
+      fontSize: fontSize,
+      fontWeight: FontWeight.bold,
+    ),
+    unselectedLabelStyle: TextStyle(
+      fontFamily: 'AvenirArabic',
+      fontSize: fontSize,
+    ),
+    tabs: const [
+      Tab(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('الخلاصة'),
+        ),
       ),
-      unselectedLabelStyle: TextStyle(
-        fontFamily: 'AvenirArabic',
-        fontSize: fontSize,
+      Tab(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('التخريج'),
+        ),
       ),
-      tabs: const [
-        Tab(text: 'الخلاصة'),
-        Tab(text: 'التخريج'),
-        Tab(text: 'الدراسة'),
-      ],
-    );
-  }
+      Tab(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('الدراسة'),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildErrorWidget(ThemeData theme, String message, IconData icon) {
     return Column(

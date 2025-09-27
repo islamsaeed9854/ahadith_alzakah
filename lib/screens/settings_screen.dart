@@ -17,24 +17,25 @@ import '../widgets/clickable_setting_card.dart';
 import 'package:arabic_font/arabic_font.dart';
 import '../providers/data_manager_provider/data_sync_service/auth_checker.dart';
 
-
 const double kMediumScreenBreakpoint = 600.0;
 const double kLargeScreenBreakpoint = 1200.0;
 const double kExtraLargeScreenBreakpoint = 1800.0;
 
 double _getMaxContentWidth(double screenWidth) {
-  if (screenWidth > kLargeScreenBreakpoint) return screenWidth * 0.7; 
-  if (screenWidth > 800) return 700; 
-  return screenWidth; 
+  if (screenWidth > kLargeScreenBreakpoint) return screenWidth * 0.7;
+  if (screenWidth > 800) return 700;
+  return screenWidth;
 }
 
-double _getResponsiveFontSize(double screenWidth, {
+double _getResponsiveFontSize(
+  double screenWidth, {
   required double small,
   required double medium,
   required double large,
   double? extraLarge,
 }) {
-  if (screenWidth > kExtraLargeScreenBreakpoint) return extraLarge ?? large * 1.1;
+  if (screenWidth > kExtraLargeScreenBreakpoint)
+    return extraLarge ?? large * 1.1;
   if (screenWidth > kLargeScreenBreakpoint) return large;
   if (screenWidth > kMediumScreenBreakpoint) return medium;
   return small;
@@ -58,15 +59,15 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
   ref.read(fontSizeProvider.notifier).state = fontSize;
   final isDarkMode = prefs.getBool('dark_mode') ?? false;
   ref.read(isDarkModeProvider.notifier).state = isDarkMode;
-  
+
   bool isEnabled = prefs.getBool('notifications_enabled') ?? true;
   ref.read(notificationsEnabledProvider.notifier).state = isEnabled;
-  
+
   final hour = prefs.getInt('daily_notification_hour') ?? 12;
   final minute = prefs.getInt('daily_notification_minute') ?? 0;
   ref.read(notificationHourProvider.notifier).state = hour;
   ref.read(notificationMinuteProvider.notifier).state = minute;
-  
+
   if (isEnabled) {
     final notificationService = ref.read(notificationServiceProvider);
     await notificationService.scheduleDailyHadithNotification();
@@ -76,10 +77,11 @@ final settingsInitializerProvider = FutureProvider<void>((ref) async {
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  Future<void> _toggleNotifications(bool value, WidgetRef ref, BuildContext context) async {
+  Future<void> _toggleNotifications(
+      bool value, WidgetRef ref, BuildContext context) async {
     final notificationService = ref.read(notificationServiceProvider);
     final prefs = await SharedPreferences.getInstance();
-    
+
     ref.read(notificationsEnabledProvider.notifier).state = value;
     await prefs.setBool('notifications_enabled', value);
 
@@ -244,15 +246,15 @@ class SettingsScreen extends ConsumerWidget {
                             'الاعدادات',
                             style: GoogleFonts.cairo(
                               fontWeight: FontWeight.bold,
-                              fontSize: _getResponsiveFontSize(screenWidth, small: 34.0, medium: 38.0, large: 42.0),
+                              fontSize: _getResponsiveFontSize(screenWidth,
+                                  small: 34.0, medium: 38.0, large: 42.0),
                               color: const Color(0xfffcead0),
                             ),
                           ),
                         ),
                         Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextApp.backButton(ref)
-                        ),
+                            alignment: Alignment.centerLeft,
+                            child: TextApp.backButton(ref)),
                       ],
                     ),
                   ),
@@ -262,13 +264,19 @@ class SettingsScreen extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove, color: Color(0xff977c55)),
-                            onPressed: fontSize > 10 ? () => _updateFontSize(fontSize - 1, ref) : null,
+                            icon: const Icon(Icons.remove,
+                                color: Color(0xff977c55)),
+                            onPressed: fontSize > 10
+                                ? () => _updateFontSize(fontSize - 1, ref)
+                                : null,
                           ),
                           Text(fontSize.toStringAsFixed(0)),
                           IconButton(
-                            icon: const Icon(Icons.add, color: Color(0xff977c55)),
-                            onPressed: fontSize < 30 ? () => _updateFontSize(fontSize + 1, ref) : null,
+                            icon:
+                                const Icon(Icons.add, color: Color(0xff977c55)),
+                            onPressed: fontSize < 30
+                                ? () => _updateFontSize(fontSize + 1, ref)
+                                : null,
                           ),
                         ],
                       )),
@@ -284,7 +292,8 @@ class SettingsScreen extends ConsumerWidget {
                       label: 'الإشعارات اليومية',
                       child: Switch.adaptive(
                         value: isNotificationsEnabled,
-                        onChanged: (value) => _toggleNotifications(value, ref, context),
+                        onChanged: (value) =>
+                            _toggleNotifications(value, ref, context),
                         activeColor: const Color(0xff977c55),
                         inactiveTrackColor: Colors.grey[300],
                       )),
@@ -296,55 +305,134 @@ class SettingsScreen extends ConsumerWidget {
                           Consumer(
                             builder: (context, ref, _) {
                               final hour = ref.watch(notificationHourProvider);
-                              final minute = ref.watch(notificationMinuteProvider);
-                              final timeText = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+                              final minute =
+                                  ref.watch(notificationMinuteProvider);
+                              final timeText =
+                                  '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
                               return Text(timeText);
                             },
                           ),
                           const SizedBox(width: 16),
+                         
                           ElevatedButton(
                             onPressed: () async {
                               final picked = await showTimePicker(
                                 context: context,
                                 initialTime: TimeOfDay(
-                                    hour: ref.read(notificationHourProvider),
-                                    minute: ref.read(notificationMinuteProvider)),
+                                  hour: ref.read(notificationHourProvider),
+                                  minute: ref.read(notificationMinuteProvider),
+                                ),
+                                builder: (BuildContext context, Widget? child) {
+                               
+                                  return Theme(
+                                    data: ThemeData.light().copyWith(
+                                      timePickerTheme: TimePickerThemeData(
+                                       
+                                        backgroundColor:
+                                            const Color(0xFFF5EFE4),
+                                   
+                                        hourMinuteColor: const Color(0xffecbd79)
+                                            .withOpacity(0.15),
+                                        
+                                        hourMinuteTextColor:
+                                            const Color(0xff513c2e),
+                                        
+                                        dialBackgroundColor:
+                                            const Color(0xffecbd79)
+                                                .withOpacity(0.1),
+                                        
+                                        dialHandColor: const Color(0xffecbd79),
+                                        
+                                        dialTextColor:
+                                            MaterialStateColor.resolveWith(
+                                          (states) => states.contains(
+                                                  MaterialState.selected)
+                                              ? Colors.white
+                                              : const Color(0xff513c2e),
+                                        ),
+                                        
+                                        dayPeriodColor: const Color(0xff912929),
+                                        dayPeriodTextColor:
+                                            MaterialStateColor.resolveWith(
+                                          (states) => states.contains(
+                                                  MaterialState.selected)
+                                              ? Colors.white
+                                              : const Color(0xff912929),
+                                        ),
+                                        dayPeriodBorderSide: const BorderSide(
+                                            color: Color(0xff912929)),
+                                      ),
+                                     
+                                      textButtonTheme: TextButtonThemeData(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor:
+                                              const Color(0xff912929),
+                                        ),
+                                      ),
+                                      colorScheme: const ColorScheme.light(
+                                      
+                                        primary: Color(0xffecbd79),
+                                        onPrimary: Colors.white,
+                                        
+                                        surface: Color(0xFFF5EFE4),
+                                       
+                                        onSurface: Color(0xff513c2e),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                 
+                                },
                               );
                               if (picked != null) {
-                                final prefs = await SharedPreferences.getInstance();
-                                await prefs.setInt('daily_notification_hour', picked.hour);
-                                await prefs.setInt('daily_notification_minute', picked.minute);
-                                ref.read(notificationHourProvider.notifier).state = picked.hour;
-                                ref.read(notificationMinuteProvider.notifier).state = picked.minute;
-                                
-                           
-                                if(ref.read(notificationsEnabledProvider)) {
-                                  final notificationService = ref.read(notificationServiceProvider);
-                                  await notificationService.scheduleDailyHadithNotification();
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setInt(
+                                    'daily_notification_hour', picked.hour);
+                                await prefs.setInt(
+                                    'daily_notification_minute', picked.minute);
+                                ref
+                                    .read(notificationHourProvider.notifier)
+                                    .state = picked.hour;
+                                ref
+                                    .read(notificationMinuteProvider.notifier)
+                                    .state = picked.minute;
+
+                                if (ref.read(notificationsEnabledProvider)) {
+                                  final notificationService =
+                                      ref.read(notificationServiceProvider);
+                                  await notificationService
+                                      .scheduleDailyHadithNotification();
                                 }
 
                                 showSingleSnackBar(context,
-                                    message: 'تم حفظ وقت الإشعار: ${picked.format(context)}',
+                                    message:
+                                        'تم حفظ وقت الإشعار: ${picked.format(context)}',
                                     backgroundColor: Colors.green,
                                     duration: const Duration(seconds: 2));
                               }
                             },
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff977c55)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff977c55),
+                              foregroundColor: Colors.white,
+                            ),
                             child: const Text('اختر وقت'),
                           ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final notificationService = ref.read(notificationServiceProvider);
-                             await notificationService.sendImmediateNotificationTest();
-                              showSingleSnackBar(context,
-                                  message: 'تم إرسال إشعار تجريبي',
-                                  backgroundColor: Colors.green,
-                                  duration: const Duration(seconds: 2));
-                            },
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
-                            child: const Text('إرسال تجريبي'),
-                          ),
+
+
+                          // const SizedBox(width: 8),
+                          // ElevatedButton(
+                          //   onPressed: () async {
+                          //     final notificationService = ref.read(notificationServiceProvider);
+                          //    await notificationService.sendImmediateNotificationTest();
+                          //     showSingleSnackBar(context,
+                          //         message: 'تم إرسال إشعار تجريبي',
+                          //         backgroundColor: Colors.green,
+                          //         duration: const Duration(seconds: 2));
+                          //   },
+                          //   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+                          //   child: const Text('إرسال تجريبي'),
+                          // ),
                         ],
                       )),
                   authState.when(
@@ -355,26 +443,45 @@ class SettingsScreen extends ConsumerWidget {
                             const SizedBox(height: 8),
                             buildClickableSettingCard(context,
                                 label: 'إضافة حديث',
-                                icon: const Icon(Icons.add, color: Color(0xff977c55), size: 20),
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddHadithScreen()))),
+                                icon: const Icon(Icons.add,
+                                    color: Color(0xff977c55), size: 20),
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const AddHadithScreen()))),
                             buildClickableSettingCard(context,
                                 label: 'حذف حديث',
-                                icon: const Icon(Icons.delete, color: Color(0xff977c55), size: 20),
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RemoveHadithScreen()))),
+                                icon: const Icon(Icons.delete,
+                                    color: Color(0xff977c55), size: 20),
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const RemoveHadithScreen()))),
                             buildClickableSettingCard(context,
                                 label: 'تعديل حديث',
-                                icon: const Icon(Icons.edit, color: Color(0xff977c55), size: 20),
-                                onTap: () {
+                                icon: const Icon(Icons.edit,
+                                    color: Color(0xff977c55),
+                                    size: 20), onTap: () {
                               ref.watch(DataProvider).when(
                                     data: (hadiths) {
                                       if (hadiths.isNotEmpty) {
-                                        ref.read(selectedEditFieldProvider.notifier).state = '';
-                                        Navigator.push(context, MaterialPageRoute(builder: (_) => const EditOptionsScreen()));
+                                        ref
+                                            .read(selectedEditFieldProvider
+                                                .notifier)
+                                            .state = '';
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const EditOptionsScreen()));
                                       } else {
                                         showSingleSnackBar(context,
                                             message: 'لا يوجد أحاديث للتعديل',
                                             backgroundColor: Colors.redAccent,
-                                            duration: const Duration(seconds: 2));
+                                            duration:
+                                                const Duration(seconds: 2));
                                       }
                                     },
                                     loading: () {},
@@ -383,15 +490,18 @@ class SettingsScreen extends ConsumerWidget {
                             }),
                             buildClickableSettingCard(context,
                                 label: 'تسجيل الخروج',
-                                icon: const Icon(Icons.logout, color: Color(0xff977c55), size: 20),
-                                onTap: () => _showLogoutConfirmationDialog(context, ref)),
+                                icon: const Icon(Icons.logout,
+                                    color: Color(0xff977c55), size: 20),
+                                onTap: () => _showLogoutConfirmationDialog(
+                                    context, ref)),
                           ],
                         );
                       } else {
                         return const SizedBox.shrink();
                       }
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (error, stackTrace) => const Center(child: Text('')),
                   ),
                   const SizedBox(height: 8),
@@ -403,4 +513,4 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
-} 
+}

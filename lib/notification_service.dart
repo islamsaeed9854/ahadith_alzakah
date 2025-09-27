@@ -29,6 +29,10 @@ class DailyHadithNotifier extends StateNotifier<Hadith?> {
   void setDailyHadith(Hadith hadith) {
     state = hadith;
   }
+
+  void clearDailyHadith() {
+    state = null;
+  }
 }
 
 class NotificationService {
@@ -44,7 +48,7 @@ class NotificationService {
 
   NotificationService(this.ref) {
     _winNotifyPlugin = WindowsNotification(
-      applicationId: "IslamSaeed.5510813C742D0_1ks8sqzt2prk8",
+      applicationId: null
     );
   }
   
@@ -115,9 +119,13 @@ class NotificationService {
     try {
       debugPrint('Handling notification click...');
       await _bringAppToForeground();
+      
+      // Get or generate daily hadith
       final currentHadith = await getDailyHadith();
       if (currentHadith != null) {
         _navigateToHadith(currentHadith);
+      } else {
+        debugPrint('No daily hadith available for notification click');
       }
     } catch (e) {
       debugPrint('Error handling notification click: $e');
@@ -152,11 +160,14 @@ class NotificationService {
     Future.delayed(const Duration(milliseconds: 200), () {
       if (navigatorKey.currentState != null && navigatorKey.currentContext != null) {
         final container = ProviderScope.containerOf(navigatorKey.currentContext!);
+        
+        // Set up daily hadith navigation
         container.read(dailyHadithProvider.notifier).setDailyHadith(hadith);
         container.read(showDailyHadithProvider.notifier).state = true;
         container.read(selectedHadithProvider.notifier).state = null;
         container.read(innerBooksScreenProvider.notifier).state = null;
         container.read(navigationProvider.notifier).changeTab(1);
+        
         navigatorKey.currentState!.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const HomeScreen(showHadithDetails: true)),
           (Route<dynamic> route) => false,
@@ -167,7 +178,6 @@ class NotificationService {
       }
     });
   }
-
 
   /// Shows a notification on Windows.
   void _showWindowsNotification(Hadith hadith) {
@@ -203,17 +213,29 @@ class NotificationService {
     final today = DateTime.now().toIso8601String().split('T')[0];
     final lastDate = await _readFromStorage(_lastHadithDateKey);
 
+    debugPrint('Getting daily hadith - Today: $today, Last date: $lastDate');
+
     if (lastDate == today) {
       final json = await _readFromStorage(_dailyHadithKey);
       if (json != null) {
         try {
-          return Hadith.fromJson(jsonDecode(json));
+          final hadith = Hadith.fromJson(jsonDecode(json));
+          debugPrint('Found stored daily hadith: ${hadith.number}');
+          return hadith;
         } catch (e) {
           debugPrint('Error parsing stored hadith: $e');
         }
       }
     }
-    return await _generateNewDailyHadith();
+
+    // Generate new daily hadith
+    final newHadith = await _generateNewDailyHadith();
+    if (newHadith != null) {
+      debugPrint('Generated new daily hadith: ${newHadith.number}');
+    } else {
+      debugPrint('Failed to generate new daily hadith');
+    }
+    return newHadith;
   }
 
   /// Generates and saves a new daily hadith.
@@ -221,17 +243,37 @@ class NotificationService {
     try {
       // Ensure hadiths are loaded
       final dataManager = ref.read(DataProvider.notifier);
-      if (ref.read(DataProvider).valueOrNull == null) {
+      final currentState = ref.read(DataProvider);
+      
+      if (currentState.valueOrNull == null) {
+        debugPrint('Loading hadiths for daily hadith generation...');
         await dataManager.loadHadiths();
       }
+      
       final hadiths = ref.read(DataProvider).value ?? [];
-      if (hadiths.isEmpty) return null;
+      debugPrint('Available hadiths for daily selection: ${hadiths.length}');
+      
+      if (hadiths.isEmpty) {
+        debugPrint('No hadiths available for daily selection');
+        return null;
+      }
 
       final activeHadiths = hadiths.where((h) => !h.deleted).toList();
-      if (activeHadiths.isEmpty) return null;
+      debugPrint('Active (non-deleted) hadiths: ${activeHadiths.length}');
+      
+      if (activeHadiths.isEmpty) {
+        debugPrint('No active hadiths available for daily selection');
+        return null;
+      }
 
-      final random = Random(DateTime.now().day); // Consistent for the same day
+      // Use a seed based on the current date to ensure the same hadith for the whole day
+      final today = DateTime.now();
+      final seed = today.year * 10000 + today.month * 100 + today.day;
+      final random = Random(seed);
       final selectedHadith = activeHadiths[random.nextInt(activeHadiths.length)];
+      
+      debugPrint('Selected daily hadith: Bab ${selectedHadith.bab}, Fasl ${selectedHadith.fasl}, Number ${selectedHadith.number}');
+      
       await _saveDailyHadith(selectedHadith);
       return selectedHadith;
     } catch (e) {
@@ -242,9 +284,26 @@ class NotificationService {
 
   /// Saves the daily hadith to secure storage.
   Future<void> _saveDailyHadith(Hadith hadith) async {
-    final today = DateTime.now().toIso8601String().split('T')[0];
-    await _writeToStorage(_lastHadithDateKey, today);
-    await _writeToStorage(_dailyHadithKey, jsonEncode(hadith.toJson()));
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      await _writeToStorage(_lastHadithDateKey, today);
+      await _writeToStorage(_dailyHadithKey, jsonEncode(hadith.toJson()));
+      debugPrint('Saved daily hadith to storage');
+    } catch (e) {
+      debugPrint('Error saving daily hadith: $e');
+    }
+  }
+
+  /// Clears the stored daily hadith (useful for testing or manual refresh)
+  Future<void> clearDailyHadith() async {
+    try {
+      await _deleteFromStorage(_lastHadithDateKey);
+      await _deleteFromStorage(_dailyHadithKey);
+      ref.read(dailyHadithProvider.notifier).clearDailyHadith();
+      debugPrint('Cleared daily hadith from storage');
+    } catch (e) {
+      debugPrint('Error clearing daily hadith: $e');
+    }
   }
 
   // --- Storage Helper Methods ---
@@ -253,6 +312,7 @@ class NotificationService {
       try {
         return await _secureStorage.read(key: key);
       } catch(e) {
+         debugPrint('SecureStorage read failed, falling back to SharedPreferences: $e');
          _useSecureStorage = false;
          final prefs = await SharedPreferences.getInstance();
          return prefs.getString(key);
@@ -267,6 +327,7 @@ class NotificationService {
       try {
         await _secureStorage.write(key: key, value: value);
       } catch(e) {
+         debugPrint('SecureStorage write failed, falling back to SharedPreferences: $e');
          _useSecureStorage = false;
          final prefs = await SharedPreferences.getInstance();
          await prefs.setString(key, value);
@@ -274,6 +335,22 @@ class NotificationService {
     } else {
        final prefs = await SharedPreferences.getInstance();
        await prefs.setString(key, value);
+    }
+  }
+
+  Future<void> _deleteFromStorage(String key) async {
+    if (_useSecureStorage) {
+      try {
+        await _secureStorage.delete(key: key);
+      } catch(e) {
+         debugPrint('SecureStorage delete failed, falling back to SharedPreferences: $e');
+         _useSecureStorage = false;
+         final prefs = await SharedPreferences.getInstance();
+         await prefs.remove(key);
+      }
+    } else {
+       final prefs = await SharedPreferences.getInstance();
+       await prefs.remove(key);
     }
   }
 

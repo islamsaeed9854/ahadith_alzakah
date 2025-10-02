@@ -81,35 +81,40 @@ void main(List<String> args) async {
   debugPrint('main: Application started with args: $args');
 
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   bool isStartupLaunch = args.contains('run');
   bool showHadithOnLaunch = args.contains(_notificationLaunchArg);
-  
+
   if (isStartupLaunch) {
-    debugPrint('App launched on system startup (MSIX task) - will run in background mode');
+    debugPrint(
+        'App launched on system startup (MSIX task) - will run in background mode');
   }
-  
+
   if (showHadithOnLaunch) {
     debugPrint('App launched from a notification click.');
   }
 
   if (Platform.isWindows) {
     await windowManager.ensureInitialized();
-    
+
     if (isStartupLaunch) {
       await windowManager.hide();
       await windowManager.setSkipTaskbar(true);
     }
-    
+
     final becamePrimary = await SingleInstance.startServer((message) async {
       debugPrint('Received message from secondary instance: $message');
       await _showWindowFromBackground();
       try {
         final decodedMessage = json.decode(message);
-        final messageArgs = (decodedMessage['args'] as List?)?.cast<String>() ?? [];
+        final messageArgs =
+            (decodedMessage['args'] as List?)?.cast<String>() ?? [];
         if (messageArgs.contains(_notificationLaunchArg)) {
-          debugPrint('Secondary instance passed notification click. Handling navigation.');
-          _globalContainer?.read(notificationServiceProvider).handleNotificationClick();
+          debugPrint(
+              'Secondary instance passed notification click. Handling navigation.');
+          _globalContainer
+              ?.read(notificationServiceProvider)
+              .handleNotificationClick();
         }
       } catch (e) {
         debugPrint('Error processing message from secondary instance: $e');
@@ -124,7 +129,6 @@ void main(List<String> args) async {
 
     if (!isStartupLaunch) {
       WindowOptions normalWindowOptions = const WindowOptions(
-        size: ui.Size(800, 500),
         minimumSize: ui.Size(800, 500),
         center: true,
         title: 'موسوعة أحاديث الزكاة',
@@ -133,9 +137,6 @@ void main(List<String> args) async {
       await windowManager.waitUntilReadyToShow(normalWindowOptions, () async {
         await windowManager.show();
         await windowManager.focus();
-        Future.delayed(const Duration(milliseconds: 100), () {
-       //   windowManager.maximize();
-        });
         debugPrint('✅ Window shown for normal launch');
       });
     }
@@ -155,7 +156,8 @@ void main(List<String> args) async {
       await Future.delayed(Duration(seconds: retryCount * 2));
     }
     if (!_supabaseInitialized) {
-      debugPrint('main: Failed to initialize Supabase after $maxRetries attempts');
+      debugPrint(
+          'main: Failed to initialize Supabase after $maxRetries attempts');
     }
   }
 
@@ -172,7 +174,7 @@ void main(List<String> args) async {
 
 void _runBackgroundInitialization() async {
   debugPrint('🔄 Starting background initialization...');
-  
+
   int retryCount = 0;
   const maxRetries = 3;
   while (!_supabaseInitialized && retryCount < maxRetries) {
@@ -181,7 +183,7 @@ void _runBackgroundInitialization() async {
     retryCount++;
     await Future.delayed(Duration(seconds: retryCount * 2));
   }
-  
+
   debugPrint('✅ Background initialization completed');
 }
 
@@ -189,16 +191,16 @@ Future<void> _showWindowFromBackground() async {
   try {
     await windowManager.show();
     await windowManager.setSkipTaskbar(false);
-    
+
     if (await windowManager.isMinimized()) {
       await windowManager.restore();
     }
-    
+
     await windowManager.setAlwaysOnTop(true);
     await windowManager.focus();
     await Future.delayed(const Duration(milliseconds: 100));
     await windowManager.setAlwaysOnTop(false);
-    
+
     debugPrint('✅ Window successfully shown from background');
   } catch (e) {
     debugPrint('❌ Error showing window from background: $e');
@@ -208,9 +210,9 @@ Future<void> _showWindowFromBackground() async {
 class MyApp extends ConsumerStatefulWidget {
   final bool showHadithOnLaunch;
   final bool isStartupLaunch;
-  
+
   const MyApp({
-    super.key, 
+    super.key,
     this.showHadithOnLaunch = false,
     this.isStartupLaunch = false,
   });
@@ -219,7 +221,8 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener {
+class _MyAppState extends ConsumerState<MyApp>
+    with WindowListener, TrayListener {
   @override
   void initState() {
     super.initState();
@@ -230,7 +233,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(notificationServiceProvider).init();
-      
+
       // If app was launched from notification, prepare daily hadith
       if (widget.showHadithOnLaunch) {
         debugPrint('App launched from notification, preparing daily hadith...');
@@ -251,10 +254,32 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
 
   void _initTray() async {
     try {
+      debugPrint('🔧 Initializing tray icon...');
+
       await trayManager.setIcon('assets/app_icon.ico');
+      debugPrint('✅ Tray icon set');
+
       await trayManager.setToolTip('موسوعة أحاديث الزكاة');
+      debugPrint('✅ Tray tooltip set');
+
+      Menu menu = Menu(
+        items: [
+          MenuItem(
+            key: 'show_window',
+            label: 'فتح التطبيق',
+          ),
+          MenuItem.separator(),
+          MenuItem(
+            key: 'exit_app',
+            label: 'إغلاق التطبيق',
+          ),
+        ],
+      );
+
+      await trayManager.setContextMenu(menu);
+      debugPrint('✅ Tray context menu set successfully');
     } catch (e) {
-      debugPrint('MyAppState: Error initializing tray: $e');
+      debugPrint('❌ Error initializing tray: $e');
     }
   }
 
@@ -270,7 +295,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
   @override
   Widget build(BuildContext context) {
     final isSupabaseConnected = ref.watch(supabaseConnectionProvider);
-    
+
     if (widget.isStartupLaunch) {
       return MaterialApp(
         title: 'موسوعة أحاديث الزكاة',
@@ -282,7 +307,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
         ),
       );
     }
-    
+
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'موسوعة أحاديث الزكاة',
@@ -326,26 +351,58 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener, TrayListener
     );
   }
 
+  // ========== Window Listener Events ==========
+
   @override
   void onWindowClose() {
+    debugPrint('🪟 Window close event - hiding window');
     if (Platform.isWindows) {
       windowManager.hide();
     }
   }
-  
+
+  // ========== Tray Listener Events ==========
+
   @override
   void onTrayIconMouseDown() {
-    debugPrint('Tray icon clicked!');
+    debugPrint('🖱️ Tray icon LEFT clicked - showing window');
     if (Platform.isWindows) {
       _showWindowFromBackground();
     }
   }
-  
+
   @override
   void onTrayIconRightMouseDown() {
-    debugPrint('Tray icon right clicked!');
-    if (Platform.isWindows) {
-      _showWindowFromBackground();
+    debugPrint(
+        '🖱️ Tray icon RIGHT clicked - context menu will show automatically');
+    trayManager.popUpContextMenu();
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) async {
+   
+    debugPrint('📋 Tray menu item clicked: ${menuItem.key}');
+
+    switch (menuItem.key) {
+      case 'show_window':
+        debugPrint('Opening window from menu...');
+        if (Platform.isWindows) {
+          _showWindowFromBackground();
+        }
+        break;
+
+      case 'exit_app':
+        debugPrint('Exiting app from menu...');
+        if (Platform.isWindows) {
+          
+          await SingleInstance.stopServer();
+          //await windowManager.destroy();
+          exit(0);
+        }
+        break;
+
+      default:
+        debugPrint('Unknown menu item: ${menuItem.key}');
     }
   }
 }

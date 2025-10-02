@@ -112,7 +112,7 @@ class SettingsScreen extends ConsumerWidget {
     }
     ref.read(lastTapTimeProvider.notifier).state = now;
     final AuthChecker _authChecker = AuthChecker();
-    if (tapCount.state >= 5 && !_authChecker.isUserAuthenticated()) {
+    if (1==0 && tapCount.state >= 5 && !_authChecker.isUserAuthenticated()) {
       ref.read(isLoadingProvider.notifier).state = false;
       tapCount.state = 0;
       Navigator.of(context).push(

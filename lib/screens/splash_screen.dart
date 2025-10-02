@@ -37,6 +37,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       return;
     }
     
+    // Maximize window IMMEDIATELY before any animation
+    if (Platform.isWindows) {
+      _maximizeWindowImmediately();
+    }
+    
     _controller = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -60,6 +65,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _startAnimation();
   }
+  
+  void _maximizeWindowImmediately() async {
+    try {
+      await windowManager.maximize();
+      debugPrint('✅ Window maximized immediately in SplashScreen');
+    } catch (e) {
+      debugPrint('❌ Error maximizing window: $e');
+    }
+  }
 
   void _initializeForStartup() async {
     debugPrint('Initializing for startup launch - ensuring window is hidden.');
@@ -79,11 +93,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void _startAnimation() async {
     await _controller.forward();
     
+    // Ensure window stays maximized during animation
+    if (Platform.isWindows) {
+      await windowManager.maximize();
+    }
+    
     // Wait for data initialization.
     await ref.read(initializationProvider.future);
     
     // Additional wait for the splash screen.
     await Future.delayed(const Duration(seconds: 4));
+    
+    // Ensure window is maximized before navigation
+    if (Platform.isWindows) {
+      await windowManager.maximize();
+      debugPrint('✅ Window maximized before navigation');
+    }
     
     // Navigate to the main screen.
     if (mounted) {
